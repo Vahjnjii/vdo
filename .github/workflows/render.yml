@@ -1,0 +1,46 @@
+name: Render Zodiac Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      zodiac_text:
+        description: 'Zodiac text'
+        required: true
+      run_token:
+        description: 'Run token'
+        required: true
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm install
+
+      - name: Install Chrome deps
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends \
+            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+            libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+            libgbm1 libpango-1.0-0 libcairo2 libasound2t64 \
+            fonts-noto-color-emoji
+
+      - name: Render
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ZODIAC_TEXT: ${{ github.event.inputs.zodiac_text }}
+        run: node render.js
+
+      - name: Upload images
+        uses: actions/upload-artifact@v4
+        with:
+          name: zodiac-images-${{ github.event.inputs.run_token }}
+          path: output/*.png
+          retention-days: 1
