@@ -1,56 +1,25 @@
 const puppeteer = require('puppeteer');
-const { GoogleGenAI, Type } = require('@google/genai');
 const fs = require('fs');
 const path = require('path');
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const WORKER_URL  = process.env.WORKER_URL || 'https://vdo.shreevathsa2k21-4fa.workers.dev';
 const ZODIAC_TEXT = process.env.ZODIAC_TEXT;
 const POST_EMOJIS = ["✨","🌟","🌙","💫","🔮","🧿","🔥","💎","🌈","🛸","🪐","⚡","🍀"];
 
-// ── 1. GEMINI ─────────────────────────────────────────────────────────────────
+// ── 1. GEMINI via Cloudflare Worker proxy ─────────────────────────────────────
 async function formatWithGemini(text) {
-  const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-  const res = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
-    contents: `Format these posts. Input: ${text}`,
-    config: {
-      systemInstruction: `Format the input text into a JSON array of posts following these STRICT formatting rules:
-1. SEPARATION: Separate the input into individual posts.
-2. TITLE: First line is the Title. NO EMOJIS in title. Keep wording EXACTLY as input.
-3. CONTENT STRUCTURE:
-   [CASE A: 1 or 2 Zodiac Signs] — SINGLE LINE. Start with emoji. Bold signs (**Aries**). Format: "✨ **Aries**, **Taurus**: explanation."
-   [CASE B: 3+ Zodiac Signs] — SPLIT lines. Line1: Emoji+Signs. Line2: Emoji+Explanation. Line3: empty string "".
-4. CLEANUP: Every content line MUST start with emoji. Vary emojis. Remove markdown headers (#). Do not rewrite text.
-Output: { "posts": [ { "title": "string", "content": ["string"] } ] }`,
-      responseMimeType: 'application/json',
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          posts: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                title: { type: Type.STRING },
-                content: { type: Type.ARRAY, items: { type: Type.STRING } }
-              },
-              required: ['title','content']
-            }
-          }
-        }
-      }
-    }
+  const res = await fetch(`${WORKER_URL}/gemini`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text })
   });
-
-  let raw = (res.text || '').replace(/```json|```/g, '').trim();
-  const s = Math.min(...[raw.indexOf('{'), raw.indexOf('[')].filter(x => x !== -1));
-  const e = Math.max(raw.lastIndexOf('}'), raw.lastIndexOf(']'));
-  if (s === Infinity || e === -1) return [];
-  const data = JSON.parse(raw.substring(s, e + 1));
-  return Array.isArray(data) ? data : (data.posts || []);
+  if (!res.ok) throw new Error(`Gemini proxy failed: ${res.status} — ${await res.text()}`);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.posts || [];
 }
 
-// ── 2. BUILD HTML (exact same styling as original PostCard) ───────────────────
+// ── 2. BUILD HTML (exact same styling as PostCard) ────────────────────────────
 function buildHTML(posts) {
   function cleanTitle(t) {
     return (t || '').replace(/[\u2700-\u27BF\uE000-\uF8FF\uD83C-\uD83E][\uDC00-\uDFFF]?/g,'').replace(/[#*]/g,'').trim();
@@ -75,10 +44,10 @@ function buildHTML(posts) {
   }
 
   const postsHTML = posts.map((post, i) => {
-    const title = cleanTitle(post.title);
+    const title   = cleanTitle(post.title);
     const content = cleanContent(post.content);
-    const s = layout(content, title);
-    const lines = content.map(line => {
+    const s       = layout(content, title);
+    const lines   = content.map(line => {
       if (line === '') return `<div style="height:20px"></div>`;
       const html = line.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/#/g,'');
       return `<div style="width:100%"><p style="font-size:${s.contentSize}px;line-height:${s.lineHeight};color:#fff;font-weight:500;margin:0;text-shadow:0 2px 4px rgba(0,0,0,.6)">${html}</p></div>`;
@@ -92,8 +61,7 @@ function buildHTML(posts) {
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8">
   <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#000;width:1080px}
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap');
-  *{font-family:'Noto Color Emoji','Segoe UI Emoji','Inter',sans-serif}
+  *{font-family:'Noto Color Emoji','Segoe UI Emoji','Segoe UI',sans-serif}
   </style></head><body>
   <div style="position:relative;width:1080px;height:1920px">${postsHTML}</div>
   </body></html>`;
@@ -123,7 +91,10 @@ async function render(posts) {
     }, i, posts.length);
 
     const safe = (posts[i].title||`post${i}`).substring(0,30).replace(/[^a-zA-Z0-9\s]/g,'').trim().replace(/\s+/g,'-').toLowerCase();
-    await (await page.$(`#p${i}`)).screenshot({ path: path.join(outDir, `${String(i+1).padStart(2,'0')}-${safe}.png`), type:'png' });
+    await (await page.$(`#p${i}`)).screenshot({
+      path: path.join(outDir, `${String(i+1).padStart(2,'0')}-${safe}.png`),
+      type: 'png'
+    });
     console.log(`  ✅ saved`);
   }
 
@@ -132,13 +103,12 @@ async function render(posts) {
 
 // ── MAIN ──────────────────────────────────────────────────────────────────────
 (async () => {
-  if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
-  if (!ZODIAC_TEXT)    throw new Error('ZODIAC_TEXT not set');
+  if (!ZODIAC_TEXT) throw new Error('ZODIAC_TEXT not set');
 
-  console.log('🤖 Calling Gemini...');
+  console.log('🤖 Calling Gemini via Worker proxy...');
   const posts = await formatWithGemini(ZODIAC_TEXT);
   console.log(`✅ ${posts.length} posts`);
-  if (!posts.length) throw new Error('Gemini returned no posts');
+  if (!posts.length) throw new Error('No posts returned');
 
   console.log('🎨 Rendering with Puppeteer...');
   await render(posts);
