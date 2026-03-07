@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Zodiac Pro</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#000;color:#fff;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+  textarea{width:100%;height:180px;background:#0f0f0f;color:#fff;padding:20px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);outline:none;resize:none;font-size:16px;font-family:inherit;transition:border .2s}
+  textarea:focus{border-color:rgba(255,255,255,0.4)}
+  .btn-primary{width:100%;padding:18px;background:#fff;color:#000;font-weight:900;font-size:18px;border:none;border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .2s}
+  .btn-primary:hover{background:#e2e2e2}
+  .btn-primary:disabled{opacity:0.4;cursor:not-allowed}
+  .btn-dl{width:100%;padding:16px;background:#fff;color:#000;font-weight:900;font-size:17px;border:none;border-radius:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s}
+  .btn-dl:hover{background:#eff6ff}
+  .btn-dl:active{transform:scale(0.98)}
+  .card{display:flex;width:100%;background:#0f172a;border:1px solid rgba(255,255,255,0.1);border-radius:14px;overflow:hidden;margin-bottom:20px;height:380px;transition:border .2s}
+  .card.done{border-color:rgba(34,197,94,0.4)}
+  .card-preview{flex:1;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+  .card-preview img{height:90%;aspect-ratio:9/16;object-fit:cover;display:block}
+  .card-actions{width:88px;background:#1e293b;display:flex;flex-direction:column;border-left:1px solid rgba(255,255,255,0.08);padding:10px 6px;gap:6px;position:relative}
+  .card-num{position:absolute;top:8px;left:0;width:100%;text-align:center;font-size:9px;font-weight:900;letter-spacing:2px;color:#475569}
+  .card-num.done{color:#22c55e}
+  .act-btn{flex:1;background:rgba(255,255,255,0.06);border:none;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#fff;transition:background .2s}
+  .act-btn:hover{background:rgba(255,255,255,0.12)}
+  .act-btn i{font-size:16px}
+  .act-btn span{font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94a3b8}
+  .act-btn.done i{color:#22c55e}
+  .progress-bar{width:100%;height:6px;background:#1e293b;border-radius:3px;overflow:hidden;margin-bottom:16px}
+  .progress-fill{height:100%;background:#fff;border-radius:3px;transition:width .6s ease}
+  .status-msg{color:#94a3b8;font-size:13px;text-align:center;animation:pulse 2s infinite}
+  .hint{color:#334155;font-size:11px;text-align:center;line-height:1.6;margin-top:8px}
+  .toast{position:fixed;bottom:120px;left:50%;transform:translateX(-50%);background:rgba(30,41,59,0.95);color:#fff;padding:12px 24px;border-radius:100px;border:1px solid rgba(255,255,255,0.15);font-weight:700;font-size:13px;display:flex;align-items:center;gap:8px;z-index:100;white-space:nowrap;backdrop-filter:blur(8px)}
+  .error-box{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:16px;padding:20px;text-align:left}
+  .error-box p:first-child{color:#f87171;font-weight:700;margin-bottom:6px}
+  .error-box p:last-child{color:rgba(252,165,165,0.7);font-size:12px;font-family:monospace}
+  .header{background:rgba(0,0,0,0.9);border-bottom:1px solid rgba(255,255,255,0.08);padding:16px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50;backdrop-filter:blur(8px)}
+  .close-btn{width:36px;height:36px;background:#1e293b;border:none;border-radius:50%;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background .2s}
+  .close-btn:hover{background:rgba(239,68,68,0.2);color:#f87171}
+  .footer{position:sticky;bottom:0;background:rgba(15,23,42,0.95);border-top:1px solid rgba(255,255,255,0.08);padding:14px 16px;backdrop-filter:blur(8px);z-index:50}
+  .scroll-area{flex:1;overflow-y:auto;padding:20px 16px}
+  .scroll-area::-webkit-scrollbar{width:3px}
+  .scroll-area::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
+  .spinner{width:36px;height:36px;border:2px solid rgba(255,255,255,0.1);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+  #view-idle,#view-loading,#view-error,#view-result{display:none}
+</style>
+</head>
+<body>
+
+<!-- ─── CONFIG — edit these 3 lines ────────────────────────────────────────── -->
+<script>
+  const GITHUB_OWNER = 'YOUR_GITHUB_USERNAME';   // ← change this
+  const GITHUB_REPO  = 'YOUR_REPO_NAME';          // ← change this
+  const GITHUB_TOKEN = 'YOUR_GITHUB_PAT_TOKEN';   // ← change this
+</script>
+<!-- ─────────────────────────────────────────────────────────────────────────── -->
+
+<!-- IDLE VIEW -->
+<div id="view-idle" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <div style="width:100%;max-width:480px">
+    <div style="text-align:center;margin-bottom:32px">
+      <h1 style="font-size:44px;font-weight:900;letter-spacing:-2px">ZODIAC PRO</h1>
+      <p style="color:#475569;font-size:16px;margin-top:6px">Batch Image Generator</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <textarea id="input-text" placeholder="Paste your zodiac text here..."></textarea>
+      <button class="btn-primary" onclick="handleGenerate()">
+        <i class="fa-solid fa-bolt"></i> GENERATE IMAGES
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING VIEW -->
+<div id="view-loading" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <div style="width:100%;max-width:480px;text-align:center;display:flex;flex-direction:column;gap:20px">
+    <h1 style="font-size:44px;font-weight:900;letter-spacing:-2px">ZODIAC PRO</h1>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <p class="status-msg" id="status-msg">Starting...</p>
+    <div class="spinner"></div>
+    <p class="hint">GitHub Actions is calling Gemini, rendering your images<br>with headless Chrome and packaging them.<br><span style="color:#1e293b">Takes about 60–90 seconds.</span></p>
+  </div>
+</div>
+
+<!-- ERROR VIEW -->
+<div id="view-error" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <div style="width:100%;max-width:480px;display:flex;flex-direction:column;gap:20px">
+    <div class="error-box">
+      <p>Something went wrong</p>
+      <p id="error-msg"></p>
+    </div>
+    <button class="btn-primary" onclick="showView('idle')">
+      <i class="fa-solid fa-rotate-left"></i> TRY AGAIN
+    </button>
+  </div>
+</div>
+
+<!-- RESULT VIEW -->
+<div id="view-result" style="height:100vh;display:flex;flex-direction:column">
+  <div class="header">
+    <div>
+      <div style="font-size:18px;font-weight:900;letter-spacing:-0.5px">READY TO SHARE</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+        <span style="width:7px;height:7px;background:#3b82f6;border-radius:50%;display:inline-block"></span>
+        <span id="render-count" style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:1px"></span>
+      </div>
+    </div>
+    <button class="close-btn" onclick="resetApp()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="scroll-area">
+    <div id="cards-container" style="max-width:480px;margin:0 auto;padding-bottom:20px"></div>
+  </div>
+  <div class="footer">
+    <div style="max-width:480px;margin:0 auto">
+      <button class="btn-dl" onclick="downloadAll()">
+        <i class="fa-solid fa-cloud-arrow-down" style="font-size:18px"></i>
+        <span id="dl-all-label">DOWNLOAD ALL</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast" style="display:none">
+  <i class="fa-solid fa-circle-check" style="color:#22c55e"></i>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let images = []; // { title, file, blob, url, downloaded, shared }
+let toastTimer = null;
+
+// ─── UI HELPERS ───────────────────────────────────────────────────────────────
+function showView(name) {
+  ['idle','loading','error','result'].forEach(v => {
+    const el = document.getElementById('view-' + v);
+    el.style.display = v === name ? (v === 'result' ? 'flex' : 'flex') : 'none';
+  });
+  if (name === 'idle') document.getElementById('input-text').value = '';
+}
+
+function setProgress(pct, msg) {
+  document.getElementById('progress-fill').style.width = pct + '%';
+  if (msg) document.getElementById('status-msg').textContent = msg;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.style.display = 'flex';
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.style.display = 'none', 3000);
+}
+
+function showError(msg) {
+  document.getElementById('error-msg').textContent = msg;
+  showView('error');
+}
+
+// ─── GITHUB API ───────────────────────────────────────────────────────────────
+async function ghFetch(path, opts = {}) {
+  const res = await fetch(`https://api.github.com${path}`, {
+    ...opts,
+    headers: {
+      Authorization: `Bearer ${GITHUB_TOKEN}`,
+      Accept: 'application/vnd.github+json',
+      'Content-Type': 'application/json',
+      ...(opts.headers || {})
+    }
+  });
+  return res;
+}
+
+async function triggerWorkflow(text) {
+  const token = `r${Date.now()}`;
+  const res = await ghFetch(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/render.yml/dispatches`, {
+    method: 'POST',
+    body: JSON.stringify({ ref: 'main', inputs: { zodiac_text: text, run_token: token } })
+  });
+  if (!res.ok) throw new Error(`Trigger failed: ${res.status} — check your token/repo name`);
+  return token;
+}
+
+async function findRunId(token) {
+  await new Promise(r => setTimeout(r, 5000));
+  for (let i = 0; i < 30; i++) {
+    const res = await ghFetch(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/runs?per_page=5&event=workflow_dispatch`);
+    const data = await res.json();
+    const twoMins = Date.now() - 2 * 60 * 1000;
+    const run = data.workflow_runs?.find(r => new Date(r.created_at).getTime() > twoMins);
+    if (run) return run.id;
+    await new Promise(r => setTimeout(r, 3000));
+  }
+  throw new Error('Could not find the workflow run — check Actions tab on GitHub');
+}
+
+async function waitForRun(runId) {
+  for (let i = 0; i < 80; i++) {
+    const res = await ghFetch(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/runs/${runId}`);
+    const run = await res.json();
+    const elapsed = Math.round((Date.now() - new Date(run.created_at).getTime()) / 1000);
+    setProgress(Math.min(30 + i, 85), `⚙️ Rendering on GitHub Actions... ${elapsed}s`);
+    if (run.status === 'completed') {
+      if (run.conclusion !== 'success') throw new Error(`Workflow failed: ${run.conclusion}`);
+      return;
+    }
+    await new Promise(r => setTimeout(r, 4000));
+  }
+  throw new Error('Timed out after 5 minutes');
+}
+
+async function fetchArtifacts(runId) {
+  const res = await ghFetch(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/runs/${runId}/artifacts`);
+  const data = await res.json();
+  const artifact = data.artifacts?.[0];
+  if (!artifact) throw new Error('No artifacts found in this run');
+
+  const zipRes = await ghFetch(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/artifacts/${artifact.id}/zip`, {
+    headers: { Accept: 'application/vnd.github+json' }
+  });
+  if (!zipRes.ok) throw new Error(`Artifact download failed: ${zipRes.status}`);
+
+  const zipBlob = await zipRes.blob();
+  const zip = await JSZip.loadAsync(zipBlob);
+
+  const files = Object.keys(zip.files).filter(f => f.endsWith('.png')).sort();
+  const results = [];
+  for (const filename of files) {
+    const blob = await zip.files[filename].async('blob');
+    const title = filename.replace(/^\d+-/, '').replace(/\.png$/, '').replace(/-/g, ' ');
+    results.push({ title, file: filename, blob, url: URL.createObjectURL(blob), downloaded: false, shared: false });
+  }
+  return results;
+}
+
+// ─── MAIN FLOW ────────────────────────────────────────────────────────────────
+async function handleGenerate() {
+  const text = document.getElementById('input-text').value.trim();
+  if (!text) return;
+
+  showView('loading');
+  setProgress(5, '🚀 Triggering GitHub Actions...');
+
+  try {
+    const token = await triggerWorkflow(text);
+    setProgress(12, '⏳ Waiting for run to start...');
+
+    const runId = await findRunId(token);
+    setProgress(25, '⚙️ Run started...');
+
+    await waitForRun(runId);
+    setProgress(88, '📦 Downloading rendered images...');
+
+    images = await fetchArtifacts(runId);
+    setProgress(100, 'Done!');
+
+    renderCards();
+    showView('result');
+
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
+// ─── RENDER CARDS ─────────────────────────────────────────────────────────────
+function renderCards() {
+  const container = document.getElementById('cards-container');
+  document.getElementById('render-count').textContent = `${images.length} Images Rendered`;
+  document.getElementById('dl-all-label').textContent = `DOWNLOAD ALL (${images.length})`;
+  container.innerHTML = '';
+
+  images.forEach((img, i) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = `card-${i}`;
+    card.innerHTML = `
+      <div class="card-preview">
+        <img src="${img.url}" alt="${img.title}" loading="lazy"/>
+      </div>
+      <div class="card-actions">
+        <div class="card-num" id="num-${i}">#${i+1}</div>
+        <button class="act-btn" id="share-btn-${i}" onclick="handleShare(${i})">
+          <i class="fa-solid fa-share-nodes"></i>
+          <span>Share</span>
+        </button>
+        <button class="act-btn" id="dl-btn-${i}" onclick="handleDownload(${i})">
+          <i class="fa-solid fa-download"></i>
+          <span>Save</span>
+        </button>
+        <button class="act-btn" id="copy-btn-${i}" onclick="handleCopy(${i})">
+          <i class="fa-solid fa-copy"></i>
+          <span>Title</span>
+        </button>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+function markDone(index, type) {
+  images[index][type] = true;
+  const isDone = images[index].downloaded || images[index].shared;
+  if (isDone) {
+    document.getElementById(`card-${index}`)?.classList.add('done');
+    document.getElementById(`num-${index}`)?.classList.add('done');
+  }
+  const btnId = type === 'downloaded' ? `dl-btn-${index}` : `share-btn-${index}`;
+  const btn = document.getElementById(btnId);
+  if (btn) btn.querySelector('i').className = 'fa-solid fa-check';
+}
+
+function handleDownload(index) {
+  const img = images[index];
+  if (!img?.blob) return;
+  const url = URL.createObjectURL(img.blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `zodiac-${(img.title || index).toString().substring(0,15).replace(/[^a-zA-Z0-9]/g,'-')}-${index+1}.png`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  markDone(index, 'downloaded');
+  showToast('Image saved!');
+}
+
+async function handleShare(index) {
+  const img = images[index];
+  if (!img?.blob) return;
+  try { await navigator.clipboard.writeText(img.title); } catch {}
+  const file = new File([img.blob], `zodiac-${index+1}.png`, { type: 'image/png' });
+  if (navigator.share && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: img.title, text: `${img.title} #zodiac` });
+      markDone(index, 'shared');
+      showToast('Shared!');
+    } catch (e) { if (e.name !== 'AbortError') handleDownload(index); }
+  } else {
+    handleDownload(index);
+  }
+}
+
+async function handleCopy(index) {
+  const img = images[index];
+  try {
+    await navigator.clipboard.writeText(img.title);
+    const btn = document.getElementById(`copy-btn-${index}`);
+    if (btn) btn.querySelector('i').className = 'fa-solid fa-check';
+    showToast('Title copied!');
+    setTimeout(() => { if (btn) btn.querySelector('i').className = 'fa-solid fa-copy'; }, 2000);
+  } catch {}
+}
+
+async function downloadAll() {
+  showToast('Starting batch download...');
+  for (let i = 0; i < images.length; i++) {
+    handleDownload(i);
+    await new Promise(r => setTimeout(r, 400));
+  }
+  showToast(`All ${images.length} images downloaded!`);
+}
+
+function resetApp() {
+  images.forEach(img => img.url && URL.revokeObjectURL(img.url));
+  images = [];
+  showView('idle');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+showView('idle');
+</script>
+</body>
+</html>
