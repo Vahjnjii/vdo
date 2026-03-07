@@ -6,96 +6,101 @@ const WORKER_URL  = 'https://vdo.shreevathsa2k21-4fa.workers.dev';
 const ZODIAC_TEXT = process.env.ZODIAC_TEXT;
 const POST_EMOJIS = ["✨","🌟","🌙","💫","🔮","🧿","🔥","💎","🌈","🛸","🪐","⚡","🍀"];
 
-const GEMINI_PROMPT = `Format the input text into a JSON array of posts following these STRICT formatting rules:
-1. SEPARATION: Separate the input into individual posts.
-2. TITLE: First line is the Title. NO EMOJIS in title. Keep wording EXACTLY as input.
-3. CONTENT STRUCTURE:
-   [CASE A: 1 or 2 Zodiac Signs] — SINGLE LINE. Start with emoji. Bold signs (**Aries**). Format: "✨ **Aries**, **Taurus**: explanation."
-   [CASE B: 3+ Zodiac Signs] — SPLIT lines. Line1: Emoji+Signs. Line2: Emoji+Explanation. Line3: empty string "".
-4. CLEANUP: Every content line MUST start with emoji. Vary emojis. Remove markdown headers (#). Do not rewrite text.
-Respond ONLY with valid JSON: { "posts": [ { "title": "string", "content": ["string"] } ] }`;
+const GEMINI_PROMPT = `You are a zodiac post formatter. Format the input text into structured posts.
 
-// ── Ask Worker for a key (excluding already-failed ones) ──────────────────────
+STRICT RULES:
+1. SEPARATION: Split input into individual posts.
+2. TITLE: First line of each post = Title. Remove ALL emojis from title. Keep wording EXACTLY as given.
+3. CONTENT:
+   - If line mentions 1 or 2 zodiac signs: keep on ONE line, start with emoji, bold the sign names. Example: "✨ **Aries**, **Taurus**: Your explanation here."
+   - If line mentions 3 or more zodiac signs: split into multiple lines. Line 1: emoji + sign names. Line 2: emoji + explanation. Line 3: empty string "".
+4. Every content line MUST start with an emoji. Vary the emojis. Remove all # characters.
+
+Return ONLY a raw JSON object, no markdown, no backticks:
+{"posts":[{"title":"string","content":["string"]}]}`;
+
+// ── Ask Worker for a key, excluding already failed ones ───────────────────────
 async function getKeyFromWorker(failedIndices) {
   const exclude = failedIndices.length ? `?exclude=${failedIndices.join(',')}` : '';
-  const res  = await fetch(`${WORKER_URL}/gemini-key${exclude}`);
+  const res = await fetch(`${WORKER_URL}/gemini-key${exclude}`);
   if (!res.ok) throw new Error(`Worker /gemini-key failed: ${res.status}`);
-  return await res.json(); // { exhausted, key, index, remaining }
+  return await res.json();
 }
 
-// ── Call Gemini directly from GitHub Actions using a given key ────────────────
+// ── Call Gemini with a specific key ───────────────────────────────────────────
 async function callGemini(apiKey, text) {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: GEMINI_PROMPT }] },
-        contents: [{ parts: [{ text: `Format these posts. Input: ${text}` }] }],
-        generationConfig: { responseMimeType: 'application/json' }
+        contents: [{
+          parts: [{ text: `${GEMINI_PROMPT}\n\nInput text to format:\n${text}` }]
+        }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 8192
+        }
       })
     }
   );
 
-  // These mean quota/invalid — tell caller to try another key
   if (res.status === 429 || res.status === 403 || res.status === 400) {
-    return { ok: false, retryable: true, reason: `HTTP ${res.status}` };
+    const body = await res.text().catch(() => '');
+    return { ok: false, retryable: true, reason: `HTTP ${res.status}: ${body.slice(0,100)}` };
   }
   if (!res.ok) {
-    return { ok: false, retryable: false, reason: `HTTP ${res.status}` };
+    const body = await res.text().catch(() => '');
+    return { ok: false, retryable: false, reason: `HTTP ${res.status}: ${body.slice(0,100)}` };
   }
 
-  const data  = await res.json();
-  const raw   = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').replace(/```json|```/g,'').trim();
-  if (!raw) return { ok: false, retryable: true, reason: 'empty response' };
+  const data = await res.json();
+  const raw  = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').replace(/```json|```/g,'').trim();
+
+  if (!raw) return { ok: false, retryable: true, reason: 'empty response from Gemini' };
 
   try {
     const s      = Math.min(...[raw.indexOf('{'), raw.indexOf('[')].filter(x => x !== -1));
     const e      = Math.max(raw.lastIndexOf('}'), raw.lastIndexOf(']'));
+    if (s === Infinity || e === -1) return { ok: false, retryable: true, reason: 'no JSON found in response' };
     const parsed = JSON.parse(raw.substring(s, e + 1));
     const posts  = Array.isArray(parsed) ? parsed : (parsed.posts || []);
-    if (!posts.length) return { ok: false, retryable: true, reason: '0 posts' };
+    if (!posts.length) return { ok: false, retryable: true, reason: '0 posts parsed' };
     return { ok: true, posts };
   } catch (e) {
-    return { ok: false, retryable: true, reason: `parse error: ${e.message}` };
+    return { ok: false, retryable: true, reason: `JSON parse error: ${e.message}` };
   }
 }
 
-// ── Main Gemini loop: ask Worker for key → call Gemini → repeat if needed ─────
+// ── Rotate keys: ask Worker → call Gemini → repeat if failed ─────────────────
 async function formatWithGemini(text) {
   const failedIndices = [];
 
   while (true) {
-    // 1. Ask Worker for a fresh key
     const keyData = await getKeyFromWorker(failedIndices);
 
     if (keyData.exhausted) {
-      throw new Error(`All ${failedIndices.length} keys tried and failed.`);
+      throw new Error(`All keys exhausted after ${failedIndices.length} attempts.`);
     }
 
-    console.log(`  🔑 Got key [${keyData.index}] from Worker (${keyData.remaining} remaining)`);
+    console.log(`  🔑 Key [${keyData.index}] from Worker (${keyData.remaining} remaining)`);
 
-    // 2. GitHub Actions calls Gemini directly with that key
     const result = await callGemini(keyData.key, text);
 
     if (result.ok) {
-      console.log(`  ✅ Key [${keyData.index}] succeeded — ${result.posts.length} posts`);
+      console.log(`  ✅ Key [${keyData.index}] success — ${result.posts.length} posts`);
       return result.posts;
     }
 
     console.log(`  ⚠️  Key [${keyData.index}] failed: ${result.reason}`);
 
     if (!result.retryable) {
-      throw new Error(`Non-retryable error on key [${keyData.index}]: ${result.reason}`);
+      throw new Error(`Fatal error on key [${keyData.index}]: ${result.reason}`);
     }
 
-    // 3. Mark as failed, ask Worker for a different key next iteration
     failedIndices.push(keyData.index);
-    console.log(`  🔄 Asking Worker for another key... (${failedIndices.length} excluded so far)`);
-
-    // Small pause before retrying
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 500));
   }
 }
 
