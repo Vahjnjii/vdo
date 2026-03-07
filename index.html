@@ -52,11 +52,9 @@
 </head>
 <body>
 
-<!-- ─── CONFIG — edit these 3 lines ────────────────────────────────────────── -->
+<!-- ─── CONFIG — only one line to change ──────────────────────────────────── -->
 <script>
-  const GITHUB_OWNER = 'YOUR_GITHUB_USERNAME';   // ← change this
-  const GITHUB_REPO  = 'YOUR_REPO_NAME';          // ← change this
-  const GITHUB_TOKEN = 'YOUR_GITHUB_PAT_TOKEN';   // ← change this
+  const PROXY = 'https://vdo.shreevathsa2k21-4fa.workers.dev';
 </script>
 <!-- ─────────────────────────────────────────────────────────────────────────── -->
 
@@ -163,46 +161,33 @@ function showError(msg) {
   showView('error');
 }
 
-// ─── GITHUB API ───────────────────────────────────────────────────────────────
-async function ghFetch(path, opts = {}) {
-  const res = await fetch(`https://api.github.com${path}`, {
-    ...opts,
-    headers: {
-      Authorization: `Bearer ${GITHUB_TOKEN}`,
-      Accept: 'application/vnd.github+json',
-      'Content-Type': 'application/json',
-      ...(opts.headers || {})
-    }
-  });
-  return res;
-}
-
+// ─── PROXY API — zero credentials in frontend, all handled by Cloudflare Worker
 async function triggerWorkflow(text) {
-  const token = `r${Date.now()}`;
-  const res = await ghFetch(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/render.yml/dispatches`, {
+  const res = await fetch(`${PROXY}/trigger`, {
     method: 'POST',
-    body: JSON.stringify({ ref: 'main', inputs: { zodiac_text: text, run_token: token } })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ zodiac_text: text })
   });
-  if (!res.ok) throw new Error(`Trigger failed: ${res.status} — check your token/repo name`);
-  return token;
+  if (!res.ok) throw new Error(`Trigger failed: ${res.status}`);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.run_token;
 }
 
-async function findRunId(token) {
+async function findRunId(run_token) {
   await new Promise(r => setTimeout(r, 5000));
   for (let i = 0; i < 30; i++) {
-    const res = await ghFetch(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/runs?per_page=5&event=workflow_dispatch`);
+    const res = await fetch(`${PROXY}/poll?run_token=${run_token}`);
     const data = await res.json();
-    const twoMins = Date.now() - 2 * 60 * 1000;
-    const run = data.workflow_runs?.find(r => new Date(r.created_at).getTime() > twoMins);
-    if (run) return run.id;
+    if (data.found) return data.run_id;
     await new Promise(r => setTimeout(r, 3000));
   }
-  throw new Error('Could not find the workflow run — check Actions tab on GitHub');
+  throw new Error('Could not find the workflow run');
 }
 
 async function waitForRun(runId) {
   for (let i = 0; i < 80; i++) {
-    const res = await ghFetch(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/runs/${runId}`);
+    const res = await fetch(`${PROXY}/status?run_id=${runId}`);
     const run = await res.json();
     const elapsed = Math.round((Date.now() - new Date(run.created_at).getTime()) / 1000);
     setProgress(Math.min(30 + i, 85), `⚙️ Rendering on GitHub Actions... ${elapsed}s`);
@@ -216,15 +201,12 @@ async function waitForRun(runId) {
 }
 
 async function fetchArtifacts(runId) {
-  const res = await ghFetch(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/runs/${runId}/artifacts`);
-  const data = await res.json();
-  const artifact = data.artifacts?.[0];
-  if (!artifact) throw new Error('No artifacts found in this run');
+  const artRes = await fetch(`${PROXY}/artifacts?run_id=${runId}`);
+  const artData = await artRes.json();
+  if (artData.error) throw new Error(artData.error);
 
-  const zipRes = await ghFetch(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/artifacts/${artifact.id}/zip`, {
-    headers: { Accept: 'application/vnd.github+json' }
-  });
-  if (!zipRes.ok) throw new Error(`Artifact download failed: ${zipRes.status}`);
+  const zipRes = await fetch(`${PROXY}/download?artifact_id=${artData.artifact_id}`);
+  if (!zipRes.ok) throw new Error(`Download failed: ${zipRes.status}`);
 
   const zipBlob = await zipRes.blob();
   const zip = await JSZip.loadAsync(zipBlob);
