@@ -4,26 +4,39 @@ on:
   workflow_dispatch:
     inputs:
       zodiac_text:
-        description: 'Zodiac text'
+        description: 'Zodiac text to render'
         required: true
       run_token:
-        description: 'Run token'
+        description: 'Unique run token — used as permanent folder name'
         required: true
+      user_id:
+        description: 'User ID for session tracking'
+        required: false
+        default: ''
+      job_id:
+        description: 'Job ID for session tracking'
+        required: false
+        default: ''
 
 jobs:
   render:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # required to commit PNG files back to repo
+
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install deps
+      - name: Install dependencies
         run: npm install
 
-      - name: Install Chrome deps
+      - name: Install Chrome system dependencies
         run: |
           sudo apt-get update -q
           sudo apt-get install -y --no-install-recommends \
@@ -32,13 +45,107 @@ jobs:
             libgbm1 libpango-1.0-0 libcairo2 libasound2t64 \
             fonts-noto-color-emoji
 
-      - name: Render
+      - name: Render images
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ZODIAC_TEXT: ${{ github.event.inputs.zodiac_text }}
+          RUN_TOKEN: ${{ github.event.inputs.run_token }}
         run: node render.js
 
-      - name: Upload images
+      # ── PERMANENT STORAGE ────────────────────────────────────────────────────
+      # Commit rendered PNGs to repo under outputs/{run_token}/
+      # They become permanently accessible at:
+      #   https://raw.githubusercontent.com/{owner}/{repo}/main/outputs/{run_token}/img-001.png
+      # This replaces ephemeral GitHub Actions artifacts (which expire in 1 day)
+      # ─────────────────────────────────────────────────────────────────────────
+      - name: Commit images to repo (permanent storage)
+        id: commit_images
+        env:
+          RUN_TOKEN: ${{ github.event.inputs.run_token }}
+        run: |
+          git config user.name  "VDO Bot"
+          git config user.email "vdo-bot@users.noreply.github.com"
+
+          # Create output folder named after run_token
+          mkdir -p "outputs/$RUN_TOKEN"
+
+          # Copy rendered PNGs
+          if ls output/*.png 2>/dev/null | head -1 > /dev/null; then
+            cp output/*.png "outputs/$RUN_TOKEN/"
+            echo "PNG_COUNT=$(ls output/*.png | wc -l)" >> $GITHUB_OUTPUT
+          else
+            echo "No PNG files found in output/"
+            echo "PNG_COUNT=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          git add "outputs/$RUN_TOKEN/"
+
+          # Exit cleanly if nothing changed (idempotent re-runs)
+          if git diff --cached --quiet; then
+            echo "Nothing new to commit"
+            exit 0
+          fi
+
+          git commit -m "vdo: images for $RUN_TOKEN [skip ci]"
+
+          # Retry push with rebase to survive concurrent renders writing simultaneously
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin main 2>/dev/null || true
+            git push origin main && echo "Push succeeded on attempt $attempt" && break
+            echo "Push attempt $attempt failed, retrying in ${attempt}s..."
+            sleep $attempt
+          done
+
+      # ── NOTIFY WORKER — save session metadata to sessions.json ───────────────
+      - name: Save session metadata via worker
+        if: steps.commit_images.outputs.PNG_COUNT != '0'
+        env:
+          RUN_TOKEN: ${{ github.event.inputs.run_token }}
+          USER_ID: ${{ github.event.inputs.user_id }}
+          JOB_ID: ${{ github.event.inputs.job_id }}
+          ZODIAC_TEXT: ${{ github.event.inputs.zodiac_text }}
+          WORKER_URL: 'https://vdo.shreevathsa2k21-4fa.workers.dev'
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          if [ -z "$USER_ID" ] || [ -z "$JOB_ID" ]; then
+            echo "No userId/jobId provided — skipping session save"
+            exit 0
+          fi
+
+          # Build JSON array of permanent raw GitHub URLs
+          REPO="${GITHUB_REPOSITORY}"
+          BASE="https://raw.githubusercontent.com/${REPO}/main/outputs/${RUN_TOKEN}"
+          IMAGE_URLS=$(ls "outputs/$RUN_TOKEN/"*.png 2>/dev/null | sort | python3 -c "
+          import sys, json, os
+          files = [os.path.basename(l.strip()) for l in sys.stdin if l.strip()]
+          base = os.environ.get('BASE','')
+          print(json.dumps([f'{base}/{f}' for f in files if f.endswith('.png')]))
+          " BASE="$BASE")
+
+          # POST session to worker /save-session
+          PROMPT_JSON=$(echo "$ZODIAC_TEXT" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read().rstrip('\n')))")
+
+          HTTP_STATUS=$(curl -s -o /tmp/save_resp.json -w "%{http_code}" \
+            -X POST "${WORKER_URL}/save-session" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"userId\": \"${USER_ID}\",
+              \"jobId\": \"${JOB_ID}\",
+              \"runToken\": \"${RUN_TOKEN}\",
+              \"prompt\": ${PROMPT_JSON},
+              \"imageUrls\": ${IMAGE_URLS},
+              \"status\": \"done\"
+            }")
+
+          echo "Worker response ($HTTP_STATUS): $(cat /tmp/save_resp.json)"
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "Warning: session save returned $HTTP_STATUS — images are still committed to repo"
+          fi
+
+      # Keep artifact as 1-day fallback (for immediate download before CDN propagates)
+      - name: Upload artifact (1-day fallback)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: zodiac-images-${{ github.event.inputs.run_token }}
