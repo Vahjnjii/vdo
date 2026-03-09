@@ -4,7 +4,6 @@ const path = require('path');
 
 const WORKER_URL  = 'https://vdo.shreevathsa2k21-4fa.workers.dev';
 const ZODIAC_TEXT = process.env.ZODIAC_TEXT;
-const POST_EMOJIS = ["✨","🌟","🌙","💫","🔮","🧿","🔥","💎","🌈","🛸","🪐","⚡","🍀"];
 
 async function formatWithWorkerAI(text) {
   console.log('🤖 Calling Cloudflare Workers AI via Worker /format ...');
@@ -19,100 +18,117 @@ async function formatWithWorkerAI(text) {
   }
   const data = await res.json();
   if (!data.posts?.length) throw new Error('Worker returned 0 posts');
-  console.log(`✅ Got ${data.posts.length} posts from Cloudflare AI`);
+  console.log(`✅ Got ${data.posts.length} posts`);
   return data.posts;
 }
 
 function buildHTML(posts) {
+
+  // Clean title: remove emojis, #, * but keep ALL text and numbers exactly
   function cleanTitle(t) {
-    // Remove emojis and # but keep numbers and everything else EXACTLY
-    return (t||'')
-      .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
-      .replace(/^#+\s*/, '')
+    return (t || '')
+      .replace(/^[#\s]+/, '')
       .replace(/\*+/g, '')
+      .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
+      .replace(/[\u2600-\u27BF]/g, '')
       .trim();
   }
-  function cleanContent(lines) {
-    return (lines||[]).map(line => {
-      if (line === '') return '';
-      let c = line.replace(/^#+\s*/, '').trim();
-      // Add emoji prefix only if missing
-      if (!/^\p{Emoji}/u.test(c) && c.length > 0)
-        c = POST_EMOJIS[Math.floor(Math.random() * POST_EMOJIS.length)] + ' ' + c;
-      return c;
-    });
-  }
-  function layout(content, title) {
-    const cc = content.join('').length + title.length;
-    let s = { titleSize:85, contentSize:45, lineHeight:1.5, paddingX:100, paddingY:280, sepSpace:80 };
-    if (cc > 300) s = {...s, titleSize:70, contentSize:40, sepSpace:70, lineHeight:1.45};
-    if (cc > 500) s = {...s, titleSize:60, contentSize:36, sepSpace:60, lineHeight:1.4};
-    if (cc > 700) s = {...s, titleSize:50, contentSize:30, sepSpace:50, lineHeight:1.35};
-    if (cc > 900) s = {...s, titleSize:45, contentSize:26, sepSpace:40, lineHeight:1.3};
-    return s;
+
+  // Render one content line as HTML — emoji + text side by side, no justify
+  function renderLine(line) {
+    if (!line || line.trim() === '') {
+      return `<div style="height:22px"></div>`;
+    }
+    const html = line
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^#+\s*/, '');
+
+    // Split emoji prefix from rest of text so they sit side by side cleanly
+    const emojiMatch = html.match(/^([\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\uD83C-\uDBFF\uDC00-\uDFFF]+\s*)/u);
+    if (emojiMatch) {
+      const emoji = emojiMatch[1];
+      const rest  = html.slice(emoji.length);
+      return `<div style="display:flex;flex-direction:row;align-items:flex-start;gap:10px;margin-bottom:10px">
+        <span style="flex-shrink:0;font-size:CSIZE px">${emoji.trim()}</span>
+        <span style="flex:1;text-align:left">${rest}</span>
+      </div>`;
+    }
+    return `<div style="margin-bottom:10px;text-align:left">${html}</div>`;
   }
 
-  const postsHTML = posts.map((post, i) => {
+  // Auto scale font based on total character count
+  function layout(totalChars) {
+    if (totalChars < 200) return { title:88, body:46, titleMB:70, lineMB:14, px:90, py:260 };
+    if (totalChars < 400) return { title:76, body:42, titleMB:60, lineMB:12, px:90, py:240 };
+    if (totalChars < 600) return { title:64, body:38, titleMB:52, lineMB:11, px:90, py:220 };
+    if (totalChars < 800) return { title:56, body:34, titleMB:44, lineMB:10, px:90, py:200 };
+    if (totalChars < 1000) return { title:50, body:30, titleMB:38, lineMB:9,  px:90, py:180 };
+    return                        { title:44, body:27, titleMB:32, lineMB:8,  px:90, py:160 };
+  }
+
+  const cards = posts.map((post, i) => {
     const title   = cleanTitle(post.title);
-    const content = cleanContent(post.content);
-    const s       = layout(content, title);
+    const lines   = (post.content || []);
+    const total   = title.length + lines.join('').length;
+    const s       = layout(total);
 
-    const lines = content.map(line => {
-      if (line === '') return `<div style="height:18px"></div>`;
-      const html = line.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/#+/g, '');
-      return `<p style="
-        font-size:${s.contentSize}px;
-        line-height:${s.lineHeight};
-        color:#fff;
-        font-weight:500;
-        margin:0 0 6px 0;
-        text-align:left;
-        word-spacing:normal;
-        letter-spacing:normal;
-        white-space:normal;
-        text-shadow:0 2px 4px rgba(0,0,0,.5)
-      ">${html}</p>`;
+    const bodyHTML = lines.map(line => {
+      return renderLine(line).replace(/CSIZE/g, s.body);
     }).join('');
 
-    return `<div id="p${i}" style="
-      width:1080px;
-      height:1920px;
+    return `
+    <div id="p${i}" style="
+      width:1080px; height:1920px;
       background:#000;
-      padding:${s.paddingY}px ${s.paddingX}px;
+      padding:${s.py}px ${s.px}px;
       box-sizing:border-box;
       display:flex;
       flex-direction:column;
       justify-content:center;
-      position:absolute;
-      top:0;left:0;
+      position:absolute; top:0; left:0;
     ">
       <h1 style="
-        font-size:${s.titleSize}px;
-        line-height:1.15;
-        color:#fff;
+        font-family:'Poppins',sans-serif;
+        font-size:${s.title}px;
         font-weight:700;
-        margin:0 0 ${s.sepSpace}px 0;
-        letter-spacing:-0.5px;
-        word-spacing:normal;
+        color:#fff;
+        line-height:1.2;
+        margin:0 0 ${s.titleMB}px 0;
         text-align:left;
-        white-space:normal;
-        text-shadow:0 4px 10px rgba(0,0,0,.8)
+        word-break:break-word;
+        hyphens:none;
       ">${title}</h1>
-      <div style="display:flex;flex-direction:column;text-align:left">${lines}</div>
+
+      <div style="
+        font-family:'Poppins',sans-serif;
+        font-size:${s.body}px;
+        font-weight:400;
+        color:#fff;
+        line-height:1.6;
+        text-align:left;
+        word-break:normal;
+        word-spacing:0;
+        letter-spacing:0;
+      ">${bodyHTML}</div>
     </div>`;
   }).join('');
 
+  // Load Poppins from Google Fonts — fixes number rendering and word spacing
   return `<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; text-align:left !important; }
-  body { background:#000; width:1080px; text-align:left; }
-  * { font-family:'Noto Color Emoji','Segoe UI Emoji','Segoe UI',Arial,sans-serif; }
-  b { font-weight:700; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { background:#000; width:1080px; text-align:left; }
+  strong { font-weight:700; }
+  div, p, span, h1 { text-align:left !important; word-spacing:normal !important; letter-spacing:normal !important; }
 </style>
 </head><body>
-<div style="position:relative;width:1080px;height:1920px">${postsHTML}</div>
+<div style="position:relative;width:1080px;height:1920px">
+${cards}
+</div>
 </body></html>`;
 }
 
@@ -122,27 +138,50 @@ async function render(posts) {
 
   const browser = await puppeteer.launch({
     headless: 'new',
-    args: ['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu','--font-render-hinting=none']
+    args: [
+      '--no-sandbox','--disable-setuid-sandbox',
+      '--disable-dev-shm-usage','--disable-gpu',
+      '--font-render-hinting=none',
+      '--enable-font-antialiasing'
+    ]
   });
+
   const page = await browser.newPage();
   await page.setViewport({ width:1080, height:1920, deviceScaleFactor:2 });
-  await page.setContent(buildHTML(posts), { waitUntil:'networkidle0' });
-  await page.waitForFunction(() => document.fonts.ready);
-  await new Promise(r => setTimeout(r, 800));
+
+  const html = buildHTML(posts);
+  await page.setContent(html, { waitUntil: 'networkidle0' });
+
+  // Wait for Poppins font to load
+  await page.waitForFunction(() => document.fonts.ready.then(() => true));
+  await new Promise(r => setTimeout(r, 1500));
 
   for (let i = 0; i < posts.length; i++) {
     console.log(`📸 [${i+1}/${posts.length}] ${posts[i].title}`);
+
+    // Show only this card
     await page.evaluate((idx, total) => {
-      for (let j = 0; j < total; j++)
-        document.getElementById(`p${j}`).style.display = j === idx ? 'flex' : 'none';
+      for (let j = 0; j < total; j++) {
+        const el = document.getElementById(`p${j}`);
+        if (el) el.style.display = j === idx ? 'flex' : 'none';
+      }
     }, i, posts.length);
-    const safe = (posts[i].title||`post${i}`).substring(0,30).replace(/[^a-zA-Z0-9\s]/g,'').trim().replace(/\s+/g,'-').toLowerCase();
-    await (await page.$(`#p${i}`)).screenshot({
+
+    const safe = (posts[i].title || `post${i}`)
+      .substring(0, 40)
+      .replace(/[^a-zA-Z0-9\s\-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .toLowerCase() || `post${i}`;
+
+    const el = await page.$(`#p${i}`);
+    await el.screenshot({
       path: path.join(outDir, `${String(i+1).padStart(2,'0')}-${safe}.png`),
       type: 'png'
     });
     console.log(`  ✅ saved`);
   }
+
   await browser.close();
 }
 
