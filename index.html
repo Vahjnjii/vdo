@@ -767,30 +767,59 @@ async function downloadAndShowImages(jobId, artifactId) {
   }
 }
 
-// Minimal ZIP parser — extracts PNG files from a zip ArrayBuffer
+// ZIP parser — handles both uncompressed (0) and deflate-compressed (8) entries
 async function extractPNGsFromZip(buf) {
   const bytes = new Uint8Array(buf);
-  const pngs = [];
+  const entries = [];
   let i = 0;
+
   while (i < bytes.length - 4) {
-    // Local file header signature: 0x04034b50
     if (bytes[i]===0x50 && bytes[i+1]===0x4b && bytes[i+2]===0x03 && bytes[i+3]===0x04) {
-      const compression   = bytes[i+8]  | (bytes[i+9]  << 8);
-      const compSize      = bytes[i+18] | (bytes[i+19]<<8) | (bytes[i+20]<<16) | (bytes[i+21]<<24);
-      const uncompSize    = bytes[i+22] | (bytes[i+23]<<8) | (bytes[i+24]<<16) | (bytes[i+25]<<24);
-      const fnLen         = bytes[i+26] | (bytes[i+27]<<8);
-      const extraLen      = bytes[i+28] | (bytes[i+29]<<8);
-      const fnBytes       = bytes.slice(i+30, i+30+fnLen);
-      const fname         = new TextDecoder().decode(fnBytes);
-      const dataOffset    = i + 30 + fnLen + extraLen;
-      if (fname.endsWith('.png') && compression === 0 && uncompSize > 0) {
-        const data = bytes.slice(dataOffset, dataOffset + uncompSize);
-        pngs.push(new Blob([data], { type: 'image/png' }));
+      const compression = bytes[i+8]  | (bytes[i+9]  << 8);
+      const compSize    = bytes[i+18] | (bytes[i+19]<<8) | (bytes[i+20]<<16) | (bytes[i+21]<<24);
+      const fnLen       = bytes[i+26] | (bytes[i+27]<<8);
+      const extraLen    = bytes[i+28] | (bytes[i+29]<<8);
+      const fname       = new TextDecoder().decode(bytes.slice(i+30, i+30+fnLen));
+      const dataOffset  = i + 30 + fnLen + extraLen;
+      const compData    = bytes.slice(dataOffset, dataOffset + compSize);
+
+      if (fname.endsWith('.png') && compSize > 0) {
+        entries.push({ fname, compression, compData });
       }
       i = dataOffset + compSize;
     } else { i++; }
   }
-  // Sort by filename (already sorted 01-, 02-, etc from render.js)
+
+  entries.sort((a, b) => a.fname.localeCompare(b.fname));
+
+  const pngs = [];
+  for (const entry of entries) {
+    try {
+      let data;
+      if (entry.compression === 0) {
+        data = entry.compData;
+      } else if (entry.compression === 8) {
+        // Deflate — use browser native DecompressionStream
+        const ds = new DecompressionStream('deflate-raw');
+        const writer = ds.writable.getWriter();
+        const reader = ds.readable.getReader();
+        writer.write(entry.compData);
+        writer.close();
+        const chunks = [];
+        let totalLen = 0;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value); totalLen += value.length;
+        }
+        const out = new Uint8Array(totalLen);
+        let off = 0;
+        for (const chunk of chunks) { out.set(chunk, off); off += chunk.length; }
+        data = out;
+      } else { continue; }
+      pngs.push(new Blob([data], { type: 'image/png' }));
+    } catch(e) { console.warn('Decompress failed:', entry.fname, e); }
+  }
   return pngs;
 }
 
