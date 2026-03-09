@@ -421,13 +421,56 @@ const CFG = {
 /* ═══ STATE ═══ */
 let _user = null;
 let _models = [], _activeModel = '', _selectedModel = '';
-const _svgs = {}, _titles = {}, _pngs = {};
+const _svgs = {}, _titles = {};
+// _pngs = in-memory blob cache (fast access during session)
+// _imgStore = persistent base64 store (survives logout/login)
+const _pngs = {};
 const LS_U = 'vdo_v1_user';
 const MAX_ACTIVE = 6;
 let _sessions = [];
 let _activeJobId = null;
 
 function uKey(s){ return _user ? 'vdo_'+_user.id+'_'+s : 'vdo_anon_'+s; }
+
+/* ─── Persistent image store ─── */
+// Saves PNG blobs as base64 strings in localStorage so images survive
+// logout/login. Key: "vdo_{userId}_imgs_{jobId}"
+function imgStoreKey(jobId){ return uKey('imgs_'+jobId); }
+
+function saveImgsToStore(jobId, blobs) {
+  // Convert blobs → base64 array and persist
+  const promises = blobs.map(blob => new Promise(res => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result); // data:image/png;base64,...
+    fr.readAsDataURL(blob);
+  }));
+  Promise.all(promises).then(b64arr => {
+    try { localStorage.setItem(imgStoreKey(jobId), JSON.stringify(b64arr)); } catch(e) {
+      console.warn('imgStore save failed (storage full?):', e);
+    }
+  });
+}
+
+function loadImgsFromStore(jobId) {
+  // Returns array of Blob objects from stored base64, or []
+  try {
+    const raw = localStorage.getItem(imgStoreKey(jobId));
+    if (!raw) return [];
+    const b64arr = JSON.parse(raw);
+    return b64arr.map(dataUrl => {
+      const parts = dataUrl.split(',');
+      const mime = parts[0].match(/:(.*?);/)[1];
+      const bin = atob(parts[1]);
+      const arr = new Uint8Array(bin.length);
+      for (let i=0; i<bin.length; i++) arr[i] = bin.charCodeAt(i);
+      return new Blob([arr], { type: mime });
+    });
+  } catch(e) { return []; }
+}
+
+function removeImgsFromStore(jobId) {
+  try { localStorage.removeItem(imgStoreKey(jobId)); } catch {}
+}
 
 /* ═══ GOOGLE LOGIN ═══ */
 let GOOGLE_CLIENT_ID = null;
@@ -772,13 +815,13 @@ async function downloadAndShowImages(jobId, artifactId) {
     updateSession(jobId, { status:'done', done: pngs.length, total: pngs.length });
     updateHist(jobId, { status:'done', done: pngs.length, total: pngs.length, pngCount: pngs.length });
 
-    // Store blobs and render cards
+    // Cache blobs in memory AND persist to localStorage as base64
     if (!_titles[jobId]) _titles[jobId] = [];
-    pngs.forEach((blob, i) => {
-      _pngs[jobId + ':' + i] = blob;
-      if (_activeJobId === jobId) addImgCard(jobId, blob, i);
-    });
+    pngs.forEach((blob, i) => { _pngs[jobId + ':' + i] = blob; });
+    saveImgsToStore(jobId, pngs); // ← persist so history restore works after logout
+
     if (_activeJobId === jobId) {
+      pngs.forEach((blob, i) => addImgCard(jobId, blob, i));
       updateGroupHd(jobId, pngs.length, pngs.length, 'done');
       scrollDown();
     }
@@ -876,13 +919,25 @@ function onChipClick(jobId) {
   addUserMsg(s.prompt || '');
   addSessionSep(s.ts);
   addImgGroup(jobId);
-  // Restore already-downloaded images
+
   const count = s.done || 0;
-  let anyShown = false;
-  for (let i = 0; i < count; i++) {
-    const blob = _pngs[jobId + ':' + i];
-    if (blob) { addImgCard(jobId, blob, i); anyShown = true; }
+  if (count > 0) {
+    // Try in-memory first; fall back to localStorage base64 store
+    let blobs = [];
+    for (let i = 0; i < count; i++) {
+      if (_pngs[jobId + ':' + i]) blobs.push(_pngs[jobId + ':' + i]);
+    }
+    if (blobs.length < count) {
+      // Not all in memory — reload from persistent store
+      const stored = loadImgsFromStore(jobId);
+      if (stored.length) {
+        stored.forEach((blob, i) => { _pngs[jobId + ':' + i] = blob; });
+        blobs = stored;
+      }
+    }
+    blobs.forEach((blob, i) => addImgCard(jobId, blob, i));
   }
+
   updateGroupHd(jobId, s.done||0, s.total||0, s.status==='done'?'done':s.status==='error'?'error':'processing');
   if (s.status === 'error') addErrMsg(s.errorMsg || 'Failed.');
   scrollDown();
@@ -928,8 +983,9 @@ function addImgGroup(jobId){
 function updateGroupHd(jobId,done,total,status){
   const hd=$('ghd-'+jobId); if(!hd)return;
   const j=xe(jobId);
+  const safeJ=(jobId).replace(/[^a-zA-Z0-9_-]/g,'_');
   if(status==='done'){
-    hd.innerHTML=`<div class="group-hd-l"><i class="fas fa-check-circle" style="color:var(--gn);font-size:15px"></i><span style="color:var(--gn);font-weight:700">${done} image${done!==1?'s':''} ready ✓</span></div><button class="dl-all-btn" id="dla-${j}" onclick="dlAll('${j}',${done})"><i class="fas fa-cloud-arrow-down"></i> Download All (${done})</button>`;
+    hd.innerHTML=`<div class="group-hd-l"><i class="fas fa-check-circle" style="color:var(--gn);font-size:15px"></i><span style="color:var(--gn);font-weight:700">${done} image${done!==1?'s':''} ready ✓</span></div><button class="dl-all-btn" id="dla-${safeJ}" onclick="dlAll('${safeJ}',${done})"><i class="fas fa-cloud-arrow-down"></i> Download All (${done})</button>`;
   } else if(status==='error'){
     const s=getSession(jobId);
     hd.innerHTML=`<div class="group-hd-l"><i class="fas fa-circle-exclamation" style="color:var(--rd)"></i><span style="color:var(--rd);font-weight:600">Failed — ${xe(s?.errorMsg||'Generation failed.')}</span></div>`;
@@ -947,75 +1003,134 @@ function updateGroupHd(jobId,done,total,status){
   }
 }
 
+// Card registry: maps card element → {jobId, idx} so onclick handlers
+// don't need to embed jobId in HTML attributes (avoids escaping bugs).
+const _cardRegistry = new Map();
+
 function addImgCard(jobId, blob, idx){
   const row=$('row-'+jobId); if(!row)return;
+  // Revoke any old object URL for this slot before creating new one
+  const oldCard = $('card-'+jobId+'::'+idx);
+  if(oldCard) oldCard.remove();
+
   const url = URL.createObjectURL(blob);
-  const ek = xe(jobId+'::'+idx);
-  const ejid = xe(jobId);
+  const cardKey = jobId+'::'+idx;
+  const safeKey = cardKey.replace(/[^a-zA-Z0-9_-]/g,'_');
   const card=document.createElement('div');
-  card.className='img-card'; card.id='card-'+ek;
+  card.className='img-card'; card.id='card-'+safeKey;
   card.style.animationDelay=(idx%6*60)+'ms';
+  // Store jobId+idx in dataset — no HTML escaping issues
+  card.dataset.jobId = jobId;
+  card.dataset.idx = idx;
+
   card.innerHTML=`
     <div class="img-card-label">Image ${idx+1}</div>
-    <div class="img-preview loading" id="prev-${ek}">
+    <div class="img-preview loading" id="prev-${safeKey}">
       <img src="${url}" alt="Image ${idx+1}" onload="this.closest('.img-preview')?.classList.remove('loading')">
-      <div class="img-badges" id="ibadges-${ek}"></div>
+      <div class="img-badges" id="ibadges-${safeKey}"></div>
     </div>
     <div class="img-actions">
-      <button class="img-btn-share" id="share-${ek}" onclick="shareImg('${ejid}',${idx})">
+      <button class="img-btn-share" id="share-${safeKey}" data-action="share">
         <i class="fas fa-share-nodes"></i> Share
       </button>
       <div class="img-btns-row">
-        <button class="img-btn" id="dl-${ek}" onclick="dlOne('${ejid}',${idx})">
+        <button class="img-btn" id="dl-${safeKey}" data-action="save">
           <i class="fas fa-download"></i> Save
         </button>
-        <button class="img-btn" id="cp-${ek}" onclick="openFull('${ejid}',${idx})">
+        <button class="img-btn" id="cp-${safeKey}" data-action="view">
           <i class="fas fa-expand"></i> View
         </button>
       </div>
     </div>`;
+
+  // Attach event listeners using dataset — safe, no escaping needed
+  card.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const action = btn.dataset.action;
+      const jid = card.dataset.jobId;
+      const i = parseInt(card.dataset.idx);
+      if(action==='share') shareImg(jid, i);
+      else if(action==='save') dlOne(jid, i);
+      else if(action==='view') openFull(jid, i);
+    });
+  });
+
   row.appendChild(card);
 }
 
 /* ═══ DOWNLOADS & SHARE ═══ */
 function randName(ext){ const a=new Uint32Array(1); crypto.getRandomValues(a); return 'vdo_'+(( a[0]%900000000)+100000000)+'.'+ext; }
 
+function _getBlob(jobId, idx) {
+  // Try memory first, then load all from persistent store if missing
+  let blob = _pngs[jobId+':'+idx];
+  if (!blob) {
+    const stored = loadImgsFromStore(jobId);
+    if (stored.length) {
+      stored.forEach((b, i) => { _pngs[jobId+':'+i] = b; });
+      blob = _pngs[jobId+':'+idx];
+    }
+  }
+  return blob || null;
+}
+
+function _cardBtn(jobId, idx, action) {
+  const safeKey = (jobId+'::'+idx).replace(/[^a-zA-Z0-9_-]/g,'_');
+  if(action==='share') return $('share-'+safeKey);
+  if(action==='save')  return $('dl-'+safeKey);
+  if(action==='view')  return $('cp-'+safeKey);
+  if(action==='badges') return $('ibadges-'+safeKey);
+  return null;
+}
+
 async function shareImg(jobId,idx){
-  const ek=xe(jobId+'::'+idx), btn=$('share-'+ek);
+  const btn=_cardBtn(jobId,idx,'share');
   if(btn){btn.classList.add('saving');btn.innerHTML='<i class="fas fa-circle-notch spin"></i> Sharing…';}
   try {
-    const blob=_pngs[jobId+':'+idx]; if(!blob)throw new Error('Image not ready');
+    const blob=_getBlob(jobId,idx); if(!blob)throw new Error('Image not ready');
     const file=new File([blob],randName('png'),{type:'image/png'});
     if(navigator.share){
       if(navigator.canShare&&navigator.canShare({files:[file]})) await navigator.share({files:[file],title:'VDO Image '+(idx+1)});
       else await navigator.share({title:'VDO Image '+(idx+1),text:'Generated with VDO'});
     } else { trigDl(blob,randName('png')); }
-    if(btn)btn.classList.add('was-shared');
+    // Show shared badge on card
+    const badges=_cardBtn(jobId,idx,'badges');
+    if(badges&&!badges.querySelector('.shared')){badges.innerHTML+='<div class="img-badge shared"><i class="fas fa-check"></i></div>';}
+    const card=btn?.closest('.img-card');
+    if(card)card.classList.add('was-shared');
     toast('Shared ✓');
   } catch(e){ if(e.name!=='AbortError') toast('⚠️ '+e.message); }
   finally { if(btn){btn.classList.remove('saving');btn.innerHTML='<i class="fas fa-share-nodes"></i> Share';} }
 }
 
 async function dlOne(jobId,idx){
-  const ek=xe(jobId+'::'+idx), btn=$('dl-'+ek);
+  const btn=_cardBtn(jobId,idx,'save');
   if(btn){btn.classList.add('saving');btn.innerHTML='<i class="fas fa-circle-notch spin"></i>';}
-  const blob=_pngs[jobId+':'+idx];
-  if(blob){ trigDl(blob,randName('png')); toast('Saved ✓'); }
-  else toast('⚠️ Image not ready');
+  const blob=_getBlob(jobId,idx);
+  if(blob){
+    trigDl(blob,randName('png'));
+    const badges=_cardBtn(jobId,idx,'badges');
+    if(badges&&!badges.querySelector('.saved')){badges.innerHTML+='<div class="img-badge saved"><i class="fas fa-check"></i></div>';}
+    const card=btn?.closest('.img-card');
+    if(card)card.classList.add('was-saved');
+    toast('Saved ✓');
+  } else toast('⚠️ Image not ready');
   if(btn){btn.classList.remove('saving');btn.innerHTML='<i class="fas fa-download"></i> Save';}
 }
 
 function openFull(jobId,idx){
-  const blob=_pngs[jobId+':'+idx]; if(!blob)return;
+  const blob=_getBlob(jobId,idx); if(!blob)return;
   const url=URL.createObjectURL(blob); window.open(url,'_blank');
 }
 
 async function dlAll(jobId,count){
-  const btn=$('dla-'+xe(jobId));
+  const safeJobId=(jobId).replace(/[^a-zA-Z0-9_-]/g,'_');
+  const btn=$('dla-'+safeJobId);
   if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch spin"></i> Saving…';}
   let done=0;
   for(let i=0;i<count;i++){
-    const b=_pngs[jobId+':'+i];
+    const b=_getBlob(jobId,i);
     if(b){trigDl(b,randName('png'));done++;await new Promise(r=>setTimeout(r,380));}
   }
   if(btn){btn.disabled=false;btn.innerHTML=`<i class="fas fa-cloud-arrow-down"></i> Download All (${count})`;}
@@ -1053,10 +1168,10 @@ async function loadSess(jobId){
   closeHistory();
   const existing=getSession(jobId); if(existing){ onChipClick(jobId); return; }
   const h=getHist().find(e=>e.jobId===jobId); if(!h){ toast('⚠️ Session not found'); return; }
-  const s={jobId,prompt:h.prompt||h.label||'',label:h.label||'',ts:h.ts||Date.now(),status:h.status||'done',done:h.done||0,total:h.total||0,seenCount:0};
-  _sessions.unshift(s); renderSessionBar(); onChipClick(jobId);
+  const s={jobId,prompt:h.prompt||h.label||'',label:h.label||'',ts:h.ts||Date.now(),status:h.status||'done',done:h.pngCount||h.done||0,total:h.pngCount||h.total||0,seenCount:0};
+  _sessions.unshift(s); saveSessions(); renderSessionBar(); onChipClick(jobId);
 }
-function delSess(e,jid){ e.stopPropagation(); delHist(jid); removeSession(jid); renderHist(getHist()); renderSessionBar(); }
+function delSess(e,jid){ e.stopPropagation(); delHist(jid); removeSession(jid); removeImgsFromStore(jid); renderHist(getHist()); renderSessionBar(); }
 
 /* ═══ UTILS ═══ */
 function $(id){ return document.getElementById(id); }
