@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -22,10 +22,8 @@
   --gn:#34d399;--rd:#f87171;--yw:#fbbf24;
   --r8:8px;--r12:12px;--r16:16px;--r20:20px;--r24:24px;
 }
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;}
-h1,h2,h3,.brand{font-family:'Syne',sans-serif;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
 ::-webkit-scrollbar{width:2px}::-webkit-scrollbar-thumb{background:var(--s3);border-radius:4px}
-
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -33,235 +31,214 @@ h1,h2,h3,.brand{font-family:'Syne',sans-serif;}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes dot{0%,80%,100%{transform:scale(.2);opacity:.2}40%{transform:scale(1);opacity:1}}
 @keyframes shimmer{0%{background-position:200% 50%}100%{background-position:-200% 50%}}
-@keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(124,109,255,.4)}70%{box-shadow:0 0 0 16px rgba(124,109,255,0)}100%{box-shadow:0 0 0 0 rgba(124,109,255,0)}}
+@keyframes pulsering{0%{box-shadow:0 0 0 0 rgba(124,109,255,.4)}70%{box-shadow:0 0 0 16px rgba(124,109,255,0)}100%{box-shadow:0 0 0 0 rgba(124,109,255,0)}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 @keyframes dotIn{from{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}
 @keyframes dotPulse{0%,100%{box-shadow:0 0 6px rgba(245,158,11,.5)}50%{box-shadow:0 0 14px rgba(245,158,11,.9)}}
-
 .spin{animation:spin .9s linear infinite}
 .screen{display:none;position:fixed;inset:0}
 .screen.active{display:flex}
-
-body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");opacity:.4;mix-blend-mode:overlay;}
-
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");opacity:.4;mix-blend-mode:overlay}
 .mesh{position:absolute;pointer-events:none;border-radius:50%;filter:blur(80px);opacity:.12}
-.mesh-a{width:600px;height:600px;background:radial-gradient(circle,#7c6dff,transparent 70%);top:-200px;right:-150px;}
-.mesh-b{width:500px;height:500px;background:radial-gradient(circle,#a78bfa,transparent 70%);bottom:-100px;left:-150px;}
-.mesh-c{width:300px;height:300px;background:radial-gradient(circle,#34d399,transparent 70%);bottom:30%;right:10%;opacity:.06;}
+.mesh-a{width:600px;height:600px;background:radial-gradient(circle,#7c6dff,transparent 70%);top:-200px;right:-150px}
+.mesh-b{width:500px;height:500px;background:radial-gradient(circle,#a78bfa,transparent 70%);bottom:-100px;left:-150px}
+.mesh-c{width:300px;height:300px;background:radial-gradient(circle,#34d399,transparent 70%);bottom:30%;right:10%;opacity:.06}
 
-/* ═══ LOGIN ═══ */
-#screen-login{flex-direction:column;align-items:center;justify-content:center;padding:24px;background:var(--bg);overflow-y:auto;}
+/* ── LOGIN ── */
+#screen-login{flex-direction:column;align-items:center;justify-content:center;padding:24px;background:var(--bg);overflow-y:auto}
 .login-wrap{position:relative;z-index:2;width:100%;max-width:380px;animation:fadeUp .6s cubic-bezier(.16,1,.3,1) both}
-.login-logo{width:72px;height:72px;border-radius:22px;margin:0 auto 22px;background:linear-gradient(135deg,#5b4de0,#7c6dff,#a78bfa);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#fff;letter-spacing:-1px;animation:pulse-ring 3s ease infinite;box-shadow:0 12px 40px rgba(92,77,224,.35);}
-.login-title{font-family:'Syne',sans-serif;font-size:38px;font-weight:800;letter-spacing:-2px;text-align:center;margin-bottom:6px;background:linear-gradient(135deg,#fff 0%,var(--acc3) 60%,var(--acc) 100%);background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 5s linear infinite;}
+.login-logo{width:72px;height:72px;border-radius:22px;margin:0 auto 22px;background:linear-gradient(135deg,#5b4de0,#7c6dff,#a78bfa);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#fff;animation:pulsering 3s ease infinite;box-shadow:0 12px 40px rgba(92,77,224,.35)}
+.login-title{font-family:'Syne',sans-serif;font-size:38px;font-weight:800;letter-spacing:-2px;text-align:center;margin-bottom:6px;background:linear-gradient(135deg,#fff 0%,var(--acc3) 60%,var(--acc) 100%);background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 5s linear infinite}
 .login-sub{font-size:13px;color:var(--tx2);text-align:center;margin-bottom:32px;letter-spacing:.02em}
-.login-card{background:rgba(14,12,26,.85);backdrop-filter:blur(24px);border:1px solid var(--bd);border-radius:var(--r24);padding:32px 28px;box-shadow:0 32px 80px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.05);}
-.btn-primary{width:100%;background:linear-gradient(135deg,#5b4de0,#7c6dff);border:none;border-radius:var(--r12);padding:14px;color:#fff;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;margin-top:16px;box-shadow:0 4px 20px rgba(92,77,224,.3);letter-spacing:.01em;}
-.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(92,77,224,.42)}
-.btn-primary:active{transform:scale(.97)}
-.btn-primary:disabled{opacity:.5;cursor:wait;transform:none}
-.btn-google{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--bd);border-radius:var(--r12);padding:13px 16px;color:var(--tx);font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px;}
+.login-card{background:rgba(14,12,26,.85);backdrop-filter:blur(24px);border:1px solid var(--bd);border-radius:var(--r24);padding:32px 28px;box-shadow:0 32px 80px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.05)}
+.btn-google{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--bd);border-radius:var(--r12);padding:13px 16px;color:var(--tx);font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px}
 .btn-google:hover{background:rgba(255,255,255,.09);border-color:var(--bdh);transform:translateY(-1px)}
 .btn-google:active{transform:scale(.97)}
 .btn-google:disabled{opacity:.5;cursor:wait;transform:none}
-.btn-divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--tx3);font-size:12px}
-.btn-divider::before,.btn-divider::after{content:'';flex:1;height:1px;background:var(--bd)}
-.login-err{background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.2);border-radius:var(--r8);padding:10px 14px;font-size:12px;color:#fca5a5;display:none;margin-top:12px;}
+.login-err{background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.2);border-radius:var(--r8);padding:10px 14px;font-size:12px;color:#fca5a5;display:none;margin-top:12px}
 .login-note{font-size:11px;color:var(--tx3);text-align:center;margin-top:20px;line-height:1.9}
 
-/* ═══ TEMPLATES ═══ */
+/* ── TEMPLATES ── */
 #screen-templates{flex-direction:column;background:var(--bg);overflow-y:auto}
-.tmpl-nav{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 16px;background:linear-gradient(to bottom,var(--bg) 60%,transparent);max-width:480px;margin:0 auto;width:100%;}
+.tmpl-nav{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 16px;background:linear-gradient(to bottom,var(--bg) 60%,transparent);max-width:480px;margin:0 auto;width:100%}
 .tmpl-brand{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;letter-spacing:-1px;color:var(--tx)}
-.user-pill{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:50px;padding:6px 14px 6px 8px;cursor:pointer;transition:all .2s;font-size:13px;font-weight:500;color:var(--tx2);}
+.user-pill{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:50px;padding:6px 14px 6px 8px;cursor:pointer;transition:all .2s;font-size:13px;font-weight:500;color:var(--tx2)}
 .user-pill:hover{border-color:var(--bdh);color:var(--tx)}
-.user-pill-av{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;overflow:hidden;}
+.user-pill-av{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;overflow:hidden}
 .user-pill-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .tmpl-body{padding:0 20px 60px;max-width:480px;margin:0 auto;width:100%}
 .tmpl-greet{font-family:'Syne',sans-serif;font-size:28px;font-weight:700;letter-spacing:-1px;color:var(--tx);margin-bottom:4px}
 .tmpl-hint{font-size:13px;color:var(--tx2);margin-bottom:28px}
 .tmpl-section{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:14px}
-.tcard{width:100%;border-radius:var(--r20);overflow:hidden;cursor:pointer;background:var(--s1);border:1px solid var(--bd);transition:transform .28s cubic-bezier(.16,1,.3,1),border-color .22s,box-shadow .22s;box-shadow:0 16px 48px rgba(0,0,0,.4);animation:fadeUp .5s cubic-bezier(.16,1,.3,1) both;}
-.tcard:hover{transform:translateY(-4px);border-color:rgba(124,109,255,.3);box-shadow:0 24px 60px rgba(0,0,0,.5),0 0 0 1px rgba(124,109,255,.1)}
+.tcard{width:100%;border-radius:var(--r20);overflow:hidden;cursor:pointer;background:var(--s1);border:1px solid var(--bd);transition:transform .28s cubic-bezier(.16,1,.3,1),border-color .22s,box-shadow .22s;box-shadow:0 16px 48px rgba(0,0,0,.4);animation:fadeUp .5s cubic-bezier(.16,1,.3,1) both}
+.tcard:hover{transform:translateY(-4px);border-color:rgba(124,109,255,.3);box-shadow:0 24px 60px rgba(0,0,0,.5)}
 .tcard:active{transform:scale(.98)}
 .tcard-stripe{height:2px;background:linear-gradient(90deg,transparent,var(--acc),var(--acc2),transparent)}
 .tcard-inner{padding:22px 20px 18px;display:flex;align-items:flex-start;gap:16px}
-.tcard-icon{width:48px;height:48px;flex-shrink:0;border-radius:14px;font-size:20px;background:linear-gradient(135deg,rgba(124,109,255,.12),rgba(167,139,250,.08));border:1px solid rgba(124,109,255,.15);display:flex;align-items:center;justify-content:center;}
+.tcard-icon{width:48px;height:48px;flex-shrink:0;border-radius:14px;font-size:20px;background:linear-gradient(135deg,rgba(124,109,255,.12),rgba(167,139,250,.08));border:1px solid rgba(124,109,255,.15);display:flex;align-items:center;justify-content:center}
 .tcard-meta{flex:1;min-width:0}
 .tcard-badge{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(124,109,255,.65);margin-bottom:4px}
 .tcard-name{font-family:'Syne',sans-serif;font-size:19px;font-weight:700;letter-spacing:-.3px;color:var(--tx);margin-bottom:4px}
 .tcard-desc{font-size:12.5px;color:var(--tx3);line-height:1.65}
-.tcard-footer{padding:12px 20px 16px;border-top:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;}
+.tcard-footer{padding:12px 20px 16px;border-top:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
 .tcard-tags{display:flex;gap:6px;flex-wrap:wrap}
-.tcard-tag{font-size:10px;font-weight:600;color:var(--tx3);background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:50px;padding:3px 9px;}
-.tcard-go{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(124,109,255,.1);border:1px solid rgba(124,109,255,.15);color:var(--acc2);font-size:11px;transition:all .22s;flex-shrink:0;}
-.tcard:hover .tcard-go{background:rgba(124,109,255,.22);transform:translateX(2px)}
+.tcard-tag{font-size:10px;font-weight:600;color:var(--tx3);background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:50px;padding:3px 9px}
+.tcard-go{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(124,109,255,.1);border:1px solid rgba(124,109,255,.15);color:var(--acc2);font-size:11px;flex-shrink:0}
 
-/* SO Menu */
-.so-menu{position:fixed;top:68px;right:16px;z-index:500;background:#0c0a1a;border:1px solid var(--bd);border-radius:var(--r16);padding:8px;min-width:200px;display:none;box-shadow:0 16px 48px rgba(0,0,0,.7);animation:fadeUp .18s ease both;}
+/* ── SO MENU ── */
+.so-menu{position:fixed;top:68px;right:16px;z-index:500;background:#0c0a1a;border:1px solid var(--bd);border-radius:var(--r16);padding:8px;min-width:210px;display:none;box-shadow:0 16px 48px rgba(0,0,0,.7);animation:fadeUp .18s ease both}
 .so-menu.open{display:block}
 .so-info{padding:10px 12px 12px;border-bottom:1px solid var(--bd);margin-bottom:6px}
 .so-name{font-weight:700;font-size:14px;color:var(--tx)}
 .so-email{font-size:11px;color:var(--tx3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.so-btn{display:flex;align-items:center;gap:9px;width:100%;background:none;border:none;color:rgba(248,113,113,.8);padding:10px 12px;border-radius:var(--r8);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s;}
+.so-sync{font-size:10px;color:var(--gn);margin-top:4px;display:flex;align-items:center;gap:5px}
+.so-sync i{font-size:9px}
+.so-btn{display:flex;align-items:center;gap:9px;width:100%;background:none;border:none;color:rgba(248,113,113,.8);padding:10px 12px;border-radius:var(--r8);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s}
 .so-btn:hover{background:rgba(248,113,113,.08)}
 
-/* ═══ CHAT ═══ */
+/* ── CHAT ── */
 #screen-chat{flex-direction:column;overflow:hidden;background:var(--bg)}
-.ch-nav{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:8px 10px;padding-top:calc(8px + env(safe-area-inset-top));background:rgba(3,3,8,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--bd);z-index:10;}
-.ch-back{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border:1px solid var(--bd);color:var(--tx2);font-size:13px;cursor:pointer;transition:all .2s;}
+.ch-nav{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:8px 10px;padding-top:calc(8px + env(safe-area-inset-top));background:rgba(3,3,8,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--bd);z-index:10}
+.ch-back{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border:1px solid var(--bd);color:var(--tx2);font-size:13px;cursor:pointer;transition:all .2s}
 .ch-back:hover{background:rgba(255,255,255,.08);color:var(--tx)}
 .ch-nav-mid{flex:1;display:flex;align-items:center;gap:10px;min-width:0}
-.ch-nav-icon{width:32px;height:32px;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,rgba(124,109,255,.18),rgba(167,139,250,.12));border:1px solid rgba(124,109,255,.18);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.ch-nav-icon{width:32px;height:32px;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,rgba(124,109,255,.18),rgba(167,139,250,.12));border:1px solid rgba(124,109,255,.18);display:flex;align-items:center;justify-content:center;font-size:14px}
 .ch-nav-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ch-hist-btn{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:var(--r8);padding:7px 12px;color:var(--tx2);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;white-space:nowrap;}
+.ch-hist-btn,.ch-model-btn{display:flex;align-items:center;gap:6px;border-radius:var(--r8);padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;white-space:nowrap;border:1px solid}
+.ch-hist-btn{background:rgba(255,255,255,.04);border-color:var(--bd);color:var(--tx2)}
 .ch-hist-btn:hover{background:rgba(255,255,255,.07);color:var(--tx)}
-.ch-model-btn{display:flex;align-items:center;gap:5px;background:rgba(124,109,255,.1);border:1px solid rgba(124,109,255,.22);border-radius:var(--r8);padding:7px 11px;color:var(--acc2);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis;}
+.ch-model-btn{background:rgba(124,109,255,.1);border-color:rgba(124,109,255,.22);color:var(--acc2);max-width:130px;overflow:hidden;text-overflow:ellipsis}
 .ch-model-btn:hover{background:rgba(124,109,255,.18);border-color:rgba(124,109,255,.4);color:#fff}
 .ch-model-btn i{font-size:11px;flex-shrink:0}
 .ch-model-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-.ch-msgs{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:12px 14px 8px;display:flex;flex-direction:column;gap:8px;}
-.ch-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--tx2);text-align:center;padding:40px 20px;}
-.ch-empty-icon{width:64px;height:64px;border-radius:20px;font-size:28px;background:linear-gradient(135deg,rgba(124,109,255,.1),rgba(167,139,250,.06));border:1px solid rgba(124,109,255,.12);display:flex;align-items:center;justify-content:center;animation:float 4s ease-in-out infinite;}
+/* ── MESSAGES ── */
+.ch-msgs{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:12px 14px 8px;display:flex;flex-direction:column;gap:8px}
+.ch-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--tx2);text-align:center;padding:40px 20px}
+.ch-empty-icon{width:64px;height:64px;border-radius:20px;font-size:28px;background:linear-gradient(135deg,rgba(124,109,255,.1),rgba(167,139,250,.06));border:1px solid rgba(124,109,255,.12);display:flex;align-items:center;justify-content:center;animation:float 4s ease-in-out infinite}
 .ch-empty-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:rgba(255,255,255,.45)}
-.ch-empty-sub{font-size:13px;color:var(--tx3);line-height:1.65;max-width:220px}
-
-/* Messages */
-.msg-user{align-self:flex-end;max-width:82%;background:linear-gradient(135deg,rgba(92,77,224,.18),rgba(124,109,255,.12));border:1px solid rgba(124,109,255,.2);border-radius:16px 16px 4px 16px;padding:11px 15px;font-size:14px;color:rgba(255,255,255,.88);line-height:1.6;white-space:pre-wrap;word-break:break-word;animation:fadeUp .25s ease both;}
-.msg-thinking{align-self:flex-start;display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:16px 16px 16px 4px;padding:10px 14px;font-size:13px;color:var(--tx2);animation:fadeUp .25s ease both;}
+.ch-empty-sub{font-size:13px;color:var(--tx3);line-height:1.65;max-width:240px}
+.msg-user{align-self:flex-end;max-width:82%;background:linear-gradient(135deg,rgba(92,77,224,.18),rgba(124,109,255,.12));border:1px solid rgba(124,109,255,.2);border-radius:16px 16px 4px 16px;padding:11px 15px;font-size:14px;color:rgba(255,255,255,.88);line-height:1.6;white-space:pre-wrap;word-break:break-word;animation:fadeUp .25s ease both}
+.msg-error{align-self:flex-start;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.14);border-radius:12px;padding:10px 14px;font-size:13px;color:#fca5a5;display:flex;align-items:flex-start;gap:8px;animation:fadeUp .25s ease both;line-height:1.55}
 .dots{display:flex;gap:4px;align-items:center}
 .dots span{width:6px;height:6px;border-radius:50%;background:rgba(124,109,255,.6);animation:dot 1.4s ease infinite}
 .dots span:nth-child(2){animation-delay:.2s}
 .dots span:nth-child(3){animation-delay:.4s}
-.msg-error{align-self:flex-start;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.14);border-radius:12px;padding:10px 14px;font-size:13px;color:#fca5a5;display:flex;align-items:flex-start;gap:8px;animation:fadeUp .25s ease both;line-height:1.55;}
+.session-sep{align-self:center;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);padding:4px 0;margin:6px 0}
 
-/* Image group */
+/* ── IMAGE GROUP ── */
 .img-group{align-self:flex-start;width:100%;display:flex;flex-direction:column;gap:8px}
-.group-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:var(--r8);padding:9px 13px;font-size:12px;color:var(--tx2);flex-wrap:wrap;}
+.group-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:var(--r8);padding:9px 13px;font-size:12px;color:var(--tx2);flex-wrap:wrap}
 .group-hd-l{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.dl-all-btn{display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,rgba(92,77,224,.2),rgba(124,109,255,.14));border:1px solid rgba(124,109,255,.28);border-radius:var(--r8);padding:7px 14px;font-size:12px;font-weight:700;color:var(--acc3);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;white-space:nowrap;}
-.dl-all-btn:hover{transform:translateY(-1px);background:linear-gradient(135deg,rgba(92,77,224,.28),rgba(124,109,255,.2))}
+.dl-all-btn{display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,rgba(92,77,224,.2),rgba(124,109,255,.14));border:1px solid rgba(124,109,255,.28);border-radius:var(--r8);padding:7px 14px;font-size:12px;font-weight:700;color:var(--acc3);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;white-space:nowrap}
+.dl-all-btn:hover{transform:translateY(-1px)}
 .dl-all-btn:active{transform:scale(.96)}
 .dl-all-btn:disabled{opacity:.5;cursor:wait;transform:none}
-.img-row{display:flex;flex-wrap:nowrap;gap:10px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding-bottom:6px;width:100%;scroll-snap-type:x mandatory;}
+.img-row{display:flex;flex-wrap:nowrap;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;width:100%;scroll-snap-type:x mandatory}
 .img-row::-webkit-scrollbar{height:3px}
 .img-row::-webkit-scrollbar-thumb{background:var(--s3);border-radius:3px}
-.img-card{flex-shrink:0;width:162px;border-radius:var(--r16);overflow:hidden;background:rgba(255,255,255,.03);border:2px solid var(--bd);animation:fadeUp .3s cubic-bezier(.16,1,.3,1) both;transition:border-color .22s,box-shadow .22s;scroll-snap-align:start;position:relative;}
-.img-card:hover{border-color:rgba(124,109,255,.25)}
-.img-card.was-shared{border-color:rgba(52,211,153,.65)!important;box-shadow:0 0 12px rgba(52,211,153,.18)}
-.img-card.was-saved{border-color:rgba(96,165,250,.65)!important;box-shadow:0 0 12px rgba(96,165,250,.18)}
-.img-card.was-copied{border-color:rgba(167,139,250,.65)!important;box-shadow:0 0 12px rgba(167,139,250,.18)}
-.img-card-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);padding:6px 10px 4px;text-align:left;}
-.img-badges{position:absolute;top:6px;right:6px;display:flex;flex-direction:column;gap:3px;align-items:flex-end;z-index:5;pointer-events:none;}
-.img-badge{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.15);}
-.img-badge.shared{background:rgba(52,211,153,.85);color:#fff}
-.img-badge.saved{background:rgba(96,165,250,.85);color:#fff}
-.img-badge.copied{background:rgba(167,139,250,.85);color:#fff}
-.img-preview{width:100%;aspect-ratio:9/16;overflow:hidden;background:#000;cursor:pointer;position:relative;}
+.img-card{flex-shrink:0;width:162px;border-radius:var(--r16);overflow:hidden;background:rgba(255,255,255,.03);border:2px solid var(--bd);animation:fadeUp .3s cubic-bezier(.16,1,.3,1) both;transition:border-color .22s;scroll-snap-align:start}
+.img-card.was-shared{border-color:rgba(52,211,153,.65)!important}
+.img-card.was-saved{border-color:rgba(96,165,250,.65)!important}
+.img-card-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);padding:6px 10px 4px}
+.img-preview{width:100%;aspect-ratio:9/16;overflow:hidden;background:#111;cursor:pointer;position:relative}
 .img-preview img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .3s}
 .img-preview.loading img{opacity:0}
 .img-actions{padding:8px;display:flex;flex-direction:column;gap:5px}
-.img-btn-share{width:100%;display:flex;align-items:center;justify-content:center;gap:7px;background:linear-gradient(135deg,rgba(52,211,153,.14),rgba(52,211,153,.08));border:1px solid rgba(52,211,153,.28);border-radius:9px;padding:9px 8px;font-size:12px;font-weight:700;color:rgba(110,231,183,.95);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;}
-.img-btn-share:hover{background:linear-gradient(135deg,rgba(52,211,153,.24),rgba(52,211,153,.16));border-color:rgba(52,211,153,.45)}
+.img-btn-share{width:100%;display:flex;align-items:center;justify-content:center;gap:7px;background:linear-gradient(135deg,rgba(52,211,153,.14),rgba(52,211,153,.08));border:1px solid rgba(52,211,153,.28);border-radius:9px;padding:9px 8px;font-size:12px;font-weight:700;color:rgba(110,231,183,.95);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s}
 .img-btn-share:active{transform:scale(.96)}
-.img-btn-share.saving{opacity:.5;cursor:wait}
 .img-btns-row{display:flex;gap:5px}
-.img-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:7px;padding:7px 4px;font-size:10px;font-weight:600;color:var(--tx3);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;}
-.img-btn:hover{background:rgba(255,255,255,.09);color:var(--tx);border-color:rgba(255,255,255,.14)}
+.img-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:7px;padding:7px 4px;font-size:10px;font-weight:600;color:var(--tx3);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s}
+.img-btn:hover{background:rgba(255,255,255,.09);color:var(--tx)}
 .img-btn:active{transform:scale(.94)}
-.img-btn i{font-size:10px}
-.img-btn.saving{opacity:.5;cursor:wait}
 
-.session-sep{align-self:center;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);padding:4px 0;margin:6px 0;}
-
-/* Session stack bar */
-#session-bar{position:absolute;left:10px;bottom:80px;top:56px;width:28px;display:none;flex-direction:column-reverse;align-items:center;justify-content:flex-start;gap:10px;padding:8px 0;pointer-events:auto;z-index:10;}
+/* ── SESSION BAR ── */
+#session-bar{position:absolute;left:10px;bottom:80px;top:56px;width:28px;display:none;flex-direction:column-reverse;align-items:center;justify-content:flex-start;gap:10px;padding:8px 0;pointer-events:auto;z-index:10}
 #session-bar.visible{display:flex}
-.sess-chip{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;cursor:pointer;flex-shrink:0;transition:transform .18s,box-shadow .18s;animation:dotIn .3s cubic-bezier(.16,1,.3,1) both;position:relative;font-family:'DM Sans',sans-serif;border:2px solid rgba(255,255,255,.15);}
+.sess-chip{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;cursor:pointer;flex-shrink:0;transition:transform .18s;animation:dotIn .3s cubic-bezier(.16,1,.3,1) both;position:relative;font-family:'DM Sans',sans-serif;border:2px solid rgba(255,255,255,.15)}
 .sess-chip:hover{transform:scale(1.25)}
-.sess-chip.active-chip{transform:scale(1.2);border-color:rgba(255,255,255,.5);}
-.sess-chip.s-gen{background:#f59e0b;box-shadow:0 0 8px rgba(245,158,11,.6);animation:dotIn .3s cubic-bezier(.16,1,.3,1) both,dotPulse 1.4s ease infinite;}
-.sess-chip.s-done{background:#10b981;box-shadow:0 0 6px rgba(16,185,129,.4);}
-.sess-chip.s-err{background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,.4);}
-.sess-chip.s-queued{background:#6b7280;box-shadow:none;}
-.sess-chip::after{content:attr(data-tip);position:absolute;left:32px;top:50%;transform:translateY(-50%);background:#0c0a1a;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.9);font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;font-family:'DM Sans',sans-serif;max-width:180px;overflow:hidden;text-overflow:ellipsis;z-index:999;}
+.sess-chip.active-chip{transform:scale(1.2);border-color:rgba(255,255,255,.5)}
+.sess-chip.s-gen{background:#f59e0b;animation:dotIn .3s cubic-bezier(.16,1,.3,1) both,dotPulse 1.4s ease infinite}
+.sess-chip.s-done{background:#10b981}
+.sess-chip.s-err{background:#ef4444}
+.sess-chip.s-queued{background:#6b7280}
+.sess-chip::after{content:attr(data-tip);position:absolute;left:32px;top:50%;transform:translateY(-50%);background:#0c0a1a;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.9);font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999}
 .sess-chip:hover::after{opacity:1}
 
-/* Input bar */
-.ch-input-bar{flex-shrink:0;display:flex;align-items:flex-end;gap:8px;padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom));background:rgba(3,3,8,.97);backdrop-filter:blur(20px);border-top:1px solid var(--bd);}
-.ch-ta{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:var(--r16);padding:11px 15px;color:var(--tx);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;resize:none;transition:border-color .2s;max-height:140px;overflow-y:auto;}
+/* ── INPUT BAR ── */
+.ch-input-bar{flex-shrink:0;display:flex;align-items:flex-end;gap:8px;padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom));background:rgba(3,3,8,.97);backdrop-filter:blur(20px);border-top:1px solid var(--bd)}
+.ch-ta{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:var(--r16);padding:11px 15px;color:var(--tx);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;resize:none;transition:border-color .2s;max-height:140px;overflow-y:auto}
 .ch-ta:focus{border-color:rgba(92,77,224,.4)}
 .ch-ta::placeholder{color:var(--tx3)}
-.ch-send-btn{width:42px;height:42px;flex-shrink:0;border-radius:50%;background:linear-gradient(135deg,#5b4de0,#7c6dff);border:none;color:#fff;font-size:15px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(92,77,224,.4);}
-.ch-send-btn:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(92,77,224,.5)}
+.ch-send-btn{width:42px;height:42px;flex-shrink:0;border-radius:50%;background:linear-gradient(135deg,#5b4de0,#7c6dff);border:none;color:#fff;font-size:15px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(92,77,224,.4)}
+.ch-send-btn:hover{transform:translateY(-1px)}
 .ch-send-btn:active{transform:scale(.93)}
 .ch-send-btn:disabled{opacity:.45;cursor:wait;transform:none}
 
-/* ═══ HISTORY ═══ */
+/* ── HISTORY PANEL ── */
 .hist-panel{position:fixed;inset:0;z-index:100;display:none;pointer-events:none}
 .hist-panel.open{display:block;pointer-events:auto}
 .hist-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);animation:fadeIn .2s ease both}
-.hist-drawer{position:fixed;right:0;top:0;bottom:0;width:min(88%,380px);background:#090818;border-left:1px solid var(--bd);display:flex;flex-direction:column;animation:slidein .3s cubic-bezier(.16,1,.3,1) both;box-shadow:-12px 0 48px rgba(0,0,0,.6);}
-.hist-head{display:flex;align-items:flex-start;justify-content:space-between;padding:20px 18px;border-bottom:1px solid var(--bd);gap:10px;flex-shrink:0;}
+.hist-drawer{position:fixed;right:0;top:0;bottom:0;width:min(88%,380px);background:#090818;border-left:1px solid var(--bd);display:flex;flex-direction:column;animation:slidein .3s cubic-bezier(.16,1,.3,1) both;box-shadow:-12px 0 48px rgba(0,0,0,.6)}
+.hist-head{display:flex;align-items:flex-start;justify-content:space-between;padding:20px 18px;border-bottom:1px solid var(--bd);gap:10px;flex-shrink:0}
 .hist-head-txt{font-family:'Syne',sans-serif;font-size:19px;font-weight:700;letter-spacing:-.3px}
-.hist-sub{font-size:11px;color:var(--tx3);margin-top:3px}
-.hist-close{width:32px;height:32px;border-radius:var(--r8);display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border:1px solid var(--bd);color:var(--tx2);font-size:14px;cursor:pointer;transition:all .2s;flex-shrink:0;}
+.hist-sub{font-size:11px;margin-top:3px;display:flex;align-items:center;gap:5px}
+.hist-sub-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.hist-sub-dot.green{background:var(--gn);box-shadow:0 0 6px var(--gn)}
+.hist-sub-dot.yellow{background:var(--yw);box-shadow:0 0 6px var(--yw)}
+.hist-sub-dot.grey{background:var(--tx3)}
+.hist-close{width:32px;height:32px;border-radius:var(--r8);display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border:1px solid var(--bd);color:var(--tx2);font-size:14px;cursor:pointer;transition:all .2s;flex-shrink:0}
 .hist-close:hover{background:rgba(255,255,255,.08);color:var(--tx)}
 .hist-list{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
-.hist-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--tx2);text-align:center;padding:40px;}
+.hist-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--tx2);text-align:center;padding:40px}
 .hist-empty-icon{font-size:40px;opacity:.25}
 .hist-empty-txt{font-size:14px;color:var(--tx3)}
-.hist-item{background:rgba(255,255,255,.02);border:1px solid var(--bd);border-radius:var(--r12);padding:12px 14px;cursor:pointer;transition:all .2s;}
+.hist-item{background:rgba(255,255,255,.02);border:1px solid var(--bd);border-radius:var(--r12);padding:12px 14px;cursor:pointer;transition:all .2s}
 .hist-item:hover{background:rgba(255,255,255,.04);border-color:rgba(124,109,255,.18)}
 .hist-item-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
 .hist-item-date{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)}
-.hist-item-del{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid transparent;color:var(--tx3);font-size:10px;cursor:pointer;transition:all .2s;}
+.hist-item-del{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid transparent;color:var(--tx3);font-size:10px;cursor:pointer;transition:all .2s}
 .hist-item-del:hover{background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.2);color:#fca5a5}
 .hist-item-prompt{font-size:12px;font-weight:600;color:var(--acc3);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:italic}
 .hist-item-label{font-size:13px;font-weight:500;color:rgba(255,255,255,.65);line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hist-item-status{font-size:11px;color:var(--tx3);margin-top:5px}
+.hist-item-status{font-size:11px;color:var(--tx3);margin-top:5px;display:flex;align-items:center;gap:6px}
 .hist-item-status.ok{color:var(--gn)}
 .hist-item-status.err{color:var(--rd)}
-.hist-item-badge{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:20px;flex-shrink:0;}
-.hist-item-badge.img{background:rgba(124,109,255,.12);color:var(--acc2);border:1px solid rgba(124,109,255,.2)}
+.hist-perm-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;background:rgba(52,211,153,.1);color:var(--gn);border:1px solid rgba(52,211,153,.2)}
 
-/* ═══ TOAST ═══ */
-.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:300;background:#0c0a1a;border:1px solid rgba(124,109,255,.22);border-radius:var(--r12);padding:10px 16px;font-size:13px;font-weight:600;color:var(--tx);display:none;align-items:center;gap:9px;box-shadow:0 8px 32px rgba(0,0,0,.7);animation:fadeUp .2s ease both;max-width:calc(100vw - 40px);}
+/* ── TOAST ── */
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:300;background:#0c0a1a;border:1px solid rgba(124,109,255,.22);border-radius:var(--r12);padding:10px 16px;font-size:13px;font-weight:600;color:var(--tx);display:none;align-items:center;gap:9px;box-shadow:0 8px 32px rgba(0,0,0,.7);animation:fadeUp .2s ease both;max-width:calc(100vw - 40px)}
 
-/* ═══ MODEL SHEET ═══ */
-.model-modal{position:fixed;inset:0;z-index:200;display:none;pointer-events:none;}
+/* ── MODEL SHEET ── */
+.model-modal{position:fixed;inset:0;z-index:200;display:none;pointer-events:none}
 .model-modal.open{display:block;pointer-events:auto}
-.model-modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);animation:fadeIn .2s ease both;}
-.model-sheet{position:fixed;bottom:0;left:0;right:0;background:#0c0a1a;border-top:1px solid var(--bd);border-radius:24px 24px 0 0;max-height:82vh;display:flex;flex-direction:column;animation:slideUp .3s cubic-bezier(.16,1,.3,1) both;box-shadow:0 -12px 48px rgba(0,0,0,.7);}
-.model-sheet-handle{width:40px;height:4px;border-radius:4px;background:rgba(255,255,255,.12);margin:12px auto 0;flex-shrink:0;}
-.model-sheet-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;flex-shrink:0;border-bottom:1px solid var(--bd);}
+.model-modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);animation:fadeIn .2s ease both}
+.model-sheet{position:fixed;bottom:0;left:0;right:0;background:#0c0a1a;border-top:1px solid var(--bd);border-radius:24px 24px 0 0;max-height:82vh;display:flex;flex-direction:column;animation:slideUp .3s cubic-bezier(.16,1,.3,1) both;box-shadow:0 -12px 48px rgba(0,0,0,.7)}
+.model-sheet-handle{width:40px;height:4px;border-radius:4px;background:rgba(255,255,255,.12);margin:12px auto 0;flex-shrink:0}
+.model-sheet-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;flex-shrink:0;border-bottom:1px solid var(--bd)}
 .model-sheet-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700}
-.model-sheet-close{width:30px;height:30px;border-radius:8px;border:1px solid var(--bd);background:rgba(255,255,255,.04);color:var(--tx2);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
-.model-sheet-close:hover{background:rgba(255,255,255,.09);color:var(--tx)}
-.model-active-row{display:flex;align-items:center;gap:10px;padding:12px 20px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--bd);flex-shrink:0;}
-.model-active-dot{width:8px;height:8px;border-radius:50%;background:var(--gn);box-shadow:0 0 8px var(--gn);flex-shrink:0;}
+.model-sheet-close{width:30px;height:30px;border-radius:8px;border:1px solid var(--bd);background:rgba(255,255,255,.04);color:var(--tx2);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.model-active-row{display:flex;align-items:center;gap:10px;padding:12px 20px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--bd);flex-shrink:0}
+.model-active-dot{width:8px;height:8px;border-radius:50%;background:var(--gn);box-shadow:0 0 8px var(--gn);flex-shrink:0}
 .model-active-label{font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em}
 .model-active-name{font-size:13px;font-weight:700;color:var(--acc2);margin-top:2px}
-.model-list{flex:1;overflow-y:auto;padding:10px 14px 20px;display:flex;flex-direction:column;gap:6px;}
-.model-list::-webkit-scrollbar{width:2px}
-.model-list::-webkit-scrollbar-thumb{background:var(--s3);border-radius:4px}
-.model-item{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.02);border:1px solid var(--bd);border-radius:12px;padding:11px 14px;cursor:pointer;transition:all .18s;}
+.model-list{flex:1;overflow-y:auto;padding:10px 14px 20px;display:flex;flex-direction:column;gap:6px}
+.model-item{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.02);border:1px solid var(--bd);border-radius:12px;padding:11px 14px;cursor:pointer;transition:all .18s}
 .model-item:hover{background:rgba(124,109,255,.07);border-color:rgba(124,109,255,.2)}
-.model-item.is-active{background:rgba(52,211,153,.06);border-color:rgba(52,211,153,.25);}
-.model-item.is-selected:not(.is-active){background:rgba(124,109,255,.1);border-color:rgba(124,109,255,.35);}
-.model-item-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--bd);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .18s;}
-.model-item.is-active .model-item-radio{border-color:var(--gn);background:var(--gn);}
-.model-item.is-selected:not(.is-active) .model-item-radio{border-color:var(--acc);background:var(--acc);}
+.model-item.is-active{background:rgba(52,211,153,.06);border-color:rgba(52,211,153,.25)}
+.model-item.is-selected:not(.is-active){background:rgba(124,109,255,.1);border-color:rgba(124,109,255,.35)}
+.model-item-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--bd);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.model-item.is-active .model-item-radio{border-color:var(--gn);background:var(--gn)}
+.model-item.is-selected:not(.is-active) .model-item-radio{border-color:var(--acc);background:var(--acc)}
 .model-item-radio i{font-size:8px;color:#fff;display:none}
 .model-item.is-active .model-item-radio i,.model-item.is-selected:not(.is-active) .model-item-radio i{display:block}
 .model-item-info{flex:1;min-width:0}
 .model-item-label{font-size:13px;font-weight:600;color:var(--tx)}
 .model-item-id{font-size:10px;color:var(--tx3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.model-rec-badge{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(124,109,255,.14);color:var(--acc2);border:1px solid rgba(124,109,255,.2);border-radius:20px;padding:2px 7px;flex-shrink:0;}
+.model-rec-badge{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(124,109,255,.14);color:var(--acc2);border:1px solid rgba(124,109,255,.2);border-radius:20px;padding:2px 7px;flex-shrink:0}
 .model-apply-row{padding:12px 16px calc(12px + env(safe-area-inset-bottom));flex-shrink:0;border-top:1px solid var(--bd)}
-.model-apply-btn{width:100%;background:linear-gradient(135deg,#5b4de0,#7c6dff);border:none;border-radius:12px;padding:14px;color:#fff;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(92,77,224,.3);}
-.model-apply-btn:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(92,77,224,.42)}
+.model-apply-btn{width:100%;background:linear-gradient(135deg,#5b4de0,#7c6dff);border:none;border-radius:12px;padding:14px;color:#fff;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(92,77,224,.3)}
+.model-apply-btn:hover{transform:translateY(-1px)}
 .model-apply-btn:active{transform:scale(.97)}
 .model-apply-btn:disabled{opacity:.45;cursor:wait;transform:none}
 </style>
@@ -274,20 +251,15 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
   <div class="login-wrap">
     <div class="login-logo">V</div>
     <div class="login-title">VDO</div>
-    <div class="login-sub">AI Image Studio — Sign in to start creating</div>
+    <div class="login-sub">AI Image Studio — sign in once, access everywhere</div>
     <div class="login-card">
       <button class="btn-google" id="btn-google" onclick="doGoogleLogin()">
-        <svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px;flex-shrink:0">
-          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-          <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.909-2.259c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/>
-          <path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-          <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
-        </svg>
+        <svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px;flex-shrink:0"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.909-2.259c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/><path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
         Continue with Google
       </button>
       <div id="login-err" class="login-err"></div>
     </div>
-    <div class="login-note">Powered by GitHub Actions &amp; Cloudflare Workers · 100% free</div>
+    <div class="login-note">History synced permanently · any browser · any device · 100% free</div>
   </div>
 </div>
 
@@ -304,23 +276,21 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
   </div>
   <div class="tmpl-body">
     <div id="greet" class="tmpl-greet">Hey there 👋</div>
-    <div class="tmpl-hint">Paste your zodiac content — AI formats &amp; renders it</div>
+    <div class="tmpl-hint">EN · NL · FR · DE · ES · IT · PL · 中文 · SV — permanent storage across all devices</div>
     <div class="tmpl-section">Generator</div>
     <div class="tcard" onclick="openTemplate()">
       <div class="tcard-stripe"></div>
       <div class="tcard-inner">
         <div class="tcard-icon">🎨</div>
         <div class="tcard-meta">
-          <div class="tcard-badge">Image · Active</div>
+          <div class="tcard-badge">Image · 9 Languages · Permanent</div>
           <div class="tcard-name">Zodiac Image Generator</div>
-          <div class="tcard-desc">Paste any zodiac text — AI structures it and renders each post as a stunning 9:16 image, ready to share.</div>
+          <div class="tcard-desc">Paste zodiac content in any language. AI formats it, renders 9:16 images, saves them permanently — visible on every device you sign into.</div>
         </div>
       </div>
       <div class="tcard-footer">
         <div class="tcard-tags">
-          <span class="tcard-tag">9:16 format</span>
-          <span class="tcard-tag">Batch export</span>
-          <span class="tcard-tag">Cloudflare AI</span>
+          <span class="tcard-tag">Cross-device</span><span class="tcard-tag">Permanent</span><span class="tcard-tag">9:16</span>
         </div>
         <div class="tcard-go"><i class="fas fa-arrow-right"></i></div>
       </div>
@@ -328,11 +298,12 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
   </div>
 </div>
 
-<!-- SO Menu -->
+<!-- SO MENU -->
 <div class="so-menu" id="so-menu">
   <div class="so-info">
     <div class="so-name" id="so-name"></div>
     <div class="so-email" id="so-email"></div>
+    <div class="so-sync"><i class="fas fa-circle-check"></i><span id="so-sync-txt">Synced to GitHub</span></div>
   </div>
   <button class="so-btn" onclick="signOut()"><i class="fas fa-right-from-bracket"></i> Sign out</button>
 </div>
@@ -350,18 +321,16 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
     </button>
     <button class="ch-hist-btn" onclick="openHistory()"><i class="fas fa-clock-rotate-left"></i></button>
   </div>
-
   <div id="session-bar"></div>
   <div id="ch-msgs" class="ch-msgs">
     <div class="ch-empty" id="ch-empty">
       <div class="ch-empty-icon">✨</div>
       <div class="ch-empty-title">Ready to create</div>
-      <div class="ch-empty-sub">Paste your zodiac content below and hit send.</div>
+      <div class="ch-empty-sub">Paste zodiac content in any language — EN NL FR DE ES IT PL 中文 SV</div>
     </div>
   </div>
-
   <div class="ch-input-bar">
-    <textarea id="ch-ta" class="ch-ta" placeholder="Paste your zodiac content here…" rows="1"></textarea>
+    <textarea id="ch-ta" class="ch-ta" placeholder="Paste zodiac content in any language…" rows="1"></textarea>
     <button id="ch-send" class="ch-send-btn" onclick="sendMsg()"><i class="fas fa-arrow-up"></i></button>
   </div>
 </div>
@@ -373,7 +342,10 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
     <div class="hist-head">
       <div>
         <div class="hist-head-txt">History</div>
-        <div class="hist-sub">Stored locally on your device</div>
+        <div class="hist-sub" id="hist-sub-row">
+          <div class="hist-sub-dot green" id="sync-dot"></div>
+          <span id="sync-txt">Synced · permanent · any browser</span>
+        </div>
       </div>
       <button class="hist-close" onclick="closeHistory()"><i class="fas fa-xmark"></i></button>
     </div>
@@ -407,208 +379,309 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
   </div>
 </div>
 
-<!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<!-- fflate: fast ZIP extraction -->
 <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
 
-<script>'use strict';
+<script>
+'use strict';
 
-const CFG = { worker: 'https://vdo.shreevathsa2k21-4fa.workers.dev' };
+const WORKER = 'https://vdo.shreevathsa2k21-4fa.workers.dev';
+const LS_USER = 'vdo_user_v1';
+const LS_SESS_CACHE = 'vdo_sessions_cache_v1';  // local fallback only
+const LS_IMG_PREFIX = 'vdo_img_';               // base64 image cache per job
 
-/* ═══ STATE ═══ */
+// ════════════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════════════
 let _user = null;
 let _models = [], _activeModel = '', _selectedModel = '';
-const _pngs = {};        // in-memory blob cache: key = "jobId:idx"
-const LS_U = 'vdo_v1_user';
-const MAX_ACTIVE = 6;
-let _sessions = [];
+let _sessions = [];         // in-memory session list (truth: GitHub)
 let _activeJobId = null;
+let _imgCache = {};         // { "jobId:idx": Blob } in-memory
+let _pollInFlight = {};     // per-job poll guard (prevents concurrent doPoll calls)
 
-// ─── Per-job poll guard: prevents concurrent doPoll() calls for the same job
-// BUG-FIX: setInterval doesn't await async functions, so if doPoll takes >3s
-// two calls run simultaneously. This flag blocks re-entry per job.
-const _pollInFlight = {};
+// ════════════════════════════════════════════════════════════════════════
+// PERMANENT STORAGE — 3-tier image loading
+//
+// Tier 1: _imgCache (in-memory Blobs) — fastest, lost on page reload
+// Tier 2: localStorage base64         — survives reload, same browser only
+// Tier 3: GitHub raw URLs             — permanent, any device, any browser
+//         https://raw.githubusercontent.com/{owner}/{repo}/main/outputs/{runToken}/img-001.png
+//
+// Session METADATA lives in GitHub repo (sessions.json).
+// On login: fetch from GitHub, merge with local cache, resume polling if needed.
+// ════════════════════════════════════════════════════════════════════════
 
-function uKey(s){ return _user ? 'vdo_'+_user.id+'_'+s : 'vdo_anon_'+s; }
+function lsGetSessions() {
+  try { return JSON.parse(localStorage.getItem(LS_SESS_CACHE) || '{}'); } catch { return {}; }
+}
+function lsSetSessions(userId, sessions) {
+  try {
+    const all = lsGetSessions();
+    all[userId] = sessions.slice(0, 100);
+    localStorage.setItem(LS_SESS_CACHE, JSON.stringify(all));
+  } catch(e) { /* quota exceeded — not fatal */ }
+}
+function lsGetUserSessions(userId) {
+  return lsGetSessions()[userId] || [];
+}
 
-/* ─── Persistent image store ─── */
-function imgStoreKey(jobId){ return uKey('imgs_'+jobId); }
+async function remoteLoadSessions(userId) {
+  setSyncStatus('syncing');
+  try {
+    const r = await fetch(`${WORKER}/sessions?userId=${encodeURIComponent(userId)}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    const sessions = d.sessions || [];
+    lsSetSessions(userId, sessions);   // update local cache
+    setSyncStatus('ok');
+    return sessions;
+  } catch(e) {
+    console.warn('Remote sessions unavailable, using local cache:', e.message);
+    setSyncStatus('offline');
+    return lsGetUserSessions(userId);
+  }
+}
 
-function saveImgsToStore(jobId, blobs) {
-  const promises = blobs.map(blob => new Promise(res => {
-    const fr = new FileReader();
-    fr.onload = () => res(fr.result);
-    fr.readAsDataURL(blob);
-  }));
-  Promise.all(promises).then(b64arr => {
-    try { localStorage.setItem(imgStoreKey(jobId), JSON.stringify(b64arr)); } catch(e) {
-      console.warn('imgStore save failed (storage full?):', e);
-    }
+async function remoteSaveSession(obj) {
+  if (!_user) return;
+  try {
+    await fetch(`${WORKER}/save-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: _user.id, ...obj }),
+    });
+  } catch(e) { console.warn('remoteSaveSession failed (non-fatal):', e.message); }
+}
+
+async function remoteDeleteSession(jobId) {
+  if (!_user) return;
+  try {
+    await fetch(`${WORKER}/delete-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: _user.id, jobId }),
+    });
+  } catch(e) { console.warn('remoteDeleteSession failed:', e.message); }
+}
+
+function setSyncStatus(state) {
+  const dot = $('sync-dot'), txt = $('sync-txt'), soTxt = $('so-sync-txt');
+  if (!dot) return;
+  dot.className = 'hist-sub-dot ' + (state === 'ok' ? 'green' : state === 'syncing' ? 'yellow' : 'grey');
+  const msg = state === 'ok' ? 'Synced · permanent · any browser'
+            : state === 'syncing' ? 'Syncing…'
+            : 'Offline — using cached data';
+  if (txt) txt.textContent = msg;
+  if (soTxt) soTxt.textContent = state === 'ok' ? 'Synced to GitHub' : msg;
+}
+
+// ── Image storage helpers ──
+function imgCacheKey(jobId, idx) { return `${jobId}:${idx}`; }
+function lsImgKey(jobId) { return LS_IMG_PREFIX + (_user?.id || 'anon') + '_' + jobId; }
+
+function lsSaveImgs(jobId, blobs) {
+  // Store as base64 in localStorage — best-effort
+  Promise.all(blobs.map(b => blobToDataUrl(b))).then(urls => {
+    try { localStorage.setItem(lsImgKey(jobId), JSON.stringify(urls)); } catch {}
   });
 }
 
-function loadImgsFromStore(jobId) {
+function lsLoadImgs(jobId) {
   try {
-    const raw = localStorage.getItem(imgStoreKey(jobId));
+    const raw = localStorage.getItem(lsImgKey(jobId));
     if (!raw) return [];
-    const b64arr = JSON.parse(raw);
-    return b64arr.map(dataUrl => {
-      const parts = dataUrl.split(',');
-      const mime = parts[0].match(/:(.*?);/)[1];
-      const bin = atob(parts[1]);
-      const arr = new Uint8Array(bin.length);
-      for (let i=0; i<bin.length; i++) arr[i] = bin.charCodeAt(i);
-      return new Blob([arr], { type: mime });
-    });
-  } catch(e) { return []; }
+    return JSON.parse(raw).map(dataUrlToBlob);
+  } catch { return []; }
 }
 
-function removeImgsFromStore(jobId) {
-  try { localStorage.removeItem(imgStoreKey(jobId)); } catch {}
+function lsRemoveImgs(jobId) { try { localStorage.removeItem(lsImgKey(jobId)); } catch {} }
+
+function blobToDataUrl(blob) {
+  return new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(blob); });
 }
 
-/* ═══ GOOGLE LOGIN ═══ */
-let GOOGLE_CLIENT_ID = null;
-let _configPromise = null;
-
-function loadGoogleConfig() {
-  if (_configPromise) return _configPromise;
-  _configPromise = (async () => {
-    try {
-      const r = await fetch(CFG.worker + '/config');
-      if (!r.ok) return null;
-      const data = await r.json();
-      if (data.google_client_id) { GOOGLE_CLIENT_ID = data.google_client_id; return GOOGLE_CLIENT_ID; }
-      return null;
-    } catch { return null; }
-    finally { _configPromise = null; }
-  })();
-  return _configPromise;
+function dataUrlToBlob(dataUrl) {
+  const [head, b64] = dataUrl.split(',');
+  const mime = head.match(/:(.*?);/)[1];
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type: mime });
 }
 
-function doGoogleLogin() {
-  const e = $('login-err'), btn = $('btn-google');
-  e.style.display = 'none';
+// Get image blob — tries cache tiers in order
+function getImgBlob(jobId, idx) {
+  return _imgCache[imgCacheKey(jobId, idx)] || null;
+}
+
+// Fetch blobs from permanent GitHub raw URLs
+async function fetchImgsFromUrls(imageUrls) {
+  if (!imageUrls?.length) return [];
+  const results = await Promise.allSettled(
+    imageUrls.map(url => fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r.blob(); }))
+  );
+  return results.filter(r => r.status === 'fulfilled').map(r => r.value);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// SESSION HELPERS
+// ════════════════════════════════════════════════════════════════════════
+function getSession(jid) { return _sessions.find(s => s.jobId === jid); }
+
+function upsertSession(partial) {
+  const idx = _sessions.findIndex(s => s.jobId === partial.jobId);
+  if (idx >= 0) Object.assign(_sessions[idx], partial);
+  else _sessions.unshift(partial);
+  // Keep local cache fresh
+  if (_user) lsSetSessions(_user.id, _sessions.map(({ pollInterval, ...r }) => r));
+}
+
+function deleteSession(jid) {
+  const s = getSession(jid);
+  if (s?.pollInterval) { clearInterval(s.pollInterval); s.pollInterval = null; }
+  delete _pollInFlight[jid];
+  _sessions = _sessions.filter(s => s.jobId !== jid);
+  if (_user) lsSetSessions(_user.id, _sessions.map(({ pollInterval, ...r }) => r));
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════════════════════════
+let _gcid = null;
+
+async function doGoogleLogin() {
+  const errEl = $('login-err'), btn = $('btn-google');
+  errEl.style.display = 'none';
   const origHTML = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-circle-notch" style="animation:spin .9s linear infinite;font-size:16px"></i> Connecting…';
-  (async () => {
-    try {
-      if (!GOOGLE_CLIENT_ID) await loadGoogleConfig();
-      if (!GOOGLE_CLIENT_ID) throw new Error('Could not load Google config. Set GOOGLE_CLIENT_ID in Cloudflare Worker secrets.');
-      if (!window.google?.accounts) throw new Error('Google sign-in library not loaded.');
-      await new Promise((resolve, reject) => {
-        window.google.accounts.oauth2.initTokenClient({
-          client_id: GOOGLE_CLIENT_ID,
-          scope: 'openid email profile',
-          callback: function(resp) {
-            if (resp.error) { reject(new Error(resp.error)); return; }
-            fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + resp.access_token } })
-              .then(r => r.json())
-              .then(profile => {
-                const u = { name: profile.name || profile.email.split('@')[0], email: profile.email, id: 'g_' + profile.sub.slice(0,12), photo: profile.picture || null, ts: Date.now(), method: 'google' };
-                setUser(u); resolve();
-              }).catch(reject);
-          },
-          error_callback: function(err) { if (err.type === 'popup_closed') resolve(); else reject(new Error(err.type || 'Sign-in failed')); }
-        }).requestAccessToken();
-      });
-    } catch(err) {
-      e.textContent = '⚠️ ' + err.message; e.style.display = 'block';
-      btn.disabled = false; btn.innerHTML = origHTML;
+  btn.innerHTML = '<i class="fas fa-circle-notch spin" style="font-size:16px"></i> Connecting…';
+  try {
+    if (!_gcid) {
+      const cfg = await fetch(`${WORKER}/config`).then(r => r.json());
+      _gcid = cfg.google_client_id;
     }
-  })();
+    if (!_gcid) throw new Error('Google client ID not configured in Worker secrets.');
+    if (!window.google?.accounts) throw new Error('Google sign-in script not loaded.');
+    await new Promise((resolve, reject) => {
+      window.google.accounts.oauth2.initTokenClient({
+        client_id: _gcid,
+        scope: 'openid email profile',
+        callback(resp) {
+          if (resp.error) { reject(new Error(resp.error)); return; }
+          fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${resp.access_token}` } })
+            .then(r => r.json())
+            .then(p => {
+              setUser({ name: p.name || p.email.split('@')[0], email: p.email, id: 'g_' + p.sub.slice(0, 12), photo: p.picture || null, ts: Date.now() });
+              resolve();
+            }).catch(reject);
+        },
+        error_callback(e) { if (e.type === 'popup_closed') resolve(); else reject(new Error(e.type || 'Sign-in failed')); },
+      }).requestAccessToken();
+    });
+  } catch(e) {
+    errEl.textContent = '⚠️ ' + e.message; errEl.style.display = 'block';
+    btn.disabled = false; btn.innerHTML = origHTML;
+  }
 }
 
 function setUser(u) {
   _user = u;
-  try { localStorage.setItem(LS_U, JSON.stringify(u)); } catch {}
+  try { localStorage.setItem(LS_USER, JSON.stringify(u)); } catch {}
   enterApp();
 }
 
-function enterApp() {
+async function enterApp() {
+  // Populate UI immediately
   const n = _user.name.split(' ')[0];
   $('user-name-nav').textContent = n;
-  const wrap = $('user-av');
+  const av = $('user-av');
   if (_user.photo) {
-    const img = document.createElement('img');
-    img.src = _user.photo; img.alt = n[0];
+    const img = Object.assign(document.createElement('img'), { src: _user.photo, alt: n[0] });
     img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover';
-    img.onerror = function(){ this.style.display='none'; this.parentNode.textContent=n[0].toUpperCase(); };
-    wrap.innerHTML = ''; wrap.appendChild(img);
-  } else { wrap.textContent = n[0].toUpperCase(); }
+    img.onerror = () => { img.style.display = 'none'; av.textContent = n[0].toUpperCase(); };
+    av.innerHTML = ''; av.appendChild(img);
+  } else { av.textContent = n[0].toUpperCase(); }
   $('so-name').textContent = _user.name;
   $('so-email').textContent = _user.email || '';
   const h = new Date().getHours();
-  $('greet').textContent = `${h<12?'Good morning':h<17?'Good afternoon':'Good evening'}, ${n} 👋`;
-  _sessions = loadSessions();
-  // Resume any in-progress sessions — restart polling for 'generating' ones
-  _sessions.forEach(s => {
-    if (s.status === 'generating') {
-      s.pollInterval = null; // reset stale interval reference from localStorage
-      startPolling(s.jobId);
-    }
-  });
+  $('greet').textContent = `${h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'}, ${n} 👋`;
+
+  // Step 1: Instantly load from local cache (zero latency)
+  const cached = lsGetUserSessions(_user.id);
+  _sessions = cached.map(s => ({ ...s, pollInterval: null }));
   renderSessionBar();
-  fetch(CFG.worker + '/models').then(r=>r.json()).then(d=>{ _models=d.models||[]; _activeModel=d.active||''; updateNavLabel(); }).catch(()=>{});
   show('templates');
+
+  // Step 2: Background sync from GitHub — updates everything when it arrives
+  remoteLoadSessions(_user.id).then(remote => {
+    // Preserve in-flight sessions (generating/queued) from local state
+    const inFlight = _sessions.filter(s => s.status === 'generating' || s.status === 'queued');
+    const inFlightIds = new Set(inFlight.map(s => s.jobId));
+    _sessions = [...inFlight, ...remote.filter(s => !inFlightIds.has(s.jobId))]
+                  .map(s => ({ ...s, pollInterval: s.pollInterval || null }));
+    renderSessionBar();
+  });
+
+  // Step 3: Resume in-flight sessions
+  _sessions.forEach(s => { if (s.status === 'generating') startPolling(s.jobId); });
+
+  // Load AI models
+  fetch(`${WORKER}/models`).then(r => r.json()).then(d => {
+    _models = d.models || []; _activeModel = d.active || '';
+    updateNavLabel();
+  }).catch(() => {});
 }
 
 function signOut() {
-  // Stop all polls cleanly before clearing state
   _sessions.forEach(s => {
-    if (s.pollInterval) { clearInterval(s.pollInterval); s.pollInterval=null; }
+    if (s.pollInterval) { clearInterval(s.pollInterval); s.pollInterval = null; }
     delete _pollInFlight[s.jobId];
   });
-  _sessions = [];
+  _sessions = []; _imgCache = {};
+  if (window.google?.accounts?.oauth2) try { window.google.accounts.oauth2.revoke(); } catch {}
+  try { localStorage.removeItem(LS_USER); } catch {}
+  _user = null; _activeJobId = null;
   $('so-menu').classList.remove('open');
-  if (window.google?.accounts?.oauth2) { try { window.google.accounts.oauth2.revoke(); } catch {} }
-  try { localStorage.removeItem(LS_U); } catch {}
-  _user = null; _activeJobId = null; renderSessionBar(); show('login');
+  renderSessionBar();
+  show('login');
 }
+
 function toggleSO() { $('so-menu').classList.toggle('open'); }
 document.addEventListener('click', e => {
-  const m = $('so-menu');
-  if (m.classList.contains('open') && !e.target.closest('.user-pill') && !e.target.closest('.so-menu')) m.classList.remove('open');
+  if ($('so-menu').classList.contains('open') && !e.target.closest('.user-pill') && !e.target.closest('.so-menu'))
+    $('so-menu').classList.remove('open');
 });
 
-/* ═══ MODEL SWITCHER ═══ */
-async function openModelSheet() {
-  $('model-modal').classList.add('open');
-  await loadModels();
-}
+// ════════════════════════════════════════════════════════════════════════
+// MODEL SWITCHER
+// ════════════════════════════════════════════════════════════════════════
+async function openModelSheet() { $('model-modal').classList.add('open'); await _loadModels(); }
 function closeModelSheet() { $('model-modal').classList.remove('open'); }
 
-async function loadModels() {
+async function _loadModels() {
   $('model-active-name').textContent = 'Loading…';
-  $('model-list').innerHTML = '<div style="padding:20px;text-align:center;color:var(--tx3);font-size:13px">Fetching models…</div>';
+  $('model-list').innerHTML = '<div style="padding:20px;text-align:center;color:var(--tx3);font-size:13px">Fetching…</div>';
   try {
-    const r = await fetch(CFG.worker + '/models');
-    if (!r.ok) throw new Error('Worker returned ' + r.status);
-    const d = await r.json();
+    const d = await fetch(`${WORKER}/models`).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
     _models = d.models || []; _activeModel = d.active || ''; _selectedModel = _activeModel;
     renderModelList(); updateNavLabel();
   } catch(e) {
-    $('model-active-name').textContent = 'Could not reach Worker';
+    $('model-active-name').textContent = 'Error';
     $('model-list').innerHTML = `<div style="padding:20px;text-align:center;color:var(--rd);font-size:13px">⚠️ ${e.message}</div>`;
   }
 }
 
 function renderModelList() {
   $('model-active-name').textContent = labelFor(_activeModel);
-  $('model-apply-btn').disabled = true;
-  $('model-apply-btn').textContent = 'Select a model to apply';
+  $('model-apply-btn').disabled = true; $('model-apply-btn').textContent = 'Select a model';
   $('model-list').innerHTML = _models.map(m => {
-    const isActive = m.id === _activeModel, isSelected = m.id === _selectedModel && !isActive;
-    return `<div class="model-item ${isActive?'is-active':''} ${isSelected?'is-selected':''}" onclick="selectModel('${m.id.replace(/'/g,"\\'")}')">
+    const isA = m.id === _activeModel, isS = m.id === _selectedModel && !isA;
+    return `<div class="model-item ${isA ? 'is-active' : ''} ${isS ? 'is-selected' : ''}" onclick="selectModel('${m.id.replace(/'/g, "\\'")}')">
       <div class="model-item-radio"><i class="fas fa-check"></i></div>
-      <div class="model-item-info">
-        <div class="model-item-label">${m.label}</div>
-        <div class="model-item-id">${m.id}</div>
-      </div>
+      <div class="model-item-info"><div class="model-item-label">${m.label}</div><div class="model-item-id">${m.id}</div></div>
       ${m.recommended ? '<span class="model-rec-badge">⭐ Best</span>' : ''}
-      ${isActive ? '<span style="font-size:10px;color:var(--gn);font-weight:700">ACTIVE</span>' : ''}
+      ${isA ? '<span style="font-size:10px;color:var(--gn);font-weight:700">ACTIVE</span>' : ''}
     </div>`;
   }).join('');
 }
@@ -617,40 +690,33 @@ function selectModel(id) {
   _selectedModel = id; renderModelList();
   const btn = $('model-apply-btn');
   if (id === _activeModel) { btn.disabled = true; btn.textContent = 'Already active'; }
-  else { btn.disabled = false; btn.textContent = 'Apply — ' + labelFor(id); }
+  else { btn.disabled = false; btn.textContent = `Apply — ${labelFor(id)}`; }
 }
 
 async function applyModel() {
   const btn = $('model-apply-btn');
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
-    const r = await fetch(CFG.worker + '/set-model', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ model: _selectedModel })
-    });
-    const d = await r.json();
+    const d = await fetch(`${WORKER}/set-model`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: _selectedModel }) }).then(r => r.json());
     if (!d.ok) throw new Error(d.error || 'Failed');
-    _activeModel = _selectedModel;
-    renderModelList(); updateNavLabel();
+    _activeModel = _selectedModel; renderModelList(); updateNavLabel();
     toast('✓ Model switched to ' + labelFor(_activeModel));
-    setTimeout(() => closeModelSheet(), 800);
+    setTimeout(() => closeModelSheet(), 700);
   } catch(e) {
     toast('⚠️ ' + e.message);
-    btn.disabled = false; btn.textContent = 'Apply — ' + labelFor(_selectedModel);
+    btn.disabled = false; btn.textContent = `Apply — ${labelFor(_selectedModel)}`;
   }
 }
 
-function labelFor(id) {
-  const m = _models.find(x => x.id === id);
-  return m ? m.label : (id ? id.split('/').pop() : 'Unknown');
-}
+function labelFor(id) { return _models.find(m => m.id === id)?.label || (id?.split('/').pop() || 'Unknown'); }
 function updateNavLabel() {
   const el = $('nav-model-label'); if (!el) return;
-  const short = _activeModel ? _activeModel.split('/').pop().replace('-instruct','').replace('-fast','⚡') : 'AI Model';
-  el.textContent = short;
+  el.textContent = _activeModel ? _activeModel.split('/').pop().replace(/-instruct$/, '').replace(/-fast$/, '⚡') : 'AI Model';
 }
 
-/* ═══ SCREENS ═══ */
+// ════════════════════════════════════════════════════════════════════════
+// SCREENS
+// ════════════════════════════════════════════════════════════════════════
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   $('screen-' + id).classList.add('active');
@@ -658,115 +724,88 @@ function show(id) {
 }
 function openTemplate() { _activeJobId = null; clearChat(); show('chat'); }
 
-/* ═══ SESSION SYSTEM ═══ */
-function sessKey(){ return uKey('sessions'); }
-function loadSessions(){ try{return JSON.parse(localStorage.getItem(sessKey())||'[]');}catch{return[];} }
-function saveSessions(){ const save=_sessions.map(({pollInterval,...r})=>r); try{localStorage.setItem(sessKey(),JSON.stringify(save.slice(0,100)));}catch{} }
-function getSession(jid){ return _sessions.find(s=>s.jobId===jid); }
-function addSession(s){ _sessions.unshift(s); saveSessions(); }
-function updateSession(jid,upd){ const s=getSession(jid); if(s){Object.assign(s,upd);saveSessions();} }
-function removeSession(jid){
-  const s=getSession(jid);
-  if(s?.pollInterval) clearInterval(s.pollInterval);
-  delete _pollInFlight[jid];
-  _sessions=_sessions.filter(x=>x.jobId!==jid);
-  saveSessions();
-}
-
-function histKey(){ return uKey('hist'); }
-function getHist(){ try{return JSON.parse(localStorage.getItem(histKey())||'[]');}catch{return[];} }
-function setHist(h){ try{localStorage.setItem(histKey(),JSON.stringify(h.slice(0,50)));}catch{} }
-function addHist(e){ const h=getHist(); h.unshift(e); setHist(h); }
-function delHist(jid){ setHist(getHist().filter(e=>e.jobId!==jid)); }
-function updateHist(jid,upd){ const h=getHist(); const e=h.find(x=>x.jobId===jid); if(e){Object.assign(e,upd);setHist(h);} }
-
-function renderSessionBar(){
-  const bar=$('session-bar'); if(!bar)return;
-  if(!_sessions.length){ bar.classList.remove('visible'); return; }
+// ════════════════════════════════════════════════════════════════════════
+// SESSION BAR (dots on left side of chat)
+// ════════════════════════════════════════════════════════════════════════
+function renderSessionBar() {
+  const bar = $('session-bar'); if (!bar) return;
+  if (!_sessions.length) { bar.classList.remove('visible'); return; }
   bar.classList.add('visible');
-  bar.innerHTML=_sessions.slice(0,5).map((s,i)=>{
-    const sc=s.status==='generating'?'s-gen':s.status==='done'?'s-done':s.status==='error'?'s-err':'s-queued';
-    const active=s.jobId===_activeJobId?'active-chip':'';
-    const st=s.status==='generating'?'Generating…':s.status==='done'?'Done ✓':s.status==='error'?'Failed ✗':'Queued';
-    const tip=xe((s.prompt||'Session').slice(0,28))+' · '+st;
-    return `<div class="sess-chip ${sc} ${active}" onclick="onChipClick('${xe(s.jobId)}')" data-tip="${tip}">${i+1}</div>`;
+  bar.innerHTML = _sessions.slice(0, 6).map((s, i) => {
+    const sc = s.status === 'generating' ? 's-gen' : s.status === 'done' ? 's-done' : s.status === 'error' ? 's-err' : 's-queued';
+    const active = s.jobId === _activeJobId ? 'active-chip' : '';
+    const stLabel = s.status === 'generating' ? 'Generating…' : s.status === 'done' ? 'Done ✓' : s.status === 'error' ? 'Failed ✗' : 'Queued';
+    const tip = `${(s.prompt || 'Session').slice(0, 24)} · ${stLabel}`;
+    return `<div class="sess-chip ${sc} ${active}" onclick="onChipClick('${xe(s.jobId)}')" data-tip="${xe(tip)}">${i + 1}</div>`;
   }).join('');
 }
 
-function countActive(){ return _sessions.filter(s=>s.status==='generating').length; }
+function countActive() { return _sessions.filter(s => s.status === 'generating').length; }
 
-function processQueue(){
-  let active=countActive();
-  const toStart=[];
-  const queued=[..._sessions].reverse().filter(s=>s.status==='queued');
-  for(const next of queued){ if(active>=MAX_ACTIVE)break; next.status='generating'; active++; toStart.push(next.jobId); }
-  if(!toStart.length)return;
-  saveSessions(); renderSessionBar();
-  toStart.forEach(jid=>{ _kickGeneration(jid); });
+function processQueue() {
+  let active = countActive();
+  const toStart = [];
+  [..._sessions].reverse().filter(s => s.status === 'queued').forEach(s => {
+    if (active >= 6) return;
+    s.status = 'generating'; active++; toStart.push(s.jobId);
+  });
+  if (!toStart.length) return;
+  renderSessionBar();
+  toStart.forEach(jid => _kickGeneration(jid));
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// GENERATION + POLLING
+// ════════════════════════════════════════════════════════════════════════
 async function _kickGeneration(jobId) {
   const s = getSession(jobId); if (!s) return;
   try {
-    const r = await fetch(CFG.worker + '/trigger', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ zodiac_text: s.prompt })
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || `Trigger failed ${r.status}`);
-    updateSession(jobId, { run_token: d.run_token });
+    const d = await fetch(`${WORKER}/trigger`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ zodiac_text: s.prompt, userId: _user?.id || '', jobId }),
+    }).then(r => r.json());
+    if (d.error) throw new Error(d.error);
+    upsertSession({ jobId, run_token: d.run_token });
     startPolling(jobId);
 
-    // BUG-FIX: Timeout guard now checks status AFTER the delay.
-    // If already 'done' or 'error' by then, do nothing.
-    // Only fires if genuinely still stuck in 'generating' state.
+    // Hard timeout — only fires if genuinely still stuck
+    const kickedAt = Date.now();
     setTimeout(() => {
       const ss = getSession(jobId);
-      if (!ss || ss.status !== 'generating') return; // already resolved — skip
-      if (Date.now() - ss.ts < 180000) return; // somehow fired early — skip
-      // Truly timed out
+      if (!ss || ss.status !== 'generating') return;   // already resolved
+      if (Date.now() - kickedAt < 175000) return;       // fired too early (shouldn't happen)
       if (ss.pollInterval) { clearInterval(ss.pollInterval); ss.pollInterval = null; }
       delete _pollInFlight[jobId];
-      updateSession(jobId, { status:'error', errorMsg:'Timed out after 3 minutes.' });
-      updateHist(jobId, { status:'error' });
-      if (_activeJobId === jobId) { updateGroupHd(jobId, 0, 0, 'error'); addErrMsg('No response from GitHub Actions after 3 minutes.'); }
+      upsertSession({ jobId, status: 'error', errorMsg: 'Timed out after 3 minutes.' });
+      if (_activeJobId === jobId) { updateGroupHd(jobId, 'error'); addErrMsg('No response from GitHub Actions after 3 minutes.'); }
       renderSessionBar(); processQueue();
-    }, 185000); // 3min + 5s buffer
+    }, 185_000);
 
   } catch(e) {
-    updateSession(jobId, { status:'error', errorMsg: e.message });
-    updateHist(jobId, { status:'error' });
-    renderSessionBar();
-    if (_activeJobId === jobId) { updateGroupHd(jobId, 0, 0, 'error'); addErrMsg('Failed to trigger: ' + e.message); }
-    processQueue();
+    upsertSession({ jobId, status: 'error', errorMsg: e.message });
+    if (_activeJobId === jobId) { updateGroupHd(jobId, 'error'); addErrMsg('Trigger failed: ' + e.message); }
+    renderSessionBar(); processQueue();
   }
 }
 
-/* ═══ POLLING — GitHub Actions status ═══ */
 function startPolling(jobId) {
   const s = getSession(jobId); if (!s) return;
-  if (s.pollInterval) clearInterval(s.pollInterval);
+  if (s.pollInterval) { clearInterval(s.pollInterval); s.pollInterval = null; }
   delete _pollInFlight[jobId];
 
-  // BUG-FIX: Use a wrapper that blocks concurrent doPoll() calls for the same job.
-  // setInterval doesn't await async functions — if one poll takes >3s,
-  // the next fires before the first finishes, creating race conditions.
+  // BUG-FIX: setInterval doesn't await — use a guard so only 1 doPoll runs at a time per job
   const iv = setInterval(() => {
-    if (_pollInFlight[jobId]) return; // previous poll still in flight — skip tick
+    if (_pollInFlight[jobId]) return;  // previous tick still running — skip
     _pollInFlight[jobId] = true;
     doPoll(jobId).finally(() => { delete _pollInFlight[jobId]; });
 
-    // Update the status header display while polling
-    const sess = getSession(jobId);
-    if (sess && sess.status === 'generating' && _activeJobId === jobId) {
-      const hd = $('ghd-' + jobId);
-      if (hd && !hd.querySelector('.fa-check-circle') && !hd.querySelector('.fa-circle-exclamation'))
-        updateGroupHd(jobId, sess.done||0, sess.total||0, 'processing');
-    }
+    // Update elapsed timer in group header while polling
+    const ss = getSession(jobId);
+    if (ss?.status === 'generating' && _activeJobId === jobId) updateGroupHd(jobId, 'processing');
   }, 3000);
 
   s.pollInterval = iv;
-  if (_activeJobId === jobId) updateGroupHd(jobId, 0, 0, 'processing');
+  if (_activeJobId === jobId) updateGroupHd(jobId, 'processing');
 }
 
 async function doPoll(jobId) {
@@ -774,446 +813,435 @@ async function doPoll(jobId) {
   if (!s || s.status !== 'generating') return;
 
   try {
-    // Step 1: find the GitHub run_id
+    // Phase 1 — find the GitHub run_id
     if (!s.run_id) {
-      const r = await fetch(CFG.worker + '/poll?run_token=' + encodeURIComponent(s.run_token || '') + '&t=' + Date.now());
-      if (!r.ok) return;
-      const d = await r.json();
-      if (!d.found) return;
-      updateSession(jobId, { run_id: d.run_id });
+      const d = await fetch(`${WORKER}/poll?run_token=${encodeURIComponent(s.run_token || '')}&_=${Date.now()}`).then(r => r.json());
+      if (d.found) upsertSession({ jobId, run_id: d.run_id });
       return;
     }
 
-    // Step 2: check if run completed
-    const r2 = await fetch(CFG.worker + '/status?run_id=' + s.run_id);
-    if (!r2.ok) return;
-    const st = await r2.json();
+    // Phase 2 — check run status
+    const st = await fetch(`${WORKER}/status?run_id=${s.run_id}`).then(r => r.json());
     if (st.status !== 'completed') return;
 
-    // Run is completed — stop polling immediately and mark
-    // BEFORE async download so the interval can't re-enter.
-    clearInterval(s.pollInterval);
-    s.pollInterval = null;
+    // RUN IS DONE — stop polling immediately before any async work
+    clearInterval(s.pollInterval); s.pollInterval = null;
     delete _pollInFlight[jobId];
 
     if (st.conclusion !== 'success') {
-      // BUG-FIX: update status BEFORE calling renderSessionBar/addErrMsg
-      // so UI reflects final error state consistently
-      updateSession(jobId, { status: 'error', errorMsg: 'GitHub Actions workflow failed.' });
-      updateHist(jobId, { status: 'error' });
-      if (_activeJobId === jobId) { updateGroupHd(jobId, 0, 0, 'error'); addErrMsg('Workflow failed. Check your GitHub Actions tab for details.'); }
-      renderSessionBar(); processQueue();
-      return;
+      upsertSession({ jobId, status: 'error', errorMsg: 'GitHub Actions workflow failed.' });
+      if (_activeJobId === jobId) { updateGroupHd(jobId, 'error'); addErrMsg('Workflow failed. Check your GitHub Actions tab.'); }
+      renderSessionBar(); processQueue(); return;
     }
 
-    // Step 3: get artifact
-    const r3 = await fetch(CFG.worker + '/artifacts?run_id=' + s.run_id);
-    if (!r3.ok) {
-      const errTxt = await r3.text();
-      throw new Error('Artifacts fetch failed: ' + r3.status + ' — ' + errTxt);
-    }
-    const art = await r3.json();
-    if (!art.artifact_id) throw new Error('No artifact found — did the workflow upload images?');
+    // Phase 3 — get artifact for immediate download (fallback — images also in repo)
+    const art = await fetch(`${WORKER}/artifacts?run_id=${s.run_id}`).then(r => r.json());
+    if (!art.artifact_id) throw new Error('No artifact found in completed run');
 
-    updateSession(jobId, { artifact_id: art.artifact_id });
-
-    // Step 4: download
-    // BUG-FIX: don't set downloaded:true before success.
-    // downloadAndShowImages handles its own error path.
-    await downloadAndShowImages(jobId, art.artifact_id);
-    renderSessionBar();
-    processQueue();
+    // Phase 4 — download & show. Status set ONLY after success.
+    await downloadAndShow(jobId, art.artifact_id);
+    renderSessionBar(); processQueue();
 
   } catch(e) {
     const cur = getSession(jobId);
     if (cur && cur.status === 'generating') {
       if (cur.pollInterval) { clearInterval(cur.pollInterval); cur.pollInterval = null; }
       delete _pollInFlight[jobId];
-      updateSession(jobId, { status: 'error', errorMsg: e.message });
-      updateHist(jobId, { status: 'error' });
-      if (_activeJobId === jobId) { updateGroupHd(jobId, 0, 0, 'error'); addErrMsg('Error: ' + e.message); }
+      upsertSession({ jobId, status: 'error', errorMsg: e.message });
+      if (_activeJobId === jobId) { updateGroupHd(jobId, 'error'); addErrMsg('Error: ' + e.message); }
       renderSessionBar(); processQueue();
     }
   }
 }
 
-async function downloadAndShowImages(jobId, artifactId) {
-  try {
-    const r = await fetch(CFG.worker + '/download?artifact_id=' + artifactId);
-    if (!r.ok) throw new Error('Download failed: HTTP ' + r.status);
-    const zipBuf = await r.arrayBuffer();
-    const pngs = await extractPNGsFromZip(zipBuf);
-    if (!pngs.length) throw new Error('No images found in artifact ZIP');
+async function downloadAndShow(jobId, artifactId) {
+  // Snapshot activeJobId NOW before any async work
+  const wasActive = _activeJobId === jobId;
 
-    // Cache in memory
-    pngs.forEach((blob, i) => { _pngs[jobId + ':' + i] = blob; });
+  const r = await fetch(`${WORKER}/download?artifact_id=${artifactId}`);
+  if (!r.ok) throw new Error(`Download failed: HTTP ${r.status}`);
+  const zipBuf = await r.arrayBuffer();
+  const pngs = await extractPNGsFromZip(zipBuf);
+  if (!pngs.length) throw new Error('No PNG images found in artifact');
 
-    // Persist to localStorage for history restore
-    saveImgsToStore(jobId, pngs);
+  // Cache images in memory (tier 1) and localStorage (tier 2)
+  pngs.forEach((blob, i) => { _imgCache[imgCacheKey(jobId, i)] = blob; });
+  lsSaveImgs(jobId, pngs);
 
-    // Mark done
-    updateSession(jobId, { status:'done', done: pngs.length, total: pngs.length });
-    updateHist(jobId, { status:'done', done: pngs.length, total: pngs.length, pngCount: pngs.length });
+  // Mark done AFTER successful download
+  upsertSession({ jobId, status: 'done', done: pngs.length, total: pngs.length });
 
-    // Render to UI only if this is the currently active job
-    if (_activeJobId === jobId) {
-      pngs.forEach((blob, i) => addImgCard(jobId, blob, i));
-      updateGroupHd(jobId, pngs.length, pngs.length, 'done');
-      scrollDown();
-    }
-  } catch(e) {
-    // BUG-FIX: properly propagate error — caller (doPoll) handles UI update
-    updateSession(jobId, { status:'error', errorMsg: e.message });
-    updateHist(jobId, { status:'error' });
-    if (_activeJobId === jobId) { updateGroupHd(jobId, 0, 0, 'error'); addErrMsg('Could not load images: ' + e.message); }
-    throw e; // re-throw so doPoll's catch block can log if needed
+  // Only update DOM if this job is still the active one
+  if (wasActive && _activeJobId === jobId) {
+    pngs.forEach((blob, i) => addImgCard(jobId, blob, i));
+    updateGroupHd(jobId, 'done', pngs.length);
+    scrollDown();
   }
 }
 
-// ─── ZIP extraction using fflate (reliable, handles GitHub artifact ZIP format)
-async function extractPNGsFromZip(buf) {
+// ════════════════════════════════════════════════════════════════════════
+// ZIP EXTRACTION
+// ════════════════════════════════════════════════════════════════════════
+function extractPNGsFromZip(buf) {
   return new Promise((resolve, reject) => {
-    if (typeof fflate === 'undefined') {
-      // fflate CDN failed — fall back to built-in parser
-      _extractPNGsFallback(buf).then(resolve).catch(reject);
-      return;
-    }
+    if (typeof fflate === 'undefined') { extractFallback(buf).then(resolve).catch(reject); return; }
     fflate.unzip(new Uint8Array(buf), (err, files) => {
-      if (err) {
-        // fflate failed — try fallback before giving up
-        console.warn('fflate failed, trying fallback:', err.message);
-        _extractPNGsFallback(buf).then(resolve).catch(() => reject(new Error('ZIP extraction failed: ' + err.message)));
-        return;
-      }
+      if (err) { extractFallback(buf).then(resolve).catch(() => reject(new Error('ZIP failed: ' + err.message))); return; }
       const pngs = Object.keys(files)
-        .filter(name => name.toLowerCase().endsWith('.png') && files[name].length > 0)
+        .filter(n => n.toLowerCase().endsWith('.png') && files[n].length > 0)
         .sort()
-        .map(name => new Blob([files[name]], { type: 'image/png' }));
+        .map(n => new Blob([files[n]], { type: 'image/png' }));
       resolve(pngs);
     });
   });
 }
 
-// Fallback ZIP parser with unsigned 32-bit fix
-async function _extractPNGsFallback(buf) {
-  const bytes = new Uint8Array(buf);
-  const entries = [];
-  let i = 0;
+async function extractFallback(buf) {
+  const bytes = new Uint8Array(buf), entries = []; let i = 0;
   while (i < bytes.length - 4) {
-    if (bytes[i]===0x50 && bytes[i+1]===0x4b && bytes[i+2]===0x03 && bytes[i+3]===0x04) {
-      const compression = (bytes[i+8]  | (bytes[i+9]  << 8)) >>> 0;
-      const compSize    = (bytes[i+18] | (bytes[i+19]<<8) | (bytes[i+20]<<16) | (bytes[i+21]<<24)) >>> 0;
-      const fnLen       = (bytes[i+26] | (bytes[i+27]<<8)) >>> 0;
-      const extraLen    = (bytes[i+28] | (bytes[i+29]<<8)) >>> 0;
-      const fname       = new TextDecoder().decode(bytes.slice(i+30, i+30+fnLen));
-      const dataOffset  = i + 30 + fnLen + extraLen;
-      const compData    = bytes.slice(dataOffset, dataOffset + compSize);
-      if (fname.toLowerCase().endsWith('.png') && compSize > 0) {
-        entries.push({ fname, compression, compData });
-      }
-      i = dataOffset + Math.max(compSize, 1);
-    } else { i++; }
+    if (bytes[i]===0x50&&bytes[i+1]===0x4b&&bytes[i+2]===0x03&&bytes[i+3]===0x04) {
+      const compression = (bytes[i+8]|(bytes[i+9]<<8))>>>0;
+      const compSize = (bytes[i+18]|(bytes[i+19]<<8)|(bytes[i+20]<<16)|(bytes[i+21]<<24))>>>0;
+      const fnLen = (bytes[i+26]|(bytes[i+27]<<8))>>>0;
+      const extraLen = (bytes[i+28]|(bytes[i+29]<<8))>>>0;
+      const fname = new TextDecoder().decode(bytes.slice(i+30, i+30+fnLen));
+      const dataOff = i+30+fnLen+extraLen;
+      if (fname.toLowerCase().endsWith('.png') && compSize>0)
+        entries.push({ fname, compression, data: bytes.slice(dataOff, dataOff+compSize) });
+      i = dataOff + Math.max(compSize, 1);
+    } else i++;
   }
-  entries.sort((a,b) => a.fname.localeCompare(b.fname));
+  entries.sort((a, b) => a.fname.localeCompare(b.fname));
   const pngs = [];
-  for (const entry of entries) {
+  for (const e of entries) {
     try {
-      let data;
-      if (entry.compression === 0) {
-        data = entry.compData;
-      } else if (entry.compression === 8) {
+      let out;
+      if (e.compression === 0) { out = e.data; }
+      else if (e.compression === 8) {
         const ds = new DecompressionStream('deflate-raw');
-        const writer = ds.writable.getWriter();
-        const reader = ds.readable.getReader();
-        writer.write(entry.compData);
-        writer.close();
-        const chunks = []; let totalLen = 0;
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value); totalLen += value.length;
-        }
-        const out = new Uint8Array(totalLen); let off = 0;
-        for (const chunk of chunks) { out.set(chunk, off); off += chunk.length; }
-        data = out;
-      } else { continue; }
-      pngs.push(new Blob([data], { type: 'image/png' }));
-    } catch(e) { console.warn('Decompress failed:', entry.fname, e); }
+        const w = ds.writable.getWriter(), rd = ds.readable.getReader();
+        w.write(e.data); w.close();
+        const chunks = []; let total = 0;
+        for (;;) { const { done, value } = await rd.read(); if (done) break; chunks.push(value); total += value.length; }
+        out = new Uint8Array(total); let off = 0;
+        for (const c of chunks) { out.set(c, off); off += c.length; }
+      } else continue;
+      pngs.push(new Blob([out], { type: 'image/png' }));
+    } catch {}
   }
   return pngs;
 }
 
-function onChipClick(jobId) {
+// ════════════════════════════════════════════════════════════════════════
+// CHIP CLICK — restore session with 3-tier image loading
+// ════════════════════════════════════════════════════════════════════════
+async function onChipClick(jobId) {
   _activeJobId = jobId; renderSessionBar();
   const s = getSession(jobId); if (!s) return;
   clearChat(); hideEmpty(); show('chat');
-  addUserMsg(s.prompt || '');
-  addSessionSep(s.ts);
-  addImgGroup(jobId);
+  addUserMsg(s.prompt || ''); addSessionSep(s.ts); addImgGroup(jobId);
 
-  const count = s.done || 0;
-  if (count > 0) {
+  if (s.status === 'done' || s.imageUrls?.length) {
+    const count = s.done || s.imageUrls?.length || 0;
+
+    // Tier 1: in-memory
     let blobs = [];
     for (let i = 0; i < count; i++) {
-      if (_pngs[jobId + ':' + i]) blobs.push(_pngs[jobId + ':' + i]);
+      const b = _imgCache[imgCacheKey(jobId, i)];
+      if (b) blobs.push(b);
     }
+
+    // Tier 2: localStorage cache
     if (blobs.length < count) {
-      const stored = loadImgsFromStore(jobId);
+      const stored = lsLoadImgs(jobId);
       if (stored.length) {
-        stored.forEach((blob, i) => { _pngs[jobId + ':' + i] = blob; });
+        stored.forEach((b, i) => { _imgCache[imgCacheKey(jobId, i)] = b; });
         blobs = stored;
       }
     }
-    blobs.forEach((blob, i) => addImgCard(jobId, blob, i));
+
+    // Tier 3: permanent GitHub raw URLs — the key cross-device feature
+    if (blobs.length < count && s.imageUrls?.length) {
+      updateGroupHd(jobId, 'loading');
+      try {
+        const fetched = await fetchImgsFromUrls(s.imageUrls);
+        if (fetched.length) {
+          fetched.forEach((b, i) => { _imgCache[imgCacheKey(jobId, i)] = b; });
+          lsSaveImgs(jobId, fetched);
+          blobs = fetched;
+        }
+      } catch(e) { console.warn('URL fetch failed:', e); }
+    }
+
+    if (blobs.length) {
+      blobs.forEach((blob, i) => addImgCard(jobId, blob, i));
+      updateGroupHd(jobId, 'done', blobs.length);
+    } else if (s.status === 'done') {
+      updateGroupHd(jobId, 'error', 0, 'Images could not be loaded');
+    }
   }
 
-  const hdStatus = s.status==='done' ? 'done' : s.status==='error' ? 'error' : 'processing';
-  updateGroupHd(jobId, s.done||0, s.total||0, hdStatus);
+  if (s.status !== 'done') {
+    const hdStatus = s.status === 'error' ? 'error' : 'processing';
+    updateGroupHd(jobId, hdStatus);
+  }
   if (s.status === 'error') addErrMsg(s.errorMsg || 'Generation failed.');
   scrollDown();
 }
 
-/* ═══ SEND ═══ */
-async function sendMsg() {
-  const ta = $('ch-ta');
-  const text = ta.value.trim();
+// ════════════════════════════════════════════════════════════════════════
+// SEND MESSAGE
+// ════════════════════════════════════════════════════════════════════════
+function sendMsg() {
+  const ta = $('ch-ta'), text = ta.value.trim();
   if (!text) return;
   ta.value = ''; resize(ta);
-  const jobId = `j-${_user?.id||'anon'}-${Date.now()}`;
+  const jobId = `j-${_user?.id || 'anon'}-${Date.now()}`;
   _activeJobId = jobId;
   clearChat(); hideEmpty(); addUserMsg(text);
-  const sess = { jobId, prompt: text, label: text.slice(0,80), ts: Date.now(), status:'queued', done:0, total:0, seenCount:0 };
-  addSession(sess);
-  addHist({ jobId, prompt: text, label: text.slice(0,80), ts: Date.now(), status:'processing' });
+
+  const sess = { jobId, prompt: text, label: text.slice(0, 80), ts: Date.now(), status: 'queued', done: 0, total: 0, imageUrls: [], pollInterval: null };
+  upsertSession(sess);
   addImgGroup(jobId); scrollDown(); renderSessionBar();
-  if (countActive() < MAX_ACTIVE) {
-    updateSession(jobId, { status:'generating' });
+
+  if (countActive() < 6) {
+    upsertSession({ jobId, status: 'generating' });
     renderSessionBar(); _kickGeneration(jobId);
   } else {
-    const hd = $('ghd-' + jobId);
-    if (hd) hd.innerHTML = '<div class="group-hd-l"><span style="color:var(--yw)">⏳</span><span>Queued — waiting for a free slot…</span></div>';
+    const hd = $('ghd-' + safeId(jobId));
+    if (hd) hd.innerHTML = '<div class="group-hd-l"><span style="color:var(--yw)">⏳</span><span>Queued…</span></div>';
   }
 }
 
-/* ═══ DOM BUILDERS ═══ */
-function addUserMsg(t){ mkEl('div','msg-user',t); }
-function addErrMsg(m){
-  const d=document.createElement('div'); d.className='msg-error';
-  d.innerHTML=`<i class="fas fa-triangle-exclamation" style="flex-shrink:0;margin-top:1px"></i><span>${xe(m)}</span>`;
+// ════════════════════════════════════════════════════════════════════════
+// DOM BUILDERS
+// ════════════════════════════════════════════════════════════════════════
+function addUserMsg(t) { mkEl('div', 'msg-user', t); }
+function addErrMsg(m) {
+  const d = document.createElement('div'); d.className = 'msg-error';
+  d.innerHTML = `<i class="fas fa-triangle-exclamation" style="flex-shrink:0;margin-top:1px"></i><span>${xe(m)}</span>`;
   msgs().appendChild(d); scrollDown();
 }
-function addSessionSep(ts){ mkEl('div','session-sep',new Date(ts).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})); }
-
-function addImgGroup(jobId){
-  const d=document.createElement('div'); d.className='img-group'; d.id=`grp-${xe(jobId)}`;
-  d.innerHTML=`<div class="group-hd" id="ghd-${xe(jobId)}"><div class="group-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>Waiting for GitHub Actions… (~60s)</span></div></div><div class="img-row" id="row-${xe(jobId)}"></div>`;
+function addSessionSep(ts) {
+  mkEl('div', 'session-sep', new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }));
+}
+function addImgGroup(jobId) {
+  const sid = safeId(jobId);
+  const d = document.createElement('div'); d.className = 'img-group'; d.id = 'grp-' + sid;
+  d.innerHTML = `<div class="group-hd" id="ghd-${sid}"><div class="group-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>Waiting for GitHub Actions… (~60s)</span></div></div><div class="img-row" id="row-${sid}"></div>`;
   msgs().appendChild(d);
 }
 
-function _safeId(jobId){ return jobId.replace(/[^a-zA-Z0-9_-]/g,'_'); }
-
-function updateGroupHd(jobId, done, total, status){
-  const hd = $('ghd-'+jobId); if(!hd)return;
-  const safeJ = _safeId(jobId);
-  if(status==='done'){
-    hd.innerHTML=`<div class="group-hd-l"><i class="fas fa-check-circle" style="color:var(--gn);font-size:15px"></i><span style="color:var(--gn);font-weight:700">${done} image${done!==1?'s':''} ready ✓</span></div><button class="dl-all-btn" id="dla-${safeJ}" onclick="dlAll('${safeJ}',${done})"><i class="fas fa-cloud-arrow-down"></i> Download All (${done})</button>`;
-  } else if(status==='error'){
-    const s=getSession(jobId);
-    const msg = s?.errorMsg || 'Generation failed.';
-    hd.innerHTML=`<div class="group-hd-l"><i class="fas fa-circle-exclamation" style="color:var(--rd)"></i><span style="color:var(--rd);font-weight:600">Failed — ${xe(msg)}</span></div>`;
-  } else if(status==='processing'){
-    if(total>0){
-      const pct=Math.round((done/total)*100);
-      hd.innerHTML=`<div class="group-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>Generating ${done} of ${total}… <span style="color:var(--acc2);font-weight:700">${pct}%</span></span></div>`;
-    } else {
-      const elapsed=Math.round((Date.now()-(getSession(jobId)?.ts||Date.now()))/1000);
-      const step=elapsed<15?'⚡ Posting to GitHub…':elapsed<35?'⏳ GitHub Actions starting…':elapsed<70?'🔄 Rendering images…':'🔄 Still working…';
-      hd.innerHTML=`<div class="group-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>${step} <span style="color:var(--tx3);font-size:11px">${elapsed}s</span></span></div>`;
-    }
+function updateGroupHd(jobId, status, count, customMsg) {
+  const sid = safeId(jobId), hd = $('ghd-' + sid); if (!hd) return;
+  const s = getSession(jobId);
+  if (status === 'done') {
+    const n = count || s?.done || 0;
+    hd.innerHTML = `<div class="group-hd-l"><i class="fas fa-check-circle" style="color:var(--gn);font-size:15px"></i><span style="color:var(--gn);font-weight:700">${n} image${n !== 1 ? 's' : ''} ready ✓</span></div><button class="dl-all-btn" onclick="dlAll('${sid}',${n})"><i class="fas fa-cloud-arrow-down"></i> Download All (${n})</button>`;
+  } else if (status === 'error') {
+    const msg = customMsg || s?.errorMsg || 'Generation failed.';
+    hd.innerHTML = `<div class="group-hd-l"><i class="fas fa-circle-exclamation" style="color:var(--rd)"></i><span style="color:var(--rd);font-weight:600">Failed — ${xe(msg)}</span></div>`;
+  } else if (status === 'loading') {
+    hd.innerHTML = `<div class="group-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>Loading images from GitHub…</span></div>`;
   } else {
-    hd.innerHTML=`<div class="group-hd-l"><i class="fas fa-layer-group" style="color:var(--tx3)"></i><span style="color:var(--tx3)">Queued…</span></div>`;
+    const elapsed = Math.round((Date.now() - (s?.ts || Date.now())) / 1000);
+    const step = elapsed < 15 ? '⚡ Posting to GitHub…' : elapsed < 35 ? '⏳ Actions starting…' : elapsed < 70 ? '🔄 Rendering…' : '🔄 Almost done…';
+    hd.innerHTML = `<div class="group-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>${step} <span style="color:var(--tx3);font-size:11px">${elapsed}s</span></span></div>`;
   }
 }
 
-function addImgCard(jobId, blob, idx){
-  const row=$('row-'+jobId); if(!row)return;
+function addImgCard(jobId, blob, idx) {
+  const sid = safeId(jobId), row = $('row-' + sid); if (!row) return;
+  const cardId = safeId(jobId + '_' + idx);
   const url = URL.createObjectURL(blob);
-  const safeKey = _safeId(jobId+'__'+idx);
-  const card=document.createElement('div');
-  card.className='img-card'; card.id='card-'+safeKey;
-  card.style.animationDelay=(idx%6*60)+'ms';
-  card.dataset.jobId = jobId;
-  card.dataset.idx = idx;
-
-  card.innerHTML=`
-    <div class="img-card-label">Image ${idx+1}</div>
-    <div class="img-preview loading" id="prev-${safeKey}">
-      <img src="${url}" alt="Image ${idx+1}" onload="this.closest('.img-preview')?.classList.remove('loading')">
-      <div class="img-badges" id="ibadges-${safeKey}"></div>
+  const card = document.createElement('div');
+  card.className = 'img-card'; card.style.animationDelay = (idx % 6 * 60) + 'ms';
+  card.dataset.jobId = jobId; card.dataset.idx = idx;
+  card.innerHTML = `
+    <div class="img-card-label">Image ${idx + 1}</div>
+    <div class="img-preview loading" id="prev-${cardId}">
+      <img src="${url}" alt="Image ${idx + 1}" onload="this.closest('.img-preview')?.classList.remove('loading')">
     </div>
     <div class="img-actions">
-      <button class="img-btn-share" id="share-${safeKey}" data-action="share">
-        <i class="fas fa-share-nodes"></i> Share
-      </button>
+      <button class="img-btn-share" data-act="share"><i class="fas fa-share-nodes"></i> Share</button>
       <div class="img-btns-row">
-        <button class="img-btn" id="dl-${safeKey}" data-action="save">
-          <i class="fas fa-download"></i> Save
-        </button>
-        <button class="img-btn" id="cp-${safeKey}" data-action="view">
-          <i class="fas fa-expand"></i> View
-        </button>
+        <button class="img-btn" data-act="save"><i class="fas fa-download"></i> Save</button>
+        <button class="img-btn" data-act="view"><i class="fas fa-expand"></i> View</button>
       </div>
     </div>`;
-
-  card.querySelectorAll('[data-action]').forEach(btn => {
+  card.querySelectorAll('[data-act]').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      const action = btn.dataset.action;
-      const jid = card.dataset.jobId;
-      const i = parseInt(card.dataset.idx);
-      if(action==='share') shareImg(jid, i);
-      else if(action==='save') dlOne(jid, i);
-      else if(action==='view') openFull(jid, i);
+      const jid = card.dataset.jobId, i = parseInt(card.dataset.idx);
+      const act = btn.dataset.act;
+      if (act === 'share') shareImg(jid, i);
+      else if (act === 'save') dlOne(jid, i);
+      else openFull(jid, i);
     });
   });
-
   row.appendChild(card);
 }
 
-/* ═══ DOWNLOADS & SHARE ═══ */
-function randName(ext){ const a=new Uint32Array(1); crypto.getRandomValues(a); return 'vdo_'+(( a[0]%900000000)+100000000)+'.'+ext; }
+// ════════════════════════════════════════════════════════════════════════
+// DOWNLOADS + SHARE
+// ════════════════════════════════════════════════════════════════════════
+function randName(ext) { const a = new Uint32Array(1); crypto.getRandomValues(a); return `vdo_${(a[0] % 900000000) + 100000000}.${ext}`; }
 
 function _getBlob(jobId, idx) {
-  let blob = _pngs[jobId+':'+idx];
+  let blob = _imgCache[imgCacheKey(jobId, idx)];
   if (!blob) {
-    const stored = loadImgsFromStore(jobId);
-    if (stored.length) {
-      stored.forEach((b, i) => { _pngs[jobId+':'+i] = b; });
-      blob = _pngs[jobId+':'+idx];
-    }
+    const stored = lsLoadImgs(jobId);
+    stored.forEach((b, i) => { _imgCache[imgCacheKey(jobId, i)] = b; });
+    blob = _imgCache[imgCacheKey(jobId, idx)];
   }
   return blob || null;
 }
 
-function _cardSafeKey(jobId, idx) { return _safeId(jobId+'__'+idx); }
-
-async function shareImg(jobId,idx){
-  const safeKey = _cardSafeKey(jobId,idx);
-  const btn=$('share-'+safeKey);
-  if(btn){btn.classList.add('saving');btn.innerHTML='<i class="fas fa-circle-notch spin"></i> Sharing…';}
+async function shareImg(jobId, idx) {
+  const blob = _getBlob(jobId, idx); if (!blob) { toast('⚠️ Image not ready'); return; }
   try {
-    const blob=_getBlob(jobId,idx); if(!blob)throw new Error('Image not ready');
-    const file=new File([blob],randName('png'),{type:'image/png'});
-    if(navigator.share){
-      if(navigator.canShare&&navigator.canShare({files:[file]})) await navigator.share({files:[file],title:'VDO Image '+(idx+1)});
-      else await navigator.share({title:'VDO Image '+(idx+1),text:'Generated with VDO'});
-    } else { trigDl(blob,randName('png')); }
-    const badges=$('ibadges-'+safeKey);
-    if(badges&&!badges.querySelector('.shared')){badges.innerHTML+='<div class="img-badge shared"><i class="fas fa-check"></i></div>';}
-    const card=btn?.closest('.img-card');
-    if(card)card.classList.add('was-shared');
+    const file = new File([blob], randName('png'), { type: 'image/png' });
+    if (navigator.share) {
+      if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: `VDO Image ${idx + 1}` });
+      else await navigator.share({ title: `VDO Image ${idx + 1}`, text: 'Generated with VDO' });
+    } else { trigDl(blob, randName('png')); }
     toast('Shared ✓');
-  } catch(e){ if(e.name!=='AbortError') toast('⚠️ '+e.message); }
-  finally { if(btn){btn.classList.remove('saving');btn.innerHTML='<i class="fas fa-share-nodes"></i> Share';} }
+  } catch(e) { if (e.name !== 'AbortError') toast('⚠️ ' + e.message); }
 }
 
-async function dlOne(jobId,idx){
-  const safeKey = _cardSafeKey(jobId,idx);
-  const btn=$('dl-'+safeKey);
-  if(btn){btn.classList.add('saving');btn.innerHTML='<i class="fas fa-circle-notch spin"></i>';}
-  const blob=_getBlob(jobId,idx);
-  if(blob){
-    trigDl(blob,randName('png'));
-    const badges=$('ibadges-'+safeKey);
-    if(badges&&!badges.querySelector('.saved')){badges.innerHTML+='<div class="img-badge saved"><i class="fas fa-check"></i></div>';}
-    const card=btn?.closest('.img-card');
-    if(card)card.classList.add('was-saved');
-    toast('Saved ✓');
-  } else toast('⚠️ Image not ready');
-  if(btn){btn.classList.remove('saving');btn.innerHTML='<i class="fas fa-download"></i> Save';}
+function dlOne(jobId, idx) {
+  const blob = _getBlob(jobId, idx); if (!blob) { toast('⚠️ Image not ready'); return; }
+  trigDl(blob, randName('png')); toast('Saved ✓');
 }
 
-function openFull(jobId,idx){
-  const blob=_getBlob(jobId,idx); if(!blob)return;
-  const url=URL.createObjectURL(blob); window.open(url,'_blank');
+function openFull(jobId, idx) {
+  const blob = _getBlob(jobId, idx); if (!blob) return;
+  window.open(URL.createObjectURL(blob), '_blank');
 }
 
-async function dlAll(jobId,count){
-  const safeJobId=_safeId(jobId);
-  const btn=$('dla-'+safeJobId);
-  if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch spin"></i> Saving…';}
-  let done=0;
-  for(let i=0;i<count;i++){
-    const b=_getBlob(jobId,i);
-    if(b){trigDl(b,randName('png'));done++;await new Promise(r=>setTimeout(r,380));}
+async function dlAll(jobId, count) {
+  const btn = document.querySelector(`[onclick*="dlAll('${safeId(jobId)}"`);
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-circle-notch spin"></i> Saving…'; }
+  let done = 0;
+  for (let i = 0; i < count; i++) {
+    const b = _getBlob(jobId, i);
+    if (b) { trigDl(b, randName('png')); done++; await sleep(380); }
   }
-  if(btn){btn.disabled=false;btn.innerHTML=`<i class="fas fa-cloud-arrow-down"></i> Download All (${count})`;}
+  if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fas fa-cloud-arrow-down"></i> Download All (${count})`; }
   toast(`Downloaded ${done} of ${count} images ✓`);
 }
 
-function trigDl(blob,name){ const url=URL.createObjectURL(blob),a=Object.assign(document.createElement('a'),{href:url,download:name}); document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url); }
+function trigDl(blob, name) {
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
 
-/* ═══ HISTORY ═══ */
-function openHistory(){ renderHist(getHist()); $('hist-panel').classList.add('open'); }
-function closeHistory(){ $('hist-panel').classList.remove('open'); }
-function renderHist(h){
-  const list=$('hist-list');
-  if(!h||!h.length){ list.innerHTML='<div class="hist-empty"><div class="hist-empty-icon">📭</div><div class="hist-empty-txt">No history yet</div></div>'; return; }
-  list.innerHTML=h.map(e=>{
-    const d=new Date(e.ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    const sc=e.status==='done'?'ok':e.status==='error'?'err':'';
-    const st=e.status==='done'?'Complete':e.status==='error'?'Failed':'In progress';
-    const promptLine=e.prompt?`<div class="hist-item-prompt">"${xe(e.prompt.slice(0,60))}${e.prompt.length>60?'…':''}"</div>`:'';
-    return `<div class="hist-item" onclick="loadSess('${xe(e.jobId)}')">
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ════════════════════════════════════════════════════════════════════════
+// HISTORY PANEL
+// ════════════════════════════════════════════════════════════════════════
+function openHistory() {
+  renderHistList(_sessions);
+  $('hist-panel').classList.add('open');
+  // Refresh from GitHub in background
+  if (_user) remoteLoadSessions(_user.id).then(remote => {
+    const inFlight = _sessions.filter(s => s.status === 'generating' || s.status === 'queued');
+    const inFlightIds = new Set(inFlight.map(s => s.jobId));
+    _sessions = [...inFlight, ...remote.filter(s => !inFlightIds.has(s.jobId))]
+                  .map(s => ({ ...s, pollInterval: s.pollInterval || null }));
+    renderHistList(_sessions);
+    renderSessionBar();
+  });
+}
+
+function closeHistory() { $('hist-panel').classList.remove('open'); }
+
+function renderHistList(sessions) {
+  const list = $('hist-list');
+  if (!sessions?.length) {
+    list.innerHTML = '<div class="hist-empty"><div class="hist-empty-icon">📭</div><div class="hist-empty-txt">No history yet</div></div>';
+    return;
+  }
+  list.innerHTML = sessions.map(e => {
+    const d = new Date(e.ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const sc = e.status === 'done' ? 'ok' : e.status === 'error' ? 'err' : '';
+    const stLabel = e.status === 'done' ? '✓ Complete' : e.status === 'error' ? '✗ Failed' : '⏳ In progress';
+    const perm = e.imageUrls?.length > 0;
+    const promptLine = e.prompt ? `<div class="hist-item-prompt">"${xe(e.prompt.slice(0, 55))}${e.prompt.length > 55 ? '…' : ''}"</div>` : '';
+    return `<div class="hist-item" onclick="loadHistSess('${xe(e.jobId)}')">
       <div class="hist-item-top">
         <div class="hist-item-date">${d}</div>
         <div style="display:flex;align-items:center;gap:6px">
-          <span class="hist-item-badge img">Image</span>
-          <button class="hist-item-del" onclick="delSess(event,'${xe(e.jobId)}')"><i class="fas fa-trash-can"></i></button>
+          ${perm ? '<span class="hist-perm-badge">💾 Permanent</span>' : ''}
+          <button class="hist-item-del" onclick="delHistSess(event,'${xe(e.jobId)}')"><i class="fas fa-trash-can"></i></button>
         </div>
       </div>
       ${promptLine}
-      <div class="hist-item-label">${xe(e.label||'')}</div>
-      <div class="hist-item-status ${sc}">${st}</div>
+      <div class="hist-item-label">${xe(e.label || '')}</div>
+      <div class="hist-item-status ${sc}">${stLabel}${e.imageUrls?.length ? ` · ${e.imageUrls.length} images` : ''}</div>
     </div>`;
   }).join('');
 }
-async function loadSess(jobId){
-  closeHistory();
-  const existing=getSession(jobId); if(existing){ onChipClick(jobId); return; }
-  const h=getHist().find(e=>e.jobId===jobId); if(!h){ toast('⚠️ Session not found'); return; }
-  const s={jobId,prompt:h.prompt||h.label||'',label:h.label||'',ts:h.ts||Date.now(),status:h.status||'done',done:h.pngCount||h.done||0,total:h.pngCount||h.total||0,seenCount:0};
-  _sessions.unshift(s); saveSessions(); renderSessionBar(); onChipClick(jobId);
-}
-function delSess(e,jid){ e.stopPropagation(); delHist(jid); removeSession(jid); removeImgsFromStore(jid); renderHist(getHist()); renderSessionBar(); }
 
-/* ═══ UTILS ═══ */
-function $(id){ return document.getElementById(id); }
-function xe(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function msgs(){ return $('ch-msgs'); }
-function hideEmpty(){ const e=$('ch-empty'); if(e) e.style.display='none'; }
-function clearChat(){
-  const m=msgs(); m.innerHTML='';
-  const e=document.createElement('div'); e.className='ch-empty'; e.id='ch-empty';
-  e.innerHTML='<div class="ch-empty-icon">✨</div><div class="ch-empty-title">Ready to create</div><div class="ch-empty-sub">Paste your zodiac content below and hit send.</div>';
+async function loadHistSess(jobId) {
+  closeHistory();
+  // Check if already in memory
+  const existing = getSession(jobId);
+  if (existing) { onChipClick(jobId); return; }
+  // Try to rebuild from remote
+  const remote = await remoteLoadSessions(_user.id).catch(() => []);
+  const found = remote.find(e => e.jobId === jobId);
+  if (!found) { toast('⚠️ Session not found'); return; }
+  upsertSession({ ...found, pollInterval: null });
+  renderSessionBar();
+  onChipClick(jobId);
+}
+
+async function delHistSess(e, jobId) {
+  e.stopPropagation();
+  deleteSession(jobId);
+  lsRemoveImgs(jobId);
+  renderHistList(_sessions);
+  renderSessionBar();
+  await remoteDeleteSession(jobId);
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════════════════════════
+function $(id) { return document.getElementById(id); }
+function xe(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function msgs() { return $('ch-msgs'); }
+function hideEmpty() { const e = $('ch-empty'); if (e) e.style.display = 'none'; }
+function clearChat() {
+  const m = msgs(); m.innerHTML = '';
+  const e = document.createElement('div'); e.className = 'ch-empty'; e.id = 'ch-empty';
+  e.innerHTML = '<div class="ch-empty-icon">✨</div><div class="ch-empty-title">Ready to create</div><div class="ch-empty-sub">Paste zodiac content in any language — EN NL FR DE ES IT PL 中文 SV</div>';
   m.appendChild(e);
 }
-function scrollDown(){ const m=msgs(); requestAnimationFrame(()=>{ m.scrollTop=m.scrollHeight; }); }
-function resize(ta){ ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,140)+'px'; }
-function mkEl(tag,cls,text){ const d=document.createElement(tag); d.className=cls; d.textContent=text; msgs().appendChild(d); }
-let _toast;
-function toast(m){ const t=$('toast'); t.innerHTML=`<i class="fas fa-circle-check" style="color:var(--gn)"></i>${xe(m)}`; t.style.display='flex'; clearTimeout(_toast); _toast=setTimeout(()=>t.style.display='none',2800); }
+function scrollDown() { const m = msgs(); requestAnimationFrame(() => { m.scrollTop = m.scrollHeight; }); }
+function resize(ta) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; }
+function mkEl(tag, cls, text) { const d = document.createElement(tag); d.className = cls; d.textContent = text; msgs().appendChild(d); }
+function safeId(s) { return (s || '').replace(/[^a-zA-Z0-9_-]/g, '_'); }
+let _toastT;
+function toast(m) {
+  const t = $('toast'); t.innerHTML = `<i class="fas fa-circle-check" style="color:var(--gn)"></i>${xe(m)}`;
+  t.style.display = 'flex'; clearTimeout(_toastT); _toastT = setTimeout(() => t.style.display = 'none', 2800);
+}
 
-/* ═══ INIT ═══ */
+// ════════════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-  try {
-    const s = localStorage.getItem(LS_U);
-    if (s) { _user = JSON.parse(s); enterApp(); }
-  } catch {}
+  // Auto-login from cached credentials
+  try { const u = localStorage.getItem(LS_USER); if (u) { _user = JSON.parse(u); enterApp(); } } catch {}
+
   const ta = $('ch-ta');
   if (ta) {
     ta.addEventListener('input', () => resize(ta));
-    ta.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } });
+    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } });
   }
 });
 </script>
