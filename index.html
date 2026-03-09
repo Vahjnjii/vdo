@@ -409,39 +409,36 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;b
 
 <!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<!-- fflate: fast, reliable ZIP extraction (replaces buggy custom parser) -->
+<!-- fflate: fast ZIP extraction -->
 <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
 
 <script>'use strict';
 
-const CFG = {
-  worker: 'https://vdo.shreevathsa2k21-4fa.workers.dev',
-};
+const CFG = { worker: 'https://vdo.shreevathsa2k21-4fa.workers.dev' };
 
 /* ═══ STATE ═══ */
 let _user = null;
 let _models = [], _activeModel = '', _selectedModel = '';
-const _svgs = {}, _titles = {};
-// _pngs = in-memory blob cache (fast access during session)
-// _imgStore = persistent base64 store (survives logout/login)
-const _pngs = {};
+const _pngs = {};        // in-memory blob cache: key = "jobId:idx"
 const LS_U = 'vdo_v1_user';
 const MAX_ACTIVE = 6;
 let _sessions = [];
 let _activeJobId = null;
 
+// ─── Per-job poll guard: prevents concurrent doPoll() calls for the same job
+// BUG-FIX: setInterval doesn't await async functions, so if doPoll takes >3s
+// two calls run simultaneously. This flag blocks re-entry per job.
+const _pollInFlight = {};
+
 function uKey(s){ return _user ? 'vdo_'+_user.id+'_'+s : 'vdo_anon_'+s; }
 
 /* ─── Persistent image store ─── */
-// Saves PNG blobs as base64 strings in localStorage so images survive
-// logout/login. Key: "vdo_{userId}_imgs_{jobId}"
 function imgStoreKey(jobId){ return uKey('imgs_'+jobId); }
 
 function saveImgsToStore(jobId, blobs) {
-  // Convert blobs → base64 array and persist
   const promises = blobs.map(blob => new Promise(res => {
     const fr = new FileReader();
-    fr.onload = () => res(fr.result); // data:image/png;base64,...
+    fr.onload = () => res(fr.result);
     fr.readAsDataURL(blob);
   }));
   Promise.all(promises).then(b64arr => {
@@ -452,7 +449,6 @@ function saveImgsToStore(jobId, blobs) {
 }
 
 function loadImgsFromStore(jobId) {
-  // Returns array of Blob objects from stored base64, or []
   try {
     const raw = localStorage.getItem(imgStoreKey(jobId));
     if (!raw) return [];
@@ -547,15 +543,24 @@ function enterApp() {
   const h = new Date().getHours();
   $('greet').textContent = `${h<12?'Good morning':h<17?'Good afternoon':'Good evening'}, ${n} 👋`;
   _sessions = loadSessions();
-  _sessions.forEach(s => { if (s.status === 'generating') startPolling(s.jobId); });
+  // Resume any in-progress sessions — restart polling for 'generating' ones
+  _sessions.forEach(s => {
+    if (s.status === 'generating') {
+      s.pollInterval = null; // reset stale interval reference from localStorage
+      startPolling(s.jobId);
+    }
+  });
   renderSessionBar();
-  // Silently load model label
   fetch(CFG.worker + '/models').then(r=>r.json()).then(d=>{ _models=d.models||[]; _activeModel=d.active||''; updateNavLabel(); }).catch(()=>{});
   show('templates');
 }
 
 function signOut() {
-  _sessions.forEach(s => { if (s.pollInterval) { clearInterval(s.pollInterval); s.pollInterval=null; } });
+  // Stop all polls cleanly before clearing state
+  _sessions.forEach(s => {
+    if (s.pollInterval) { clearInterval(s.pollInterval); s.pollInterval=null; }
+    delete _pollInFlight[s.jobId];
+  });
   _sessions = [];
   $('so-menu').classList.remove('open');
   if (window.google?.accounts?.oauth2) { try { window.google.accounts.oauth2.revoke(); } catch {} }
@@ -619,14 +624,19 @@ async function applyModel() {
   const btn = $('model-apply-btn');
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
-    const r = await fetch(CFG.worker + '/set-model', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ model: _selectedModel }) });
+    const r = await fetch(CFG.worker + '/set-model', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model: _selectedModel })
+    });
     const d = await r.json();
     if (!d.ok) throw new Error(d.error || 'Failed');
-    _activeModel = _selectedModel; renderModelList(); updateNavLabel();
+    _activeModel = _selectedModel;
+    renderModelList(); updateNavLabel();
     toast('✓ Model switched to ' + labelFor(_activeModel));
     setTimeout(() => closeModelSheet(), 800);
   } catch(e) {
-    toast('⚠️ ' + e.message); btn.disabled = false; btn.textContent = 'Apply — ' + labelFor(_selectedModel);
+    toast('⚠️ ' + e.message);
+    btn.disabled = false; btn.textContent = 'Apply — ' + labelFor(_selectedModel);
   }
 }
 
@@ -646,10 +656,7 @@ function show(id) {
   $('screen-' + id).classList.add('active');
   if (id === 'chat') scrollDown();
 }
-
-function openTemplate() {
-  _activeJobId = null; clearChat(); show('chat');
-}
+function openTemplate() { _activeJobId = null; clearChat(); show('chat'); }
 
 /* ═══ SESSION SYSTEM ═══ */
 function sessKey(){ return uKey('sessions'); }
@@ -658,7 +665,13 @@ function saveSessions(){ const save=_sessions.map(({pollInterval,...r})=>r); try
 function getSession(jid){ return _sessions.find(s=>s.jobId===jid); }
 function addSession(s){ _sessions.unshift(s); saveSessions(); }
 function updateSession(jid,upd){ const s=getSession(jid); if(s){Object.assign(s,upd);saveSessions();} }
-function removeSession(jid){ const s=getSession(jid); if(s?.pollInterval)clearInterval(s.pollInterval); _sessions=_sessions.filter(x=>x.jobId!==jid); saveSessions(); }
+function removeSession(jid){
+  const s=getSession(jid);
+  if(s?.pollInterval) clearInterval(s.pollInterval);
+  delete _pollInFlight[jid];
+  _sessions=_sessions.filter(x=>x.jobId!==jid);
+  saveSessions();
+}
 
 function histKey(){ return uKey('hist'); }
 function getHist(){ try{return JSON.parse(localStorage.getItem(histKey())||'[]');}catch{return[];} }
@@ -681,6 +694,7 @@ function renderSessionBar(){
 }
 
 function countActive(){ return _sessions.filter(s=>s.status==='generating').length; }
+
 function processQueue(){
   let active=countActive();
   const toStart=[];
@@ -702,19 +716,23 @@ async function _kickGeneration(jobId) {
     if (!r.ok) throw new Error(d.error || `Trigger failed ${r.status}`);
     updateSession(jobId, { run_token: d.run_token });
     startPolling(jobId);
-    // Timeout guard 3min
+
+    // BUG-FIX: Timeout guard now checks status AFTER the delay.
+    // If already 'done' or 'error' by then, do nothing.
+    // Only fires if genuinely still stuck in 'generating' state.
     setTimeout(() => {
       const ss = getSession(jobId);
-      if (ss && ss.status === 'generating') {
-        if (Date.now() - ss.ts > 180000) {
-          clearInterval(ss.pollInterval); ss.pollInterval = null;
-          updateSession(jobId, { status:'error', errorMsg:'Timed out after 3 minutes.' });
-          updateHist(jobId, { status:'error' });
-          if (_activeJobId === jobId) { updateGroupHd(jobId, 0, 0, 'error'); addErrMsg('No response from GitHub Actions after 3 minutes.'); }
-          renderSessionBar(); processQueue();
-        }
-      }
-    }, 180000);
+      if (!ss || ss.status !== 'generating') return; // already resolved — skip
+      if (Date.now() - ss.ts < 180000) return; // somehow fired early — skip
+      // Truly timed out
+      if (ss.pollInterval) { clearInterval(ss.pollInterval); ss.pollInterval = null; }
+      delete _pollInFlight[jobId];
+      updateSession(jobId, { status:'error', errorMsg:'Timed out after 3 minutes.' });
+      updateHist(jobId, { status:'error' });
+      if (_activeJobId === jobId) { updateGroupHd(jobId, 0, 0, 'error'); addErrMsg('No response from GitHub Actions after 3 minutes.'); }
+      renderSessionBar(); processQueue();
+    }, 185000); // 3min + 5s buffer
+
   } catch(e) {
     updateSession(jobId, { status:'error', errorMsg: e.message });
     updateHist(jobId, { status:'error' });
@@ -728,8 +746,17 @@ async function _kickGeneration(jobId) {
 function startPolling(jobId) {
   const s = getSession(jobId); if (!s) return;
   if (s.pollInterval) clearInterval(s.pollInterval);
+  delete _pollInFlight[jobId];
+
+  // BUG-FIX: Use a wrapper that blocks concurrent doPoll() calls for the same job.
+  // setInterval doesn't await async functions — if one poll takes >3s,
+  // the next fires before the first finishes, creating race conditions.
   const iv = setInterval(() => {
-    doPoll(jobId);
+    if (_pollInFlight[jobId]) return; // previous poll still in flight — skip tick
+    _pollInFlight[jobId] = true;
+    doPoll(jobId).finally(() => { delete _pollInFlight[jobId]; });
+
+    // Update the status header display while polling
     const sess = getSession(jobId);
     if (sess && sess.status === 'generating' && _activeJobId === jobId) {
       const hd = $('ghd-' + jobId);
@@ -737,6 +764,7 @@ function startPolling(jobId) {
         updateGroupHd(jobId, sess.done||0, sess.total||0, 'processing');
     }
   }, 3000);
+
   s.pollInterval = iv;
   if (_activeJobId === jobId) updateGroupHd(jobId, 0, 0, 'processing');
 }
@@ -746,56 +774,61 @@ async function doPoll(jobId) {
   if (!s || s.status !== 'generating') return;
 
   try {
-    // ── Step 1: find the GitHub run_id by polling recent runs ──────────────
+    // Step 1: find the GitHub run_id
     if (!s.run_id) {
       const r = await fetch(CFG.worker + '/poll?run_token=' + encodeURIComponent(s.run_token || '') + '&t=' + Date.now());
       if (!r.ok) return;
       const d = await r.json();
       if (!d.found) return;
       updateSession(jobId, { run_id: d.run_id });
-      return; // next tick will have run_id
+      return;
     }
 
-    // ── Step 2: check if run completed ─────────────────────────────────────
+    // Step 2: check if run completed
     const r2 = await fetch(CFG.worker + '/status?run_id=' + s.run_id);
     if (!r2.ok) return;
     const st = await r2.json();
-    if (st.status !== 'completed') return; // still running — keep polling
+    if (st.status !== 'completed') return;
 
-    // ── Run is completed — stop polling NOW ─────────────────────────────────
+    // Run is completed — stop polling immediately and mark
+    // BEFORE async download so the interval can't re-enter.
     clearInterval(s.pollInterval);
     s.pollInterval = null;
-    updateSession(jobId, { downloaded: true }); // prevent re-entry
+    delete _pollInFlight[jobId];
 
     if (st.conclusion !== 'success') {
-      updateSession(jobId, { status: 'error', errorMsg: 'GitHub Actions failed. Check your repo Actions tab.' });
+      // BUG-FIX: update status BEFORE calling renderSessionBar/addErrMsg
+      // so UI reflects final error state consistently
+      updateSession(jobId, { status: 'error', errorMsg: 'GitHub Actions workflow failed.' });
       updateHist(jobId, { status: 'error' });
-      if (_activeJobId === jobId) { updateGroupHd(jobId, 0, 0, 'error'); addErrMsg('Workflow failed. Check GitHub Actions tab.'); }
+      if (_activeJobId === jobId) { updateGroupHd(jobId, 0, 0, 'error'); addErrMsg('Workflow failed. Check your GitHub Actions tab for details.'); }
       renderSessionBar(); processQueue();
       return;
     }
 
-    // ── Step 3: get artifact id ─────────────────────────────────────────────
+    // Step 3: get artifact
     const r3 = await fetch(CFG.worker + '/artifacts?run_id=' + s.run_id);
     if (!r3.ok) {
       const errTxt = await r3.text();
-      throw new Error('Artifacts fetch failed: ' + r3.status + ' ' + errTxt);
+      throw new Error('Artifacts fetch failed: ' + r3.status + ' — ' + errTxt);
     }
     const art = await r3.json();
     if (!art.artifact_id) throw new Error('No artifact found — did the workflow upload images?');
 
     updateSession(jobId, { artifact_id: art.artifact_id });
 
-    // ── Step 4: download zip ────────────────────────────────────────────────
+    // Step 4: download
+    // BUG-FIX: don't set downloaded:true before success.
+    // downloadAndShowImages handles its own error path.
     await downloadAndShowImages(jobId, art.artifact_id);
     renderSessionBar();
     processQueue();
 
   } catch(e) {
-    // Only mark error if we haven't already completed
     const cur = getSession(jobId);
     if (cur && cur.status === 'generating') {
-      clearInterval(cur.pollInterval); cur.pollInterval = null;
+      if (cur.pollInterval) { clearInterval(cur.pollInterval); cur.pollInterval = null; }
+      delete _pollInFlight[jobId];
       updateSession(jobId, { status: 'error', errorMsg: e.message });
       updateHist(jobId, { status: 'error' });
       if (_activeJobId === jobId) { updateGroupHd(jobId, 0, 0, 'error'); addErrMsg('Error: ' + e.message); }
@@ -807,44 +840,51 @@ async function doPoll(jobId) {
 async function downloadAndShowImages(jobId, artifactId) {
   try {
     const r = await fetch(CFG.worker + '/download?artifact_id=' + artifactId);
-    if (!r.ok) throw new Error('Download failed ' + r.status);
+    if (!r.ok) throw new Error('Download failed: HTTP ' + r.status);
     const zipBuf = await r.arrayBuffer();
     const pngs = await extractPNGsFromZip(zipBuf);
-    if (!pngs.length) throw new Error('No images found in artifact');
+    if (!pngs.length) throw new Error('No images found in artifact ZIP');
 
+    // Cache in memory
+    pngs.forEach((blob, i) => { _pngs[jobId + ':' + i] = blob; });
+
+    // Persist to localStorage for history restore
+    saveImgsToStore(jobId, pngs);
+
+    // Mark done
     updateSession(jobId, { status:'done', done: pngs.length, total: pngs.length });
     updateHist(jobId, { status:'done', done: pngs.length, total: pngs.length, pngCount: pngs.length });
 
-    // Cache blobs in memory AND persist to localStorage as base64
-    if (!_titles[jobId]) _titles[jobId] = [];
-    pngs.forEach((blob, i) => { _pngs[jobId + ':' + i] = blob; });
-    saveImgsToStore(jobId, pngs); // ← persist so history restore works after logout
-
+    // Render to UI only if this is the currently active job
     if (_activeJobId === jobId) {
       pngs.forEach((blob, i) => addImgCard(jobId, blob, i));
       updateGroupHd(jobId, pngs.length, pngs.length, 'done');
       scrollDown();
     }
   } catch(e) {
+    // BUG-FIX: properly propagate error — caller (doPoll) handles UI update
     updateSession(jobId, { status:'error', errorMsg: e.message });
     updateHist(jobId, { status:'error' });
     if (_activeJobId === jobId) { updateGroupHd(jobId, 0, 0, 'error'); addErrMsg('Could not load images: ' + e.message); }
+    throw e; // re-throw so doPoll's catch block can log if needed
   }
 }
 
-// ZIP extraction using fflate (reliable — handles GitHub's artifact ZIP format,
-// data descriptors, and large files where the old parser broke due to JS signed
-// integer overflow: `bytes[i+21]<<24` goes negative for PNGs larger than ~2MB,
-// producing a negative compSize → empty slice → "No images found in artifact").
+// ─── ZIP extraction using fflate (reliable, handles GitHub artifact ZIP format)
 async function extractPNGsFromZip(buf) {
   return new Promise((resolve, reject) => {
     if (typeof fflate === 'undefined') {
-      // fflate not loaded yet — fall back to built-in DecompressionStream parser
-      resolve(_extractPNGsFallback(buf));
+      // fflate CDN failed — fall back to built-in parser
+      _extractPNGsFallback(buf).then(resolve).catch(reject);
       return;
     }
     fflate.unzip(new Uint8Array(buf), (err, files) => {
-      if (err) { reject(new Error('ZIP extraction failed: ' + err.message)); return; }
+      if (err) {
+        // fflate failed — try fallback before giving up
+        console.warn('fflate failed, trying fallback:', err.message);
+        _extractPNGsFallback(buf).then(resolve).catch(() => reject(new Error('ZIP extraction failed: ' + err.message)));
+        return;
+      }
       const pngs = Object.keys(files)
         .filter(name => name.toLowerCase().endsWith('.png') && files[name].length > 0)
         .sort()
@@ -854,34 +894,27 @@ async function extractPNGsFromZip(buf) {
   });
 }
 
-// Fallback ZIP parser (used only if fflate CDN fails to load).
-// FIX vs original: uses `>>> 0` to force unsigned 32-bit integers so that
-// compSize is never negative for PNGs larger than ~2MB.
+// Fallback ZIP parser with unsigned 32-bit fix
 async function _extractPNGsFallback(buf) {
   const bytes = new Uint8Array(buf);
   const entries = [];
   let i = 0;
-
   while (i < bytes.length - 4) {
     if (bytes[i]===0x50 && bytes[i+1]===0x4b && bytes[i+2]===0x03 && bytes[i+3]===0x04) {
       const compression = (bytes[i+8]  | (bytes[i+9]  << 8)) >>> 0;
-      // >>> 0 forces unsigned 32-bit — without this, <<24 on bytes ≥0x80 goes negative
       const compSize    = (bytes[i+18] | (bytes[i+19]<<8) | (bytes[i+20]<<16) | (bytes[i+21]<<24)) >>> 0;
       const fnLen       = (bytes[i+26] | (bytes[i+27]<<8)) >>> 0;
       const extraLen    = (bytes[i+28] | (bytes[i+29]<<8)) >>> 0;
       const fname       = new TextDecoder().decode(bytes.slice(i+30, i+30+fnLen));
       const dataOffset  = i + 30 + fnLen + extraLen;
       const compData    = bytes.slice(dataOffset, dataOffset + compSize);
-
       if (fname.toLowerCase().endsWith('.png') && compSize > 0) {
         entries.push({ fname, compression, compData });
       }
       i = dataOffset + Math.max(compSize, 1);
     } else { i++; }
   }
-
-  entries.sort((a, b) => a.fname.localeCompare(b.fname));
-
+  entries.sort((a,b) => a.fname.localeCompare(b.fname));
   const pngs = [];
   for (const entry of entries) {
     try {
@@ -894,15 +927,13 @@ async function _extractPNGsFallback(buf) {
         const reader = ds.readable.getReader();
         writer.write(entry.compData);
         writer.close();
-        const chunks = [];
-        let totalLen = 0;
+        const chunks = []; let totalLen = 0;
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           chunks.push(value); totalLen += value.length;
         }
-        const out = new Uint8Array(totalLen);
-        let off = 0;
+        const out = new Uint8Array(totalLen); let off = 0;
         for (const chunk of chunks) { out.set(chunk, off); off += chunk.length; }
         data = out;
       } else { continue; }
@@ -922,13 +953,11 @@ function onChipClick(jobId) {
 
   const count = s.done || 0;
   if (count > 0) {
-    // Try in-memory first; fall back to localStorage base64 store
     let blobs = [];
     for (let i = 0; i < count; i++) {
       if (_pngs[jobId + ':' + i]) blobs.push(_pngs[jobId + ':' + i]);
     }
     if (blobs.length < count) {
-      // Not all in memory — reload from persistent store
       const stored = loadImgsFromStore(jobId);
       if (stored.length) {
         stored.forEach((blob, i) => { _pngs[jobId + ':' + i] = blob; });
@@ -938,8 +967,9 @@ function onChipClick(jobId) {
     blobs.forEach((blob, i) => addImgCard(jobId, blob, i));
   }
 
-  updateGroupHd(jobId, s.done||0, s.total||0, s.status==='done'?'done':s.status==='error'?'error':'processing');
-  if (s.status === 'error') addErrMsg(s.errorMsg || 'Failed.');
+  const hdStatus = s.status==='done' ? 'done' : s.status==='error' ? 'error' : 'processing';
+  updateGroupHd(jobId, s.done||0, s.total||0, hdStatus);
+  if (s.status === 'error') addErrMsg(s.errorMsg || 'Generation failed.');
   scrollDown();
 }
 
@@ -980,15 +1010,17 @@ function addImgGroup(jobId){
   msgs().appendChild(d);
 }
 
-function updateGroupHd(jobId,done,total,status){
-  const hd=$('ghd-'+jobId); if(!hd)return;
-  const j=xe(jobId);
-  const safeJ=(jobId).replace(/[^a-zA-Z0-9_-]/g,'_');
+function _safeId(jobId){ return jobId.replace(/[^a-zA-Z0-9_-]/g,'_'); }
+
+function updateGroupHd(jobId, done, total, status){
+  const hd = $('ghd-'+jobId); if(!hd)return;
+  const safeJ = _safeId(jobId);
   if(status==='done'){
     hd.innerHTML=`<div class="group-hd-l"><i class="fas fa-check-circle" style="color:var(--gn);font-size:15px"></i><span style="color:var(--gn);font-weight:700">${done} image${done!==1?'s':''} ready ✓</span></div><button class="dl-all-btn" id="dla-${safeJ}" onclick="dlAll('${safeJ}',${done})"><i class="fas fa-cloud-arrow-down"></i> Download All (${done})</button>`;
   } else if(status==='error'){
     const s=getSession(jobId);
-    hd.innerHTML=`<div class="group-hd-l"><i class="fas fa-circle-exclamation" style="color:var(--rd)"></i><span style="color:var(--rd);font-weight:600">Failed — ${xe(s?.errorMsg||'Generation failed.')}</span></div>`;
+    const msg = s?.errorMsg || 'Generation failed.';
+    hd.innerHTML=`<div class="group-hd-l"><i class="fas fa-circle-exclamation" style="color:var(--rd)"></i><span style="color:var(--rd);font-weight:600">Failed — ${xe(msg)}</span></div>`;
   } else if(status==='processing'){
     if(total>0){
       const pct=Math.round((done/total)*100);
@@ -1003,23 +1035,13 @@ function updateGroupHd(jobId,done,total,status){
   }
 }
 
-// Card registry: maps card element → {jobId, idx} so onclick handlers
-// don't need to embed jobId in HTML attributes (avoids escaping bugs).
-const _cardRegistry = new Map();
-
 function addImgCard(jobId, blob, idx){
   const row=$('row-'+jobId); if(!row)return;
-  // Revoke any old object URL for this slot before creating new one
-  const oldCard = $('card-'+jobId+'::'+idx);
-  if(oldCard) oldCard.remove();
-
   const url = URL.createObjectURL(blob);
-  const cardKey = jobId+'::'+idx;
-  const safeKey = cardKey.replace(/[^a-zA-Z0-9_-]/g,'_');
+  const safeKey = _safeId(jobId+'__'+idx);
   const card=document.createElement('div');
   card.className='img-card'; card.id='card-'+safeKey;
   card.style.animationDelay=(idx%6*60)+'ms';
-  // Store jobId+idx in dataset — no HTML escaping issues
   card.dataset.jobId = jobId;
   card.dataset.idx = idx;
 
@@ -1043,7 +1065,6 @@ function addImgCard(jobId, blob, idx){
       </div>
     </div>`;
 
-  // Attach event listeners using dataset — safe, no escaping needed
   card.querySelectorAll('[data-action]').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
@@ -1063,7 +1084,6 @@ function addImgCard(jobId, blob, idx){
 function randName(ext){ const a=new Uint32Array(1); crypto.getRandomValues(a); return 'vdo_'+(( a[0]%900000000)+100000000)+'.'+ext; }
 
 function _getBlob(jobId, idx) {
-  // Try memory first, then load all from persistent store if missing
   let blob = _pngs[jobId+':'+idx];
   if (!blob) {
     const stored = loadImgsFromStore(jobId);
@@ -1075,17 +1095,11 @@ function _getBlob(jobId, idx) {
   return blob || null;
 }
 
-function _cardBtn(jobId, idx, action) {
-  const safeKey = (jobId+'::'+idx).replace(/[^a-zA-Z0-9_-]/g,'_');
-  if(action==='share') return $('share-'+safeKey);
-  if(action==='save')  return $('dl-'+safeKey);
-  if(action==='view')  return $('cp-'+safeKey);
-  if(action==='badges') return $('ibadges-'+safeKey);
-  return null;
-}
+function _cardSafeKey(jobId, idx) { return _safeId(jobId+'__'+idx); }
 
 async function shareImg(jobId,idx){
-  const btn=_cardBtn(jobId,idx,'share');
+  const safeKey = _cardSafeKey(jobId,idx);
+  const btn=$('share-'+safeKey);
   if(btn){btn.classList.add('saving');btn.innerHTML='<i class="fas fa-circle-notch spin"></i> Sharing…';}
   try {
     const blob=_getBlob(jobId,idx); if(!blob)throw new Error('Image not ready');
@@ -1094,8 +1108,7 @@ async function shareImg(jobId,idx){
       if(navigator.canShare&&navigator.canShare({files:[file]})) await navigator.share({files:[file],title:'VDO Image '+(idx+1)});
       else await navigator.share({title:'VDO Image '+(idx+1),text:'Generated with VDO'});
     } else { trigDl(blob,randName('png')); }
-    // Show shared badge on card
-    const badges=_cardBtn(jobId,idx,'badges');
+    const badges=$('ibadges-'+safeKey);
     if(badges&&!badges.querySelector('.shared')){badges.innerHTML+='<div class="img-badge shared"><i class="fas fa-check"></i></div>';}
     const card=btn?.closest('.img-card');
     if(card)card.classList.add('was-shared');
@@ -1105,12 +1118,13 @@ async function shareImg(jobId,idx){
 }
 
 async function dlOne(jobId,idx){
-  const btn=_cardBtn(jobId,idx,'save');
+  const safeKey = _cardSafeKey(jobId,idx);
+  const btn=$('dl-'+safeKey);
   if(btn){btn.classList.add('saving');btn.innerHTML='<i class="fas fa-circle-notch spin"></i>';}
   const blob=_getBlob(jobId,idx);
   if(blob){
     trigDl(blob,randName('png'));
-    const badges=_cardBtn(jobId,idx,'badges');
+    const badges=$('ibadges-'+safeKey);
     if(badges&&!badges.querySelector('.saved')){badges.innerHTML+='<div class="img-badge saved"><i class="fas fa-check"></i></div>';}
     const card=btn?.closest('.img-card');
     if(card)card.classList.add('was-saved');
@@ -1125,7 +1139,7 @@ function openFull(jobId,idx){
 }
 
 async function dlAll(jobId,count){
-  const safeJobId=(jobId).replace(/[^a-zA-Z0-9_-]/g,'_');
+  const safeJobId=_safeId(jobId);
   const btn=$('dla-'+safeJobId);
   if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch spin"></i> Saving…';}
   let done=0;
@@ -1178,7 +1192,12 @@ function $(id){ return document.getElementById(id); }
 function xe(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function msgs(){ return $('ch-msgs'); }
 function hideEmpty(){ const e=$('ch-empty'); if(e) e.style.display='none'; }
-function clearChat(){ const m=msgs(); m.innerHTML=''; const e=document.createElement('div'); e.className='ch-empty'; e.id='ch-empty'; e.innerHTML='<div class="ch-empty-icon">✨</div><div class="ch-empty-title">Ready to create</div><div class="ch-empty-sub">Paste your zodiac content below and hit send.</div>'; m.appendChild(e); }
+function clearChat(){
+  const m=msgs(); m.innerHTML='';
+  const e=document.createElement('div'); e.className='ch-empty'; e.id='ch-empty';
+  e.innerHTML='<div class="ch-empty-icon">✨</div><div class="ch-empty-title">Ready to create</div><div class="ch-empty-sub">Paste your zodiac content below and hit send.</div>';
+  m.appendChild(e);
+}
 function scrollDown(){ const m=msgs(); requestAnimationFrame(()=>{ m.scrollTop=m.scrollHeight; }); }
 function resize(ta){ ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,140)+'px'; }
 function mkEl(tag,cls,text){ const d=document.createElement(tag); d.className=cls; d.textContent=text; msgs().appendChild(d); }
