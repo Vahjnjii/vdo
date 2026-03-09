@@ -1,4 +1,5 @@
-const puppeteer = require('puppeteer');
+const puppeteer  = require('puppeteer');
+const { GoogleGenAI } = require('@google/genai');
 const fs   = require('fs');
 const path = require('path');
 
@@ -12,14 +13,14 @@ STRICT RULES:
 1. SEPARATION: Split input into individual posts.
 2. TITLE: First line of each post = Title. Remove ALL emojis from title. Keep wording EXACTLY as given.
 3. CONTENT:
-   - If line mentions 1 or 2 zodiac signs: keep on ONE line, start with emoji, bold the sign names. Example: "✨ **Aries**, **Taurus**: Your explanation here."
-   - If line mentions 3 or more zodiac signs: split into multiple lines. Line 1: emoji + sign names. Line 2: emoji + explanation. Line 3: empty string "".
+   - If line mentions 1 or 2 zodiac signs: keep on ONE line, start with emoji, bold the sign names with **. Example: "✨ **Aries**, **Taurus**: Your explanation here."
+   - If line mentions 3 or more zodiac signs: split into multiple lines. Line 1: emoji + sign names bolded. Line 2: emoji + explanation. Line 3: empty string "".
 4. Every content line MUST start with an emoji. Vary the emojis. Remove all # characters.
 
 Return ONLY a raw JSON object, no markdown, no backticks:
 {"posts":[{"title":"string","content":["string"]}]}`;
 
-// ── Ask Worker for a key, excluding already failed ones ───────────────────────
+// ── Ask Worker for a key, excluding already failed indices ────────────────────
 async function getKeyFromWorker(failedIndices) {
   const exclude = failedIndices.length ? `?exclude=${failedIndices.join(',')}` : '';
   const res = await fetch(`${WORKER_URL}/gemini-key${exclude}`);
@@ -27,53 +28,47 @@ async function getKeyFromWorker(failedIndices) {
   return await res.json();
 }
 
-// ── Call Gemini with a specific key ───────────────────────────────────────────
+// ── Call Gemini using same SDK pattern as working Python code ─────────────────
 async function callGemini(apiKey, text) {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: `${GEMINI_PROMPT}\n\nInput text to format:\n${text}` }]
-        }],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 8192
-        }
-      })
-    }
-  );
-
-  if (res.status === 429 || res.status === 403 || res.status === 400) {
-    const body = await res.text().catch(() => '');
-    return { ok: false, retryable: true, reason: `HTTP ${res.status}: ${body.slice(0,100)}` };
-  }
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    return { ok: false, retryable: false, reason: `HTTP ${res.status}: ${body.slice(0,100)}` };
-  }
-
-  const data = await res.json();
-  const raw  = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').replace(/```json|```/g,'').trim();
-
-  if (!raw) return { ok: false, retryable: true, reason: 'empty response from Gemini' };
-
   try {
+    // Exact same pattern: genai.Client(api_key=...) → client.models.generate_content(...)
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: `${GEMINI_PROMPT}\n\nInput text to format:\n${text}`,
+    });
+
+    const raw = (response.text || '').replace(/```json|```/g, '').trim();
+
+    if (!raw) return { ok: false, retryable: true, reason: 'empty response' };
+
     const s      = Math.min(...[raw.indexOf('{'), raw.indexOf('[')].filter(x => x !== -1));
     const e      = Math.max(raw.lastIndexOf('}'), raw.lastIndexOf(']'));
-    if (s === Infinity || e === -1) return { ok: false, retryable: true, reason: 'no JSON found in response' };
+    if (s === Infinity || e === -1) return { ok: false, retryable: true, reason: 'no JSON in response' };
+
     const parsed = JSON.parse(raw.substring(s, e + 1));
     const posts  = Array.isArray(parsed) ? parsed : (parsed.posts || []);
     if (!posts.length) return { ok: false, retryable: true, reason: '0 posts parsed' };
+
     return { ok: true, posts };
-  } catch (e) {
-    return { ok: false, retryable: true, reason: `JSON parse error: ${e.message}` };
+
+  } catch (err) {
+    const msg = err.message || '';
+    // Quota / rate limit → try next key
+    if (msg.includes('RESOURCE_EXHAUSTED') || msg.includes('429') || msg.includes('quota')) {
+      return { ok: false, retryable: true, reason: `Quota: ${msg.slice(0, 80)}` };
+    }
+    // Invalid key → try next key
+    if (msg.includes('API_KEY_INVALID') || msg.includes('403') || msg.includes('401')) {
+      return { ok: false, retryable: true, reason: `Auth: ${msg.slice(0, 80)}` };
+    }
+    // Unknown error → still try next key
+    return { ok: false, retryable: true, reason: `Error: ${msg.slice(0, 80)}` };
   }
 }
 
-// ── Rotate keys: ask Worker → call Gemini → repeat if failed ─────────────────
+// ── Rotate: ask Worker for key → call Gemini → repeat if failed ───────────────
 async function formatWithGemini(text) {
   const failedIndices = [];
 
@@ -94,12 +89,8 @@ async function formatWithGemini(text) {
     }
 
     console.log(`  ⚠️  Key [${keyData.index}] failed: ${result.reason}`);
-
-    if (!result.retryable) {
-      throw new Error(`Fatal error on key [${keyData.index}]: ${result.reason}`);
-    }
-
     failedIndices.push(keyData.index);
+
     await new Promise(r => setTimeout(r, 500));
   }
 }
