@@ -697,46 +697,66 @@ function startPolling(jobId) {
 }
 
 async function doPoll(jobId) {
-  const s = getSession(jobId); if (!s) return;
+  const s = getSession(jobId);
+  if (!s || s.status !== 'generating') return;
+
   try {
-    // Phase 1: find the run_id
+    // ── Step 1: find the GitHub run_id by polling recent runs ──────────────
     if (!s.run_id) {
       const r = await fetch(CFG.worker + '/poll?run_token=' + encodeURIComponent(s.run_token || '') + '&t=' + Date.now());
       if (!r.ok) return;
       const d = await r.json();
       if (!d.found) return;
       updateSession(jobId, { run_id: d.run_id });
-      return;
+      return; // next tick will have run_id
     }
-    // Phase 2: check run status
+
+    // ── Step 2: check if run completed ─────────────────────────────────────
     const r2 = await fetch(CFG.worker + '/status?run_id=' + s.run_id);
     if (!r2.ok) return;
     const st = await r2.json();
-    if (st.status !== 'completed') return;
-    // Phase 3: get artifact
-    if (!s.artifact_id) {
-      const r3 = await fetch(CFG.worker + '/artifacts?run_id=' + s.run_id);
-      if (!r3.ok) return;
-      const art = await r3.json();
-      if (!art.artifact_id) return;
-      updateSession(jobId, { artifact_id: art.artifact_id });
+    if (st.status !== 'completed') return; // still running — keep polling
+
+    // ── Run is completed — stop polling NOW ─────────────────────────────────
+    clearInterval(s.pollInterval);
+    s.pollInterval = null;
+    updateSession(jobId, { downloaded: true }); // prevent re-entry
+
+    if (st.conclusion !== 'success') {
+      updateSession(jobId, { status: 'error', errorMsg: 'GitHub Actions failed. Check your repo Actions tab.' });
+      updateHist(jobId, { status: 'error' });
+      if (_activeJobId === jobId) { updateGroupHd(jobId, 0, 0, 'error'); addErrMsg('Workflow failed. Check GitHub Actions tab.'); }
+      renderSessionBar(); processQueue();
       return;
     }
-    // Phase 4: download zip and extract PNGs
-    if (s.artifact_id && !s.downloaded) {
-      updateSession(jobId, { downloaded: true });
-      clearInterval(s.pollInterval); s.pollInterval = null;
 
-      if (st.conclusion === 'success') {
-        await downloadAndShowImages(jobId, s.artifact_id);
-      } else {
-        updateSession(jobId, { status:'error', errorMsg: 'GitHub Actions workflow failed. Check your repo Actions tab.' });
-        updateHist(jobId, { status:'error' });
-        if (_activeJobId === jobId) { updateGroupHd(jobId, 0, 0, 'error'); addErrMsg('Workflow failed. Check GitHub Actions tab.'); }
-      }
+    // ── Step 3: get artifact id ─────────────────────────────────────────────
+    const r3 = await fetch(CFG.worker + '/artifacts?run_id=' + s.run_id);
+    if (!r3.ok) {
+      const errTxt = await r3.text();
+      throw new Error('Artifacts fetch failed: ' + r3.status + ' ' + errTxt);
+    }
+    const art = await r3.json();
+    if (!art.artifact_id) throw new Error('No artifact found — did the workflow upload images?');
+
+    updateSession(jobId, { artifact_id: art.artifact_id });
+
+    // ── Step 4: download zip ────────────────────────────────────────────────
+    await downloadAndShowImages(jobId, art.artifact_id);
+    renderSessionBar();
+    processQueue();
+
+  } catch(e) {
+    // Only mark error if we haven't already completed
+    const cur = getSession(jobId);
+    if (cur && cur.status === 'generating') {
+      clearInterval(cur.pollInterval); cur.pollInterval = null;
+      updateSession(jobId, { status: 'error', errorMsg: e.message });
+      updateHist(jobId, { status: 'error' });
+      if (_activeJobId === jobId) { updateGroupHd(jobId, 0, 0, 'error'); addErrMsg('Error: ' + e.message); }
       renderSessionBar(); processQueue();
     }
-  } catch {}
+  }
 }
 
 async function downloadAndShowImages(jobId, artifactId) {
