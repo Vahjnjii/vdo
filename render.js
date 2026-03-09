@@ -1,5 +1,4 @@
-const puppeteer  = require('puppeteer');
-const { GoogleGenAI } = require('@google/genai');
+const puppeteer = require('puppeteer');
 const fs   = require('fs');
 const path = require('path');
 
@@ -7,92 +6,26 @@ const WORKER_URL  = 'https://vdo.shreevathsa2k21-4fa.workers.dev';
 const ZODIAC_TEXT = process.env.ZODIAC_TEXT;
 const POST_EMOJIS = ["✨","🌟","🌙","💫","🔮","🧿","🔥","💎","🌈","🛸","🪐","⚡","🍀"];
 
-const GEMINI_PROMPT = `You are a zodiac post formatter. Format the input text into structured posts.
+// ── Ask Cloudflare Worker AI to format the text ───────────────────────────────
+async function formatWithWorkerAI(text) {
+  console.log('🤖 Calling Cloudflare Workers AI via Worker /format ...');
 
-STRICT RULES:
-1. SEPARATION: Split input into individual posts.
-2. TITLE: First line of each post = Title. Remove ALL emojis from title. Keep wording EXACTLY as given.
-3. CONTENT:
-   - If line mentions 1 or 2 zodiac signs: keep on ONE line, start with emoji, bold the sign names with **. Example: "✨ **Aries**, **Taurus**: Your explanation here."
-   - If line mentions 3 or more zodiac signs: split into multiple lines. Line 1: emoji + sign names bolded. Line 2: emoji + explanation. Line 3: empty string "".
-4. Every content line MUST start with an emoji. Vary the emojis. Remove all # characters.
+  const res = await fetch(`${WORKER_URL}/format`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text })
+  });
 
-Return ONLY a raw JSON object, no markdown, no backticks:
-{"posts":[{"title":"string","content":["string"]}]}`;
-
-// ── Ask Worker for a key, excluding already failed indices ────────────────────
-async function getKeyFromWorker(failedIndices) {
-  const exclude = failedIndices.length ? `?exclude=${failedIndices.join(',')}` : '';
-  const res = await fetch(`${WORKER_URL}/gemini-key${exclude}`);
-  if (!res.ok) throw new Error(`Worker /gemini-key failed: ${res.status}`);
-  return await res.json();
-}
-
-// ── Call Gemini using same SDK pattern as working Python code ─────────────────
-async function callGemini(apiKey, text) {
-  try {
-    // Exact same pattern: genai.Client(api_key=...) → client.models.generate_content(...)
-    const ai = new GoogleGenAI({ apiKey });
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: `${GEMINI_PROMPT}\n\nInput text to format:\n${text}`,
-    });
-
-    const raw = (response.text || '').replace(/```json|```/g, '').trim();
-
-    if (!raw) return { ok: false, retryable: true, reason: 'empty response' };
-
-    const s      = Math.min(...[raw.indexOf('{'), raw.indexOf('[')].filter(x => x !== -1));
-    const e      = Math.max(raw.lastIndexOf('}'), raw.lastIndexOf(']'));
-    if (s === Infinity || e === -1) return { ok: false, retryable: true, reason: 'no JSON in response' };
-
-    const parsed = JSON.parse(raw.substring(s, e + 1));
-    const posts  = Array.isArray(parsed) ? parsed : (parsed.posts || []);
-    if (!posts.length) return { ok: false, retryable: true, reason: '0 posts parsed' };
-
-    return { ok: true, posts };
-
-  } catch (err) {
-    const msg = err.message || '';
-    // Quota / rate limit → try next key
-    if (msg.includes('RESOURCE_EXHAUSTED') || msg.includes('429') || msg.includes('quota')) {
-      return { ok: false, retryable: true, reason: `Quota: ${msg.slice(0, 80)}` };
-    }
-    // Invalid key → try next key
-    if (msg.includes('API_KEY_INVALID') || msg.includes('403') || msg.includes('401')) {
-      return { ok: false, retryable: true, reason: `Auth: ${msg.slice(0, 80)}` };
-    }
-    // Unknown error → still try next key
-    return { ok: false, retryable: true, reason: `Error: ${msg.slice(0, 80)}` };
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Worker /format failed: ${res.status} — ${body}`);
   }
-}
 
-// ── Rotate: ask Worker for key → call Gemini → repeat if failed ───────────────
-async function formatWithGemini(text) {
-  const failedIndices = [];
+  const data = await res.json();
+  if (!data.posts?.length) throw new Error('Worker returned 0 posts');
 
-  while (true) {
-    const keyData = await getKeyFromWorker(failedIndices);
-
-    if (keyData.exhausted) {
-      throw new Error(`All keys exhausted after ${failedIndices.length} attempts.`);
-    }
-
-    console.log(`  🔑 Key [${keyData.index}] from Worker (${keyData.remaining} remaining)`);
-
-    const result = await callGemini(keyData.key, text);
-
-    if (result.ok) {
-      console.log(`  ✅ Key [${keyData.index}] success — ${result.posts.length} posts`);
-      return result.posts;
-    }
-
-    console.log(`  ⚠️  Key [${keyData.index}] failed: ${result.reason}`);
-    failedIndices.push(keyData.index);
-
-    await new Promise(r => setTimeout(r, 500));
-  }
+  console.log(`✅ Got ${data.posts.length} posts from Cloudflare AI`);
+  return data.posts;
 }
 
 // ── BUILD HTML ────────────────────────────────────────────────────────────────
@@ -174,9 +107,7 @@ async function render(posts) {
 (async () => {
   if (!ZODIAC_TEXT) throw new Error('ZODIAC_TEXT not set');
 
-  console.log('🔑 Getting Gemini key from Cloudflare Worker...');
-  const posts = await formatWithGemini(ZODIAC_TEXT);
-  if (!posts.length) throw new Error('No posts returned');
+  const posts = await formatWithWorkerAI(ZODIAC_TEXT);
 
   console.log(`\n🎨 Rendering ${posts.length} posts...`);
   await render(posts);
