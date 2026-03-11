@@ -113,7 +113,7 @@ function buildHTML(posts) {
     </div>`;
   }).join('');
 
-  // Load Poppins from Google Fonts — fixes number rendering and word spacing
+  // Load Poppins from Google Fonts
   return `<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
@@ -176,7 +176,7 @@ async function render(posts) {
 
     const el = await page.$(`#p${i}`);
     await el.screenshot({
-      path: path.join(outDir, `${String(i+1).padStart(2,'0')}-${safe}.png`),
+      path: path.join(outDir, `${String(i+1).padStart(3,'0')}-${safe}.png`),
       type: 'png'
     });
     console.log(`  ✅ saved`);
@@ -191,4 +191,4 @@ async function render(posts) {
   console.log(`\n🎨 Rendering ${posts.length} posts...`);
   await render(posts);
   console.log('✅ All done!');
-})().catch(e => { console.error('❌', e.message); process.exit(1); });
+})().catch(e => { console.error('❌', e.message); process.exit(1); }); 
