@@ -396,7 +396,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
       <i class="fas fa-film" style="font-size:10px"></i>
       <span>10s &middot; MP4</span>
     </button>
-    <button class="nav-btn nb-hist" onclick="openHistory()">
+    <button class="nav-btn nb-hist" onclick="openVideoHistory()">
       <i class="fas fa-clock-rotate-left" style="font-size:10px"></i>
     </button>
   </div>
@@ -420,18 +420,33 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
   <video id="vc-full-vid" controls playsinline style="max-width:100%;max-height:100%;border-radius:12px"></video>
 </div>
 
-<!-- HISTORY -->
+<!-- HISTORY (images) -->
 <div class="hist-panel" id="hist-panel">
   <div class="hist-bg" onclick="closeHistory()"></div>
   <div class="hist-drawer">
     <div class="hist-hd">
       <div>
-        <div class="hist-hd-t">History</div>
+        <div class="hist-hd-t">Image History</div>
         <div class="hist-sync"><div class="sd ok" id="sync-dot"></div><span id="sync-txt">Synced</span></div>
       </div>
       <button class="hist-close" onclick="closeHistory()"><i class="fas fa-xmark"></i></button>
     </div>
     <div class="hist-list" id="hist-list"></div>
+  </div>
+</div>
+
+<!-- VIDEO HISTORY -->
+<div class="hist-panel" id="vhist-panel">
+  <div class="hist-bg" onclick="closeVideoHistory()"></div>
+  <div class="hist-drawer" style="border-left-color:rgba(224,64,251,.2)">
+    <div class="hist-hd">
+      <div>
+        <div class="hist-hd-t" style="background:linear-gradient(135deg,#e040fb,#ce93d8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Video History</div>
+        <div class="hist-sync"><div class="sd ok" id="vsync-dot"></div><span id="vsync-txt">Local</span></div>
+      </div>
+      <button class="hist-close" onclick="closeVideoHistory()"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="hist-list" id="vhist-list"></div>
   </div>
 </div>
 
@@ -469,10 +484,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 // ═══════════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
-const WORKER  = 'https://vdo.shreevathsa2k21-4fa.workers.dev';
-const LS_USER = 'vdo_user_v2';
-const LS_SESS = 'vdo_sess_v2';
-const LS_IMG  = 'vdo_img_v2_';
+const WORKER      = 'https://vdo.shreevathsa2k21-4fa.workers.dev';
+const LS_USER     = 'vdo_user_v2';
+const LS_SESS     = 'vdo_sess_v2';
+const LS_IMG      = 'vdo_img_v2_';
+const LS_VID_SESS = 'vdo_vsess_v2';  // video sessions storage key
 
 // ═══════════════════════════════════════════════════════════════
 // STATE
@@ -518,6 +534,19 @@ function lsLoadImgs(jobId) {
   } catch { return []; }
 }
 function lsDelImgs(jobId) { lsDel(LS_IMG+(_user?.id||'')+'_'+jobId); }
+
+// ── Video session persistence ──────────────────────────────────
+function lsGetVidSess(uid){ return (lsGet(LS_VID_SESS)||{})[uid]||[]; }
+function lsSaveVidSess(uid,arr){
+  const all=lsGet(LS_VID_SESS)||{};
+  all[uid]=arr.slice(0,60).map(function(s){const c={...s};delete c.pollInterval;return c;});
+  lsSet(LS_VID_SESS,all);
+}
+function lsDelVidSess(uid,jobId){
+  const all=lsGet(LS_VID_SESS)||{};
+  all[uid]=(all[uid]||[]).filter(function(s){return s.jobId!==jobId;});
+  lsSet(LS_VID_SESS,all);
+}
 
 // ═══════════════════════════════════════════════════════════════
 // REMOTE SYNC
@@ -655,7 +684,9 @@ async function enterApp() {
 
   // 1. Instant local render
   _sessions=lsGetSess(_user.id).map(s=>({...s,pollInterval:null}));
-  renderSessBar(); show('templates');
+  // Restore video sessions too
+  _videoSessions=lsGetVidSess(_user.id).map(function(s){return {...s,pollInterval:null};});
+  renderSessBar(); vcRenderSessBar(); show('templates');
 
   // 2. Background remote sync — updates session list and image URLs
   remoteLoad(_user.id).then(remote=>{
@@ -676,11 +707,12 @@ async function enterApp() {
 
 function signOut(){
   _sessions.forEach(s=>{if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}});
-  _sessions=[]; _imgCache={};
+  _videoSessions.forEach(function(s){if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}});
+  _sessions=[]; _imgCache={}; _videoSessions=[]; _vidCache={};
   try{window.google?.accounts?.oauth2?.revoke?.();}catch{}
-  lsDel(LS_USER); _user=null; _activeJobId=null;
+  lsDel(LS_USER); _user=null; _activeJobId=null; _activeVideoJobId=null;
   $('so-menu').classList.remove('open');
-  renderSessBar(); show('login');
+  renderSessBar(); vcRenderSessBar(); show('login');
 }
 function toggleSO(){ $('so-menu').classList.toggle('open'); }
 document.addEventListener('click',e=>{
@@ -1290,6 +1322,7 @@ function sendVideoMsg(){
   vcClearChat(); vcHideEmpty(); vcAddUserMsg(text);
   const sess={jobId:jobId,prompt:text,label:text.slice(0,80),ts:Date.now(),status:'generating',type:'video',videoUrls:[],done:0,pollInterval:null};
   _videoSessions.unshift(sess);
+  if(_user) lsSaveVidSess(_user.id,_videoSessions);
   vcAddVideoGroup(jobId); vcScrollDown(); vcRenderSessBar();
   kickVideoGen(jobId);
 }
@@ -1303,6 +1336,7 @@ async function kickVideoGen(jobId){
     startVideoPolling(jobId);
   }catch(e){
     s.status='error'; s.errorMsg=e.message;
+    if(_user) lsSaveVidSess(_user.id,_videoSessions);
     if(_activeVideoJobId===jobId){ vcUpdateGrpHd(jobId,'error'); vcAddErr('Trigger failed: '+e.message); }
     vcRenderSessBar();
   }
@@ -1353,9 +1387,12 @@ async function doVideoPoll(jobId){
         const r=await fetch(WORKER+'/sessions?userId='+encodeURIComponent(_user?_user.id:'')+'&_='+Date.now());
         if(r.ok){const data=await r.json();ws=(data.sessions||[]).find(function(sv){return sv.jobId===jobId;})||null;}
       }catch(err){}
-      if(ws&&ws.status==='done'&&((ws.videoUrls||ws.imageUrls)||[]).length) break; else ws=null;
+      // Only accept videoUrls (must be an array with entries), ignore imageUrls
+      const vurls=(ws&&ws.videoUrls)||[];
+      if(ws&&ws.status==='done'&&vurls.length) break; else ws=null;
     }
-    const urls=(ws&&(ws.videoUrls||ws.imageUrls))||[];
+    // Only use videoUrls, never imageUrls — imageUrls belong to image jobs
+    const urls=(ws&&ws.videoUrls)||[];
     if(urls.length){await handleVideosDone(jobId,urls);return;}
     if(_activeVideoJobId===jobId) vcUpdateGrpHd(jobId,'loading');
     const art=await fetchJSON(WORKER+'/artifacts?run_id='+s.run_id);
@@ -1377,6 +1414,8 @@ async function handleVideosDone(jobId,urls){
   if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}
   s.status='done'; s.videoUrls=urls; s.done=urls.length;
   const wasActive=_activeVideoJobId===jobId;
+  // Persist to localStorage
+  if(_user) lsSaveVidSess(_user.id,_videoSessions);
   vcRenderSessBar();
   if(wasActive) vcUpdateGrpHd(jobId,'loading');
 
@@ -1388,12 +1427,10 @@ async function handleVideosDone(jobId,urls){
   }
 
   let blobs = await fetchVideoBlobs(urls);
-  // CDN may take ~5s to propagate — retry once if empty
   if(!blobs.length){
     await sleep(5000);
     blobs = await fetchVideoBlobs(urls);
   }
-
   if(!blobs.length){
     if(wasActive && _activeVideoJobId===jobId)
       vcUpdateGrpHd(jobId,'error',0,'Videos saved — try refreshing in 30s');
@@ -1416,6 +1453,7 @@ async function downloadAndShowVideos(jobId,artifactId){
   const s=_videoSessions.find(function(v){return v.jobId===jobId;});
   if(s){s.status='done';s.done=blobs.length;}
   blobs.forEach(function(b,i){_vidCache[jobId+':'+i]=b;});
+  if(_user) lsSaveVidSess(_user.id,_videoSessions);
   vcRenderSessBar();
   if(_activeVideoJobId===jobId){
     blobs.forEach(function(b,i){vcAddVideoCard(jobId,b,i);});
@@ -1552,6 +1590,58 @@ async function vcDlAll(safeJobId,count){
   let done=0;
   for(let i=0;i<count;i++){const b=vcGetBlob(sess.jobId,i);if(b){trigDl(b,vcRndName());done++;await new Promise(function(r){setTimeout(r,400);});}}
   toast('Downloaded '+done+'/'+count);
+}
+
+// ── Video History ───────────────────────────────────────────────
+function openVideoHistory(){
+  vcRenderHistList(_videoSessions);
+  document.getElementById('vhist-panel').classList.add('open');
+}
+function closeVideoHistory(){ document.getElementById('vhist-panel').classList.remove('open'); }
+
+function vcRenderHistList(sessions){
+  const list=document.getElementById('vhist-list');
+  if(!sessions||!sessions.length){
+    list.innerHTML='<div class="hist-empty"><div style="font-size:36px;opacity:.2">🎬</div><div style="font-size:13px;color:var(--tx3);margin-top:8px">No video history yet</div></div>';
+    return;
+  }
+  list.innerHTML=sessions.map(function(e){
+    const d=new Date(e.ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const sc=e.status==='done'?'ok':e.status==='error'?'err':'';
+    const dotCls=e.status==='done'?'ok':e.status==='error'?'err':e.status==='generating'?'sy':'q';
+    const stLbl=e.status==='done'?'Complete':e.status==='error'?'Failed':e.status==='generating'?'Rendering…':'Queued';
+    const hasPerm=(e.videoUrls||[]).some(function(u){return u&&u.startsWith('https://');});
+    return '<div class="hist-item" onclick="vcLoadHistSess(\''+esc(e.jobId)+'\')">'+
+      '<div class="hist-item-top">'+
+        '<div class="hist-date">🎬 '+d+'</div>'+
+        '<div style="display:flex;align-items:center;gap:5px">'+
+          (hasPerm?'<span class="perm-badge" style="color:rgba(206,147,216,.9);background:rgba(224,64,251,.07);border-color:rgba(224,64,251,.2)">💾 Saved</span>':'')+
+          '<button class="hist-del" onclick="vcDelHistSess(event,\''+esc(e.jobId)+'\')"><i class="fas fa-trash-can"></i></button>'+
+        '</div>'+
+      '</div>'+
+      (e.prompt?'<div class="hist-prompt">"'+esc(e.prompt.slice(0,52))+(e.prompt.length>52?'…':'')+'"</div>':'')+
+      '<div class="hist-label">'+esc(e.label||'')+'</div>'+
+      '<div class="hist-st '+sc+'"><span class="hst-dot '+dotCls+'"></span>'+stLbl+((e.videoUrls||[]).length?' · '+e.videoUrls.length+' video'+((e.videoUrls.length!==1)?'s':''):'')+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function vcLoadHistSess(jobId){
+  closeVideoHistory();
+  const s=_videoSessions.find(function(v){return v.jobId===jobId;});
+  if(s){ vcOnChipClick(jobId); return; }
+  toast('⚠️ Session not found');
+}
+function vcDelHistSess(e,jobId){
+  e.stopPropagation();
+  const s=_videoSessions.find(function(v){return v.jobId===jobId;});
+  if(s&&s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}
+  _videoSessions=_videoSessions.filter(function(v){return v.jobId!==jobId;});
+  // Clean up memory cache
+  Object.keys(_vidCache).forEach(function(k){if(k.startsWith(jobId+':'))delete _vidCache[k];});
+  if(_user) lsSaveVidSess(_user.id,_videoSessions);
+  vcRenderHistList(_videoSessions); vcRenderSessBar();
 }
 
 // ═══════════════════════════════════════════════════════════════
