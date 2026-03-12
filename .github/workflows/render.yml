@@ -50,6 +50,8 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ZODIAC_TEXT: ${{ github.event.inputs.zodiac_text }}
           RUN_TOKEN: ${{ github.event.inputs.run_token }}
+          USER_ID: ${{ github.event.inputs.user_id }}
+          JOB_ID: ${{ github.event.inputs.job_id }}
         run: node render.js
 
       - name: Upload images to GitHub Release
