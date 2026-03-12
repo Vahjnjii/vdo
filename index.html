@@ -223,25 +223,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .hst-dot.q{background:#4a4a6a}
 .perm-badge{font-size:9px;font-weight:600;padding:2px 6px;border-radius:20px;background:rgba(0,214,143,.08);color:var(--gn);border:1px solid rgba(0,214,143,.18)}
 
-/* ═══ VIDEO CARDS ═══ */
-.vid-group{align-self:stretch;display:flex;flex-direction:column;gap:6px}
-.vid-card{flex-shrink:0;width:154px;border-radius:14px;overflow:hidden;background:rgba(255,255,255,.02);border:1.5px solid rgba(224,64,251,.18);animation:fadeUp .3s cubic-bezier(.16,1,.3,1) both;transition:border-color .2s;scroll-snap-align:start}
-.vid-card-lbl{font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:rgba(206,147,216,.7);padding:6px 9px 4px}
-.vid-preview{width:100%;aspect-ratio:9/16;overflow:hidden;background:var(--s2);cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center}
-.vid-preview video{width:100%;height:100%;object-fit:cover;display:block}
-.vid-preview.loading::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 30%,rgba(224,64,251,.06) 50%,transparent 70%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
-.vid-play-ico{position:absolute;width:36px;height:36px;border-radius:50%;background:rgba(224,64,251,.22);border:1.5px solid rgba(224,64,251,.4);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;pointer-events:none;transition:opacity .2s}
-.vid-preview:hover .vid-play-ico{opacity:0}
-.vid-acts{padding:7px}
-.vid-btn-share{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(224,64,251,.08);border:1px solid rgba(224,64,251,.22);border-radius:8px;padding:8px 6px;font-size:11.5px;font-weight:600;color:rgba(206,147,216,.95);cursor:pointer;font-family:'Geist',sans-serif;transition:all .18s;margin-bottom:5px}
-.vid-btn-share:active{transform:scale(.95)}
-.vid-btns-r{display:flex;gap:4px}
-.vid-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:3px;background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:7px;padding:6px 3px;font-size:10px;font-weight:500;color:var(--tx3);cursor:pointer;font-family:'Geist',sans-serif;transition:all .18s}
-.vid-btn:hover{background:rgba(224,64,251,.08);color:rgba(206,147,216,.9)}
-.vid-btn:active{transform:scale(.93)}
-.dl-all-vid{display:flex;align-items:center;gap:6px;background:rgba(224,64,251,.08);border:1px solid rgba(224,64,251,.22);border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:600;color:rgba(206,147,216,.95);cursor:pointer;font-family:'Geist',sans-serif;transition:all .2s;white-space:nowrap}
-.dl-all-vid:hover{background:rgba(224,64,251,.16);transform:translateY(-1px)}
-.dl-all-vid:disabled{opacity:.4;cursor:wait;transform:none}
 /* ═══ MODEL SHEET ═══ */
 .model-modal{position:fixed;inset:0;z-index:200;display:none;pointer-events:none}
 .model-modal.open{display:block;pointer-events:auto}
@@ -277,6 +258,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 
 /* toast */
 .toast{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:400;background:#0a0818;border:1px solid rgba(108,92,231,.18);border-radius:var(--r12);padding:9px 16px;font-size:12.5px;font-weight:500;color:var(--tx);display:none;align-items:center;gap:8px;box-shadow:0 8px 28px rgba(0,0,0,.7);animation:fadeUp .16s ease both;max-width:calc(100vw - 40px);white-space:nowrap}
+
+/* ═══ VIDEO PLAY ICON ═══ */
+.vc-play-ico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:opacity .2s}
+.vc-play-ico i{width:40px;height:40px;border-radius:50%;background:rgba(224,64,251,.25);border:1.5px solid rgba(224,64,251,.45);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;padding-left:3px}
+/* vc-sess-bar mirrors #sess-bar exactly */
+#vc-sess-bar{position:absolute;left:8px;bottom:76px;top:58px;width:26px;display:none;flex-direction:column-reverse;align-items:center;justify-content:flex-start;gap:9px;padding:6px 0;z-index:10}
+#vc-sess-bar.vis{display:flex}
 </style>
 </head>
 <body>
@@ -312,7 +300,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
     <div id="greet" class="tmpl-greet">Hello 👋</div>
     <div class="tmpl-sub">Create · save permanently · access anywhere</div>
     <div class="sec-lbl">Generator</div>
-    <div class="tcard" onclick="openTemplate()" style="animation-delay:0ms">
+    <div class="tcard" onclick="openTemplate()">
       <div class="tcard-stripe"></div>
       <div class="tcard-body">
         <div class="tcard-ico">🎨</div>
@@ -331,14 +319,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
     </div>
 
     <div style="margin-top:18px" class="sec-lbl">Video</div>
-    <div class="tcard" onclick="openVideoTemplate()" style="animation-delay:80ms;--acc:#e040fb;--acc2:#ce93d8;--acc3:#f3e5f5">
+    <div class="tcard" onclick="openVideoTemplate()" style="animation-delay:80ms">
       <div class="tcard-stripe" style="background:linear-gradient(90deg,transparent,#e040fb,#ce93d8,transparent)"></div>
       <div class="tcard-body">
         <div class="tcard-ico" style="background:rgba(224,64,251,.1);border-color:rgba(224,64,251,.18)">🎬</div>
         <div class="tcard-info">
-          <div class="tcard-badge" style="color:rgba(206,147,216,.65)">Video · 10s · 9:16 · AI Motion</div>
+          <div class="tcard-badge" style="color:rgba(206,147,216,.65)">Video &middot; 10s &middot; 9:16 &middot; MP4</div>
           <div class="tcard-name">Zodiac Video Generator</div>
-          <div class="tcard-desc">Same zodiac content — now rendered as a 10-second animated video in 9:16 portrait. AI brings your visuals to life with cinematic motion, stored permanently.</div>
+          <div class="tcard-desc">Same zodiac content, now rendered as a 10-second animated 9:16 video with cinematic motion — stored permanently.</div>
         </div>
       </div>
       <div class="tcard-foot">
@@ -396,24 +384,35 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
   <div class="ch-nav">
     <button class="ch-back" onclick="show('templates')"><i class="fas fa-arrow-left"></i></button>
     <div class="ch-nav-mid">
-      <div class="ch-nav-ico" style="background:rgba(224,64,251,.1);border-color:rgba(224,64,251,.18)">🎬</div>
+      <div class="ch-nav-ico" style="background:rgba(224,64,251,.1);border-color:rgba(224,64,251,.18)">&#127909;</div>
       <div class="ch-nav-title">Video Generator</div>
     </div>
+    <button class="nav-btn" style="background:rgba(224,64,251,.08);border-color:rgba(224,64,251,.2);color:rgba(206,147,216,.9)">
+      <i class="fas fa-film" style="font-size:10px"></i>
+      <span>10s &middot; MP4</span>
+    </button>
     <button class="nav-btn nb-hist" onclick="openHistory()">
       <i class="fas fa-clock-rotate-left" style="font-size:10px"></i>
     </button>
   </div>
+  <div id="vc-sess-bar"></div>
   <div id="vc-msgs" class="ch-msgs">
     <div class="ch-empty" id="vc-empty">
-      <div class="empty-ico" style="background:rgba(224,64,251,.07);border-color:rgba(224,64,251,.1)">🎬</div>
+      <div class="empty-ico" style="background:rgba(224,64,251,.07);border-color:rgba(224,64,251,.1)">&#127909;</div>
       <div class="empty-title">Ready to create video</div>
-      <div class="empty-sub">Paste zodiac content — AI renders a 10-second 9:16 animated video</div>
+      <div class="empty-sub">Paste zodiac content &mdash; AI renders a 10-second 9:16 animated video</div>
     </div>
   </div>
   <div class="ch-bar">
-    <textarea id="vc-ta" class="ch-ta" placeholder="Paste zodiac content for video…" rows="1"></textarea>
-    <button id="vc-send" class="send-btn" style="background:linear-gradient(135deg,#9b1fc7,#e040fb);box-shadow:0 4px 16px rgba(224,64,251,.4)" onclick="sendVideoMsg()"><i class="fas fa-arrow-up"></i></button>
+    <textarea id="vc-ta" class="ch-ta" placeholder="Paste zodiac content for video&hellip;" rows="1" style="border-color:rgba(224,64,251,.15)"></textarea>
+    <button id="vc-send" class="send-btn" style="background:linear-gradient(135deg,#9b1fc7,#e040fb);box-shadow:0 4px 16px rgba(224,64,251,.4);animation:none" onclick="sendVideoMsg()"><i class="fas fa-arrow-up"></i></button>
   </div>
+</div>
+
+<!-- VIDEO FULLSCREEN -->
+<div id="vc-full" style="display:none;position:fixed;inset:0;z-index:999;background:#000;flex-direction:column;align-items:center;justify-content:center">
+  <button onclick="vcCloseFull()" style="position:absolute;top:16px;right:16px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2"><i class="fas fa-xmark"></i></button>
+  <video id="vc-full-vid" controls playsinline style="max-width:100%;max-height:100%;border-radius:12px"></video>
 </div>
 
 <!-- HISTORY -->
@@ -744,9 +743,9 @@ function updateNavLabel(){
 // ═══════════════════════════════════════════════════════════════
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  var el=document.getElementById('screen-'+id); if(el) el.classList.add('active');
+  var scr=document.getElementById('screen-'+id); if(scr) scr.classList.add('active');
   if(id==='chat') scrollDown();
-  if(id==='video-chat'&&typeof vcScrollDown==='function') vcScrollDown();
+  if(id==='video-chat') vcScrollDown();
 }
 function openTemplate(){ _activeJobId=null; clearChat(); show('chat'); }
 
@@ -1195,120 +1194,141 @@ function trigDl(blob,name){
 }
 
 
-// ═══════════════════════════════════════════════════════════════
-// VIDEO GENERATOR — separate flow (screen-video-chat)
-// Same architecture as image flow but renders 10s MP4 videos
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
+// VIDEO GENERATOR
+// ===============================================================
 let _activeVideoJobId = null;
-let _videoSessions = [];   // separate session list for video
-let _vidCache = {};        // jobId:idx -> Blob
+let _videoSessions = [];
+let _vidCache = {};
 
-// ── helpers ──────────────────────────────────────────────────
 const vcMsgs = () => document.getElementById('vc-msgs');
-function vcScrollDown(){ const m=vcMsgs(); requestAnimationFrame(()=>{ m.scrollTop=m.scrollHeight; }); }
+function vcScrollDown(){ const m=vcMsgs(); if(m) requestAnimationFrame(()=>{ m.scrollTop=m.scrollHeight; }); }
 function vcResize(ta){ ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,130)+'px'; }
 function vcHideEmpty(){ const e=document.getElementById('vc-empty'); if(e) e.style.display='none'; }
-function vcAddUserMsg(t){
-  const d=document.createElement('div'); d.className='msg-user'; d.textContent=t;
-  vcMsgs().appendChild(d);
-}
+function vcAddUserMsg(t){ const d=document.createElement('div'); d.className='msg-user'; d.textContent=t; vcMsgs().appendChild(d); }
 function vcClearChat(){
-  const m=vcMsgs(); m.innerHTML='';
+  const m=vcMsgs(); if(!m) return; m.innerHTML='';
   const e=document.createElement('div'); e.className='ch-empty'; e.id='vc-empty';
-  e.innerHTML='<div class="empty-ico" style="background:rgba(224,64,251,.07);border-color:rgba(224,64,251,.1)">🎬</div><div class="empty-title">Ready to create video</div><div class="empty-sub">Paste zodiac content — AI renders a 10-second 9:16 animated video</div>';
+  e.innerHTML='<div class="empty-ico" style="background:rgba(224,64,251,.07);border-color:rgba(224,64,251,.1)">&#127909;</div><div class="empty-title">Ready to create video</div><div class="empty-sub">Paste zodiac content &mdash; AI renders a 10-second 9:16 animated video</div>';
   m.appendChild(e);
 }
 
-// ── open ─────────────────────────────────────────────────────
-function openVideoTemplate(){
-  _activeVideoJobId=null; vcClearChat(); show('video-chat');
+function vcRenderSessBar(){
+  const bar=document.getElementById('vc-sess-bar'); if(!bar) return;
+  if(!_videoSessions.length){ bar.className=''; bar.innerHTML=''; return; }
+  bar.className='vis';
+  bar.innerHTML=_videoSessions.slice(0,7).map((s,i)=>{
+    const sc=s.status==='done'?'s-done':s.status==='generating'?'s-gen':s.status==='error'?'s-err':'s-q';
+    const cur=s.jobId===_activeVideoJobId?'cur':'';
+    const stLbl=s.status==='done'?'Done':s.status==='generating'?'Rendering':s.status==='error'?'Failed':'Queued';
+    const tip=((s.prompt||'').slice(0,22)+' - '+stLbl).replace(/"/g,'&quot;');
+    return '<div class="s-chip '+sc+' '+cur+'" data-vjid="'+s.jobId.replace(/"/g,'&quot;')+'" data-tip="'+tip+'" onclick="vcOnChipClick(this.getAttribute(\'data-vjid\'))">'+(i+1)+'</div>';
+  }).join('');
 }
-// ── send ─────────────────────────────────────────────────────
+
+function openVideoTemplate(){ _activeVideoJobId=null; vcClearChat(); vcRenderSessBar(); show('video-chat'); }
+
+function vcOnChipClick(jobId){
+  _activeVideoJobId=jobId; vcRenderSessBar();
+  const s=_videoSessions.find(v=>v.jobId===jobId); if(!s) return;
+  vcClearChat(); vcHideEmpty(); show('video-chat');
+  vcAddUserMsg(s.prompt||'');
+  const sep=document.createElement('div'); sep.className='sess-sep';
+  sep.textContent=new Date(s.ts).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  vcMsgs().appendChild(sep);
+  vcAddVideoGroup(jobId);
+  if(s.status==='done'){
+    const blobs=[];
+    for(let i=0;i<(s.done||0);i++){ const b=_vidCache[jobId+':'+i]; if(b) blobs.push({b,i}); }
+    if(blobs.length){ blobs.forEach(function(x){vcAddVideoCard(jobId,x.b,x.i);}); vcUpdateGrpHd(jobId,'done',blobs.length); }
+    else vcUpdateGrpHd(jobId,'error',0,'Videos unavailable');
+  } else if(s.status==='error'){
+    vcUpdateGrpHd(jobId,'error');
+    const d=document.createElement('div'); d.className='msg-err';
+    d.innerHTML='<i class="fas fa-triangle-exclamation" style="flex-shrink:0"></i><span>'+(s.errorMsg||'Generation failed.')+'</span>';
+    vcMsgs().appendChild(d);
+  } else { vcUpdateGrpHd(jobId,'processing'); }
+  vcScrollDown();
+}
+
 function sendVideoMsg(){
-  const ta=document.getElementById('vc-ta'), text=ta.value.trim(); if(!text)return;
+  const ta=document.getElementById('vc-ta'), text=ta.value.trim(); if(!text) return;
   ta.value=''; vcResize(ta);
-  const jobId='vj-'+(Date.now());
+  const jobId='vj-'+(_user?_user.id:'anon')+'-'+Date.now();
   _activeVideoJobId=jobId;
   vcClearChat(); vcHideEmpty(); vcAddUserMsg(text);
-  const sess={jobId,prompt:text,label:text.slice(0,80),ts:Date.now(),status:'generating',type:'video',videoUrls:[],pollInterval:null};
+  const sess={jobId:jobId,prompt:text,label:text.slice(0,80),ts:Date.now(),status:'generating',type:'video',videoUrls:[],done:0,pollInterval:null};
   _videoSessions.unshift(sess);
-  vcAddVideoGroup(jobId); vcScrollDown();
+  vcAddVideoGroup(jobId); vcScrollDown(); vcRenderSessBar();
   kickVideoGen(jobId);
 }
 
-// ── kick ─────────────────────────────────────────────────────
 async function kickVideoGen(jobId){
-  const s=_videoSessions.find(v=>v.jobId===jobId); if(!s)return;
+  const s=_videoSessions.find(function(v){return v.jobId===jobId;}); if(!s) return;
   try{
-    const d = await fetchWithRetry(WORKER+'/trigger-video',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({zodiac_text:s.prompt, userId:_user?.id||'', jobId, duration:10})
-    });
+    const d=await fetchWithRetry(WORKER+'/trigger-video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({zodiac_text:s.prompt,userId:_user?_user.id:'',jobId:jobId,duration:10})});
     if(d.error) throw new Error(d.error);
     s.run_token=d.run_token; s.errorCount=0;
     startVideoPolling(jobId);
-  } catch(e){
+  }catch(e){
     s.status='error'; s.errorMsg=e.message;
     if(_activeVideoJobId===jobId){ vcUpdateGrpHd(jobId,'error'); vcAddErr('Trigger failed: '+e.message); }
+    vcRenderSessBar();
   }
 }
 
-// ── polling ──────────────────────────────────────────────────
 function startVideoPolling(jobId){
-  const s=_videoSessions.find(v=>v.jobId===jobId); if(!s)return;
+  const s=_videoSessions.find(function(v){return v.jobId===jobId;}); if(!s) return;
   if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}
-  const iv=setInterval(async ()=>{
+  const iv=setInterval(async function(){
     await doVideoPoll(jobId);
-    const ss=_videoSessions.find(v=>v.jobId===jobId);
-    if(!ss||ss.status!=='generating'){clearInterval(iv);s.pollInterval=null;}
+    const ss=_videoSessions.find(function(v){return v.jobId===jobId;});
+    if(!ss||ss.status!=='generating') clearInterval(iv);
+    if(_activeVideoJobId===jobId) vcUpdateGrpHd(jobId,'processing');
   },4000);
   s.pollInterval=iv;
-  // 5-minute timeout
-  setTimeout(()=>{
-    const ss=_videoSessions.find(v=>v.jobId===jobId);
-    if(!ss||ss.status!=='generating')return;
+  setTimeout(function(){
+    const ss=_videoSessions.find(function(v){return v.jobId===jobId;});
+    if(!ss||ss.status!=='generating') return;
     if(ss.pollInterval){clearInterval(ss.pollInterval);ss.pollInterval=null;}
     ss.status='error'; ss.errorMsg='Timed out after 5 minutes.';
-    if(_activeVideoJobId===jobId){vcUpdateGrpHd(jobId,'error');vcAddErr('Timed out — check GitHub Actions.');}
-  },300_000);
+    if(_activeVideoJobId===jobId){vcUpdateGrpHd(jobId,'error');vcAddErr('Timed out.');}
+    vcRenderSessBar();
+  },300000);
   if(_activeVideoJobId===jobId) vcUpdateGrpHd(jobId,'processing');
 }
 
 async function doVideoPoll(jobId){
-  const s=_videoSessions.find(v=>v.jobId===jobId);
-  if(!s||s.status!=='generating')return;
+  const s=_videoSessions.find(function(v){return v.jobId===jobId;});
+  if(!s||s.status!=='generating') return;
   try{
-    // Phase 1: get run_id
     if(!s.run_id){
       const d=await fetchJSON(WORKER+'/poll?run_token='+encodeURIComponent(s.run_token||'')+'&_='+Date.now());
-      if(d?.found){ s.run_id=d.run_id; s.errorCount=0; }
+      if(d&&d.found){s.run_id=d.run_id;s.errorCount=0;}
       return;
     }
-    // Phase 2: check run status
     const st=await fetchJSON(WORKER+'/status?run_id='+s.run_id);
-    if(st?.status!=='completed')return;
+    if(!st||st.status!=='completed') return;
     if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}
     if(st.conclusion!=='success'){
       s.status='error'; s.errorMsg='Workflow failed.';
-      if(_activeVideoJobId===jobId){vcUpdateGrpHd(jobId,'error');vcAddErr('Workflow failed — check GitHub Actions.');}
-      return;
+      if(_activeVideoJobId===jobId){vcUpdateGrpHd(jobId,'error');vcAddErr('Workflow failed.');}
+      vcRenderSessBar(); return;
     }
-    // Phase 3: get video URLs from worker
     let ws=null;
     for(let i=0;i<4;i++){
       await sleep(i===0?800:2500);
       try{
-        const r=await fetch(WORKER+'/sessions?userId='+encodeURIComponent(_user?.id||'')+'&_='+Date.now());
-        if(r.ok){ const {sessions}=await r.json(); ws=(sessions||[]).find(sv=>sv.jobId===jobId)||null; }
-      }catch{}
-      if(ws?.status==='done'&&(ws.videoUrls||ws.imageUrls)?.length) break; else ws=null;
+        const r=await fetch(WORKER+'/sessions?userId='+encodeURIComponent(_user?_user.id:'')+'&_='+Date.now());
+        if(r.ok){const data=await r.json();ws=(data.sessions||[]).find(function(sv){return sv.jobId===jobId;})||null;}
+      }catch(err){}
+      if(ws&&ws.status==='done'&&((ws.videoUrls||ws.imageUrls)||[]).length) break; else ws=null;
     }
-    const urls=ws?.videoUrls||ws?.imageUrls||[];
-    if(urls.length){ await handleVideosDone(jobId,urls); return; }
-    // Phase 4: artifact fallback
+    const urls=(ws&&(ws.videoUrls||ws.imageUrls))||[];
+    if(urls.length){await handleVideosDone(jobId,urls);return;}
     if(_activeVideoJobId===jobId) vcUpdateGrpHd(jobId,'loading');
     const art=await fetchJSON(WORKER+'/artifacts?run_id='+s.run_id);
-    if(!art?.artifact_id) throw new Error('No artifact found');
+    if(!art||!art.artifact_id) throw new Error('No artifact found');
     await downloadAndShowVideos(jobId,art.artifact_id);
   }catch(e){
     const n=(s.errorCount||0)+1;
@@ -1316,27 +1336,28 @@ async function doVideoPoll(jobId){
       if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}
       s.status='error'; s.errorMsg=e.message;
       if(_activeVideoJobId===jobId){vcUpdateGrpHd(jobId,'error');vcAddErr('Failed: '+e.message);}
-    } else { s.errorCount=n; }
+      vcRenderSessBar();
+    }else{s.errorCount=n;}
   }
 }
 
 async function handleVideosDone(jobId,urls){
-  const s=_videoSessions.find(v=>v.jobId===jobId); if(!s)return;
+  const s=_videoSessions.find(function(v){return v.jobId===jobId;}); if(!s) return;
   if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}
   s.status='done'; s.videoUrls=urls; s.done=urls.length;
+  vcRenderSessBar();
   if(_activeVideoJobId===jobId) vcUpdateGrpHd(jobId,'loading');
-  // fetch video blobs via proxy
-  const results=await Promise.allSettled(urls.map(u=>
-    fetch(WORKER+'/image?url='+encodeURIComponent(u)).then(r=>{if(!r.ok)throw new Error(r.status);return r.blob();})
-  ));
-  const blobs=results.filter(r=>r.status==='fulfilled').map(r=>r.value);
+  const results=await Promise.allSettled(urls.map(function(u){
+    return fetch(WORKER+'/image?url='+encodeURIComponent(u)).then(function(r){if(!r.ok)throw new Error(r.status);return r.blob();});
+  }));
+  const blobs=results.filter(function(r){return r.status==='fulfilled';}).map(function(r){return r.value;});
   if(!blobs.length){
-    if(_activeVideoJobId===jobId) vcUpdateGrpHd(jobId,'error',0,'Videos saved — try refreshing in 30s');
+    if(_activeVideoJobId===jobId) vcUpdateGrpHd(jobId,'error',0,'Videos saved - try refreshing in 30s');
     return;
   }
-  blobs.forEach((b,i)=>{ _vidCache[jobId+':'+i]=b; });
+  blobs.forEach(function(b,i){_vidCache[jobId+':'+i]=b;});
   if(_activeVideoJobId===jobId){
-    blobs.forEach((b,i)=>vcAddVideoCard(jobId,b,i));
+    blobs.forEach(function(b,i){vcAddVideoCard(jobId,b,i);});
     vcUpdateGrpHd(jobId,'done',blobs.length);
     vcScrollDown();
   }
@@ -1346,118 +1367,131 @@ async function downloadAndShowVideos(jobId,artifactId){
   const r=await fetch(WORKER+'/download?artifact_id='+artifactId);
   if(!r.ok) throw new Error('Download HTTP '+r.status);
   const buf=await r.arrayBuffer();
-  // extract MP4s from zip
   const blobs=await extractMP4s(buf);
   if(!blobs.length) throw new Error('No videos in artifact');
-  const s=_videoSessions.find(v=>v.jobId===jobId);
+  const s=_videoSessions.find(function(v){return v.jobId===jobId;});
   if(s){s.status='done';s.done=blobs.length;}
-  blobs.forEach((b,i)=>{ _vidCache[jobId+':'+i]=b; });
+  blobs.forEach(function(b,i){_vidCache[jobId+':'+i]=b;});
+  vcRenderSessBar();
   if(_activeVideoJobId===jobId){
-    blobs.forEach((b,i)=>vcAddVideoCard(jobId,b,i));
+    blobs.forEach(function(b,i){vcAddVideoCard(jobId,b,i);});
     vcUpdateGrpHd(jobId,'done',blobs.length);
     vcScrollDown();
   }
 }
 
 function extractMP4s(buf){
-  return new Promise((res,rej)=>{
+  return new Promise(function(res){
     if(typeof fflate==='undefined'){res([]);return;}
-    fflate.unzip(new Uint8Array(buf),(err,files)=>{
+    fflate.unzip(new Uint8Array(buf),function(err,files){
       if(err){res([]);return;}
-      const vids=Object.keys(files)
-        .filter(n=>/\.(mp4|webm|mov)$/i.test(n)&&files[n].length>0)
-        .sort().map(n=>new Blob([files[n]],{type:'video/mp4'}));
+      var vids=Object.keys(files).filter(function(n){return /\.(mp4|webm|mov)$/i.test(n)&&files[n].length>0;})
+        .sort().map(function(n){return new Blob([files[n]],{type:'video/mp4'});});
       res(vids);
     });
   });
 }
 
-// ── DOM builders ─────────────────────────────────────────────
 function vcAddVideoGroup(jobId){
   const s=jobId.replace(/[^a-zA-Z0-9_-]/g,'_');
-  const d=document.createElement('div'); d.className='vid-group'; d.id='vgrp-'+s;
-  d.innerHTML='<div class="grp-hd" id="vghd-'+s+'"><div class="grp-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>Starting video render… (~2-4 min)</span></div></div><div class="img-row" id="vrow-'+s+'"></div>';
+  const d=document.createElement('div'); d.className='img-group'; d.id='vgrp-'+s;
+  d.innerHTML='<div class="grp-hd" id="vghd-'+s+'"><div class="grp-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>Starting video render... (~2-4 min)</span></div></div><div class="img-row" id="vrow-'+s+'"></div>';
   vcMsgs().appendChild(d);
 }
+
 function vcUpdateGrpHd(jobId,status,count,msg){
   const s=jobId.replace(/[^a-zA-Z0-9_-]/g,'_');
-  const hd=document.getElementById('vghd-'+s); if(!hd)return;
-  const sess=_videoSessions.find(v=>v.jobId===jobId);
+  const hd=document.getElementById('vghd-'+s); if(!hd) return;
+  const sess=_videoSessions.find(function(v){return v.jobId===jobId;});
   if(status==='done'){
-    const n=count||sess?.done||0;
-    hd.innerHTML='<div class="grp-hd-l"><i class="fas fa-check-circle" style="color:#e040fb"></i><span style="color:#ce93d8;font-weight:600">'+n+' video'+(n!==1?'s':'')+' ready ✓</span></div><button class="dl-all-vid" onclick="vcDlAll(\''+s+'\','+n+')"><i class="fas fa-cloud-arrow-down"></i> Save All ('+n+')</button>';
-  } else if(status==='error'){
-    const m=msg||sess?.errorMsg||'Failed.';
-    hd.innerHTML='<div class="grp-hd-l"><i class="fas fa-circle-exclamation" style="color:var(--rd)"></i><span style="color:var(--rd);font-weight:500">Failed — '+m.replace(/</g,'&lt;')+'</span></div>';
-  } else if(status==='loading'){
-    hd.innerHTML='<div class="grp-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>Loading videos…</span></div>';
-  } else {
-    const el=Math.round((Date.now()-(sess?.ts||Date.now()))/1000);
-    const step=el<20?'⚡ Triggering render…':el<60?'⏳ Encoding video…':el<120?'🎬 Processing frames…':'🎬 Almost done…';
+    const n=count||(sess&&sess.done)||0;
+    hd.innerHTML='<div class="grp-hd-l"><i class="fas fa-check-circle" style="color:#e040fb"></i><span style="color:#ce93d8;font-weight:600">'+n+' video'+(n!==1?'s':'')+' ready</span></div><button class="dl-all" style="background:rgba(224,64,251,.08);border-color:rgba(224,64,251,.22);color:rgba(206,147,216,.95)" onclick="vcDlAll(\''+s+'\','+n+')"><i class="fas fa-cloud-arrow-down"></i> Save All ('+n+')</button>';
+  }else if(status==='error'){
+    const m=msg||(sess&&sess.errorMsg)||'Failed.';
+    hd.innerHTML='<div class="grp-hd-l"><i class="fas fa-circle-exclamation" style="color:var(--rd)"></i><span style="color:var(--rd);font-weight:500">Failed - '+m.replace(/</g,'&lt;')+'</span></div>';
+  }else if(status==='loading'){
+    hd.innerHTML='<div class="grp-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>Loading videos...</span></div>';
+  }else{
+    const el=Math.round((Date.now()-((sess&&sess.ts)||Date.now()))/1000);
+    const step=el<20?'Triggering render...':el<60?'Actions queued...':el<120?'Encoding video...':'Almost done...';
     hd.innerHTML='<div class="grp-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>'+step+' <span style="color:var(--tx3);font-size:10.5px">'+el+'s</span></span></div>';
   }
 }
+
 function vcAddVideoCard(jobId,blob,idx){
   const s=jobId.replace(/[^a-zA-Z0-9_-]/g,'_');
-  const row=document.getElementById('vrow-'+s); if(!row)return;
+  const row=document.getElementById('vrow-'+s); if(!row) return;
   const url=URL.createObjectURL(blob);
   const card=document.createElement('div');
-  card.className='vid-card'; card.style.animationDelay=(idx%6*55)+'ms';
+  card.className='img-card'; card.style.animationDelay=(idx%6*55)+'ms';
+  card.style.borderColor='rgba(224,64,251,.2)';
   card.dataset.jobId=jobId; card.dataset.idx=idx;
   card.innerHTML=
-    '<div class="vid-card-lbl">Video '+(idx+1)+'</div>'+
-    '<div class="vid-preview" id="vprev-'+s+'_'+idx+'" onclick="vcTogglePlay(this)">'+
-      '<video src="'+url+'" loop playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover"></video>'+
-      '<div class="vid-play-ico"><i class="fas fa-play" style="margin-left:2px"></i></div>'+
+    '<div class="img-card-lbl" style="color:rgba(206,147,216,.7)">Video '+(idx+1)+'</div>'+
+    '<div class="img-preview" style="position:relative;cursor:pointer" onclick="vcTogglePlay(this)">'+
+      '<video src="'+url+'" loop playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;display:block"></video>'+
+      '<div class="vc-play-ico"><i class="fas fa-play" style="margin-left:2px;font-size:13px"></i></div>'+
     '</div>'+
-    '<div class="vid-acts">'+
-      '<button class="vid-btn-share" data-act="share"><i class="fas fa-share-nodes"></i> Share</button>'+
-      '<div class="vid-btns-r">'+
-        '<button class="vid-btn" data-act="save"><i class="fas fa-download"></i> Save</button>'+
-        '<button class="vid-btn" data-act="view"><i class="fas fa-expand"></i> View</button>'+
+    '<div class="img-acts">'+
+      '<button class="img-btn-share" style="background:rgba(224,64,251,.08);border-color:rgba(224,64,251,.22);color:rgba(206,147,216,.95)" data-act="share"><i class="fas fa-share-nodes"></i> Share</button>'+
+      '<div class="img-btns-r">'+
+        '<button class="img-btn" data-act="save"><i class="fas fa-download"></i> Save</button>'+
+        '<button class="img-btn" data-act="view"><i class="fas fa-expand"></i> View</button>'+
       '</div>'+
     '</div>';
-  card.querySelectorAll('[data-act]').forEach(btn=>btn.addEventListener('click',e=>{
-    e.stopPropagation();
-    const jid=card.dataset.jobId,i=+card.dataset.idx,act=btn.dataset.act;
-    if(act==='share') vcShareVid(jid,i);
-    else if(act==='save') vcDlOne(jid,i);
-    else vcOpenFull(jid,i);
-  }));
+  card.querySelectorAll('[data-act]').forEach(function(btn){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      const jid=card.dataset.jobId,i=+card.dataset.idx,act=btn.dataset.act;
+      if(act==='share') vcShareVid(jid,i);
+      else if(act==='save') vcDlOne(jid,i);
+      else vcOpenFull(jid,i);
+    });
+  });
   row.appendChild(card);
 }
+
 function vcTogglePlay(el){
   const vid=el.querySelector('video');
-  const ico=el.querySelector('.vid-play-ico i');
-  if(vid.paused){ vid.play(); ico.className='fas fa-pause'; }
-  else { vid.pause(); ico.className='fas fa-play'; }
+  const ico=el.querySelector('.vc-play-ico');
+  if(!vid) return;
+  if(vid.paused){ vid.play(); if(ico) ico.style.opacity='0'; }
+  else{ vid.pause(); if(ico) ico.style.opacity='1'; }
 }
 function vcAddErr(m){
   const d=document.createElement('div'); d.className='msg-err';
   d.innerHTML='<i class="fas fa-triangle-exclamation" style="flex-shrink:0"></i><span>'+m.replace(/</g,'&lt;')+'</span>';
   vcMsgs().appendChild(d); vcScrollDown();
 }
-
-// ── download / share ──────────────────────────────────────────
-const vcRndName=()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return'vdo_video_'+(a[0]%900000000+100000000)+'.mp4';};
-function vcGetBlob(jobId,idx){ return _vidCache[jobId+':'+idx]||null; }
+function vcOpenFull(jobId,idx){
+  const b=vcGetBlob(jobId,idx); if(!b) return;
+  const el=document.getElementById('vc-full');
+  const vid=document.getElementById('vc-full-vid');
+  vid.src=URL.createObjectURL(b); el.style.display='flex'; vid.play();
+}
+function vcCloseFull(){
+  const el=document.getElementById('vc-full');
+  const vid=document.getElementById('vc-full-vid');
+  vid.pause(); vid.src=''; el.style.display='none';
+}
+const vcRndName=function(){const a=new Uint32Array(1);crypto.getRandomValues(a);return'vdo_video_'+(a[0]%900000000+100000000)+'.mp4';};
+function vcGetBlob(jobId,idx){return _vidCache[jobId+':'+idx]||null;}
 async function vcShareVid(jobId,idx){
-  const b=vcGetBlob(jobId,idx); if(!b){toast('⚠️ Not ready');return;}
+  const b=vcGetBlob(jobId,idx); if(!b){toast('Not ready');return;}
   try{
     const f=new File([b],vcRndName(),{type:'video/mp4'});
-    if(navigator.share&&navigator.canShare?.({files:[f]})) await navigator.share({files:[f],title:'VDO Video '+(idx+1)});
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})) await navigator.share({files:[f],title:'VDO Video '+(idx+1)});
     else trigDl(b,vcRndName());
-    toast('Shared ✓');
-  }catch(e){if(e.name!=='AbortError')toast('⚠️ '+e.message);}
+    toast('Shared');
+  }catch(e){if(e.name!=='AbortError')toast(e.message);}
 }
-function vcDlOne(jobId,idx){const b=vcGetBlob(jobId,idx);if(!b){toast('⚠️ Not ready');return;}trigDl(b,vcRndName());toast('Saved ✓');}
-function vcOpenFull(jobId,idx){const b=vcGetBlob(jobId,idx);if(!b)return;window.open(URL.createObjectURL(b),'_blank');}
+function vcDlOne(jobId,idx){const b=vcGetBlob(jobId,idx);if(!b){toast('Not ready');return;}trigDl(b,vcRndName());toast('Saved');}
 async function vcDlAll(safeJobId,count){
-  const sess=_videoSessions.find(s=>s.jobId.replace(/[^a-zA-Z0-9_-]/g,'_')===safeJobId);
-  if(!sess){toast('⚠️ Not found');return;}
+  const sess=_videoSessions.find(function(s){return s.jobId.replace(/[^a-zA-Z0-9_-]/g,'_')===safeJobId;});
+  if(!sess){toast('Not found');return;}
   let done=0;
-  for(let i=0;i<count;i++){const b=vcGetBlob(sess.jobId,i);if(b){trigDl(b,vcRndName());done++;await new Promise(r=>setTimeout(r,400));}}
-  toast('Downloaded '+done+'/'+count+' ✓');
+  for(let i=0;i<count;i++){const b=vcGetBlob(sess.jobId,i);if(b){trigDl(b,vcRndName());done++;await new Promise(function(r){setTimeout(r,400);});}}
+  toast('Downloaded '+done+'/'+count);
 }
 
 // ═══════════════════════════════════════════════════════════════
