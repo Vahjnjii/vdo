@@ -261,7 +261,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 
 /* ═══ VIDEO PLAY ICON ═══ */
 .vc-play-ico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:opacity .2s}
-.vc-play-ico i{width:40px;height:40px;border-radius:50%;background:rgba(224,64,251,.25);border:1.5px solid rgba(224,64,251,.45);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;padding-left:3px}
+.vc-play-ico i{width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.45);border:2px solid rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;padding-left:3px;backdrop-filter:blur(4px)}
+/* video card loading state */
+.vid-preview{width:100%;aspect-ratio:9/16;overflow:hidden;background:var(--s2);cursor:pointer;position:relative}
+.vid-preview video{width:100%;height:100%;object-fit:cover;display:block}
+.vid-preview.loading{background:var(--s2)}
+.vid-preview.loading::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 30%,rgba(255,255,255,.04) 50%,transparent 70%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
 /* vc-sess-bar mirrors #sess-bar exactly */
 #vc-sess-bar{position:absolute;left:8px;bottom:76px;top:58px;width:26px;display:none;flex-direction:column-reverse;align-items:center;justify-content:flex-start;gap:9px;padding:6px 0;z-index:10}
 #vc-sess-bar.vis{display:flex}
@@ -1228,26 +1233,52 @@ function vcRenderSessBar(){
 
 function openVideoTemplate(){ _activeVideoJobId=null; vcClearChat(); vcRenderSessBar(); show('video-chat'); }
 
-function vcOnChipClick(jobId){
+async function vcOnChipClick(jobId){
   _activeVideoJobId=jobId; vcRenderSessBar();
-  const s=_videoSessions.find(v=>v.jobId===jobId); if(!s) return;
+  const s=_videoSessions.find(function(v){return v.jobId===jobId;}); if(!s) return;
   vcClearChat(); vcHideEmpty(); show('video-chat');
   vcAddUserMsg(s.prompt||'');
   const sep=document.createElement('div'); sep.className='sess-sep';
   sep.textContent=new Date(s.ts).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
   vcMsgs().appendChild(sep);
   vcAddVideoGroup(jobId);
+
   if(s.status==='done'){
-    const blobs=[];
-    for(let i=0;i<(s.done||0);i++){ const b=_vidCache[jobId+':'+i]; if(b) blobs.push({b,i}); }
-    if(blobs.length){ blobs.forEach(function(x){vcAddVideoCard(jobId,x.b,x.i);}); vcUpdateGrpHd(jobId,'done',blobs.length); }
-    else vcUpdateGrpHd(jobId,'error',0,'Videos unavailable');
+    const count=s.done||s.videoUrls?.length||0;
+    let blobs=[];
+
+    // T1: memory cache
+    for(let i=0;i<count;i++){const b=_vidCache[jobId+':'+i];if(b)blobs.push(b);}
+
+    // T2: re-fetch from videoUrls (permanent GitHub Release URLs)
+    if(blobs.length<count && s.videoUrls?.length){
+      vcUpdateGrpHd(jobId,'loading');
+      try{
+        const results=await Promise.allSettled(s.videoUrls.map(function(u){
+          return fetch(WORKER+'/image?url='+encodeURIComponent(u)).then(function(r){if(!r.ok)throw new Error(r.status);return r.blob();});
+        }));
+        const fetched=results.filter(function(r){return r.status==='fulfilled';}).map(function(r){return r.value;});
+        if(fetched.length){
+          fetched.forEach(function(b,i){_vidCache[jobId+':'+i]=b;});
+          blobs=fetched;
+        }
+      }catch(e){console.warn('Video re-fetch failed:',e);}
+    }
+
+    if(blobs.length){
+      blobs.forEach(function(b,i){vcAddVideoCard(jobId,b,i);});
+      vcUpdateGrpHd(jobId,'done',blobs.length);
+    } else {
+      vcUpdateGrpHd(jobId,'error',0,'Videos unavailable — may still be processing');
+    }
   } else if(s.status==='error'){
     vcUpdateGrpHd(jobId,'error');
     const d=document.createElement('div'); d.className='msg-err';
     d.innerHTML='<i class="fas fa-triangle-exclamation" style="flex-shrink:0"></i><span>'+(s.errorMsg||'Generation failed.')+'</span>';
     vcMsgs().appendChild(d);
-  } else { vcUpdateGrpHd(jobId,'processing'); }
+  } else {
+    vcUpdateGrpHd(jobId,'processing');
+  }
   vcScrollDown();
 }
 
@@ -1345,18 +1376,31 @@ async function handleVideosDone(jobId,urls){
   const s=_videoSessions.find(function(v){return v.jobId===jobId;}); if(!s) return;
   if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}
   s.status='done'; s.videoUrls=urls; s.done=urls.length;
+  const wasActive=_activeVideoJobId===jobId;
   vcRenderSessBar();
-  if(_activeVideoJobId===jobId) vcUpdateGrpHd(jobId,'loading');
-  const results=await Promise.allSettled(urls.map(function(u){
-    return fetch(WORKER+'/image?url='+encodeURIComponent(u)).then(function(r){if(!r.ok)throw new Error(r.status);return r.blob();});
-  }));
-  const blobs=results.filter(function(r){return r.status==='fulfilled';}).map(function(r){return r.value;});
+  if(wasActive) vcUpdateGrpHd(jobId,'loading');
+
+  async function fetchVideoBlobs(urlList){
+    const results=await Promise.allSettled(urlList.map(function(u){
+      return fetch(WORKER+'/image?url='+encodeURIComponent(u)).then(function(r){if(!r.ok)throw new Error(r.status);return r.blob();});
+    }));
+    return results.filter(function(r){return r.status==='fulfilled';}).map(function(r){return r.value;});
+  }
+
+  let blobs = await fetchVideoBlobs(urls);
+  // CDN may take ~5s to propagate — retry once if empty
   if(!blobs.length){
-    if(_activeVideoJobId===jobId) vcUpdateGrpHd(jobId,'error',0,'Videos saved - try refreshing in 30s');
+    await sleep(5000);
+    blobs = await fetchVideoBlobs(urls);
+  }
+
+  if(!blobs.length){
+    if(wasActive && _activeVideoJobId===jobId)
+      vcUpdateGrpHd(jobId,'error',0,'Videos saved — try refreshing in 30s');
     return;
   }
   blobs.forEach(function(b,i){_vidCache[jobId+':'+i]=b;});
-  if(_activeVideoJobId===jobId){
+  if(wasActive && _activeVideoJobId===jobId){
     blobs.forEach(function(b,i){vcAddVideoCard(jobId,b,i);});
     vcUpdateGrpHd(jobId,'done',blobs.length);
     vcScrollDown();
@@ -1405,15 +1449,15 @@ function vcUpdateGrpHd(jobId,status,count,msg){
   const sess=_videoSessions.find(function(v){return v.jobId===jobId;});
   if(status==='done'){
     const n=count||(sess&&sess.done)||0;
-    hd.innerHTML='<div class="grp-hd-l"><i class="fas fa-check-circle" style="color:#e040fb"></i><span style="color:#ce93d8;font-weight:600">'+n+' video'+(n!==1?'s':'')+' ready</span></div><button class="dl-all" style="background:rgba(224,64,251,.08);border-color:rgba(224,64,251,.22);color:rgba(206,147,216,.95)" onclick="vcDlAll(\''+s+'\','+n+')"><i class="fas fa-cloud-arrow-down"></i> Save All ('+n+')</button>';
+    hd.innerHTML='<div class="grp-hd-l"><i class="fas fa-check-circle" style="color:#e040fb"></i><span style="color:#ce93d8;font-weight:600">'+n+' video'+(n!==1?'s':'')+' ready ✓</span></div>'+(n>0?'<button class="dl-all" style="background:rgba(224,64,251,.08);border-color:rgba(224,64,251,.22);color:rgba(206,147,216,.95)" onclick="vcDlAll(\''+s+'\','+n+')"><i class="fas fa-cloud-arrow-down"></i> Save All ('+n+')</button>':'');
   }else if(status==='error'){
     const m=msg||(sess&&sess.errorMsg)||'Failed.';
-    hd.innerHTML='<div class="grp-hd-l"><i class="fas fa-circle-exclamation" style="color:var(--rd)"></i><span style="color:var(--rd);font-weight:500">Failed - '+m.replace(/</g,'&lt;')+'</span></div>';
+    hd.innerHTML='<div class="grp-hd-l"><i class="fas fa-circle-exclamation" style="color:var(--rd)"></i><span style="color:var(--rd);font-weight:500">Failed — '+m.replace(/</g,'&lt;')+'</span></div>';
   }else if(status==='loading'){
-    hd.innerHTML='<div class="grp-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>Loading videos...</span></div>';
+    hd.innerHTML='<div class="grp-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>Loading videos…</span></div>';
   }else{
     const el=Math.round((Date.now()-((sess&&sess.ts)||Date.now()))/1000);
-    const step=el<20?'Triggering render...':el<60?'Actions queued...':el<120?'Encoding video...':'Almost done...';
+    const step=el<20?'⚡ Triggering render…':el<60?'⏳ Actions queued…':el<120?'🎬 Encoding video…':'🔄 Almost done…';
     hd.innerHTML='<div class="grp-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>'+step+' <span style="color:var(--tx3);font-size:10.5px">'+el+'s</span></span></div>';
   }
 }
@@ -1428,15 +1472,15 @@ function vcAddVideoCard(jobId,blob,idx){
   card.dataset.jobId=jobId; card.dataset.idx=idx;
   card.innerHTML=
     '<div class="img-card-lbl" style="color:rgba(206,147,216,.7)">Video '+(idx+1)+'</div>'+
-    '<div class="img-preview" style="position:relative;cursor:pointer" onclick="vcTogglePlay(this)">'+
-      '<video src="'+url+'" loop playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;display:block"></video>'+
-      '<div class="vc-play-ico"><i class="fas fa-play" style="margin-left:2px;font-size:13px"></i></div>'+
+    '<div class="vid-preview loading" id="vprev-'+s+'_'+idx+'" style="cursor:pointer" onclick="vcTogglePlay(this)">'+
+      '<video src="'+url+'" loop playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;display:block" onloadeddata="this.closest(\'.vid-preview\')?.classList.remove(\'loading\')"></video>'+
+      '<div class="vc-play-ico"><i class="fas fa-play"></i></div>'+
     '</div>'+
     '<div class="img-acts">'+
       '<button class="img-btn-share" style="background:rgba(224,64,251,.08);border-color:rgba(224,64,251,.22);color:rgba(206,147,216,.95)" data-act="share"><i class="fas fa-share-nodes"></i> Share</button>'+
       '<div class="img-btns-r">'+
         '<button class="img-btn" data-act="save"><i class="fas fa-download"></i> Save</button>'+
-        '<button class="img-btn" data-act="view"><i class="fas fa-expand"></i> View</button>'+
+        '<button class="img-btn" data-act="view"><i class="fas fa-expand"></i> Full</button>'+
       '</div>'+
     '</div>';
   card.querySelectorAll('[data-act]').forEach(function(btn){
@@ -1455,8 +1499,20 @@ function vcTogglePlay(el){
   const vid=el.querySelector('video');
   const ico=el.querySelector('.vc-play-ico');
   if(!vid) return;
-  if(vid.paused){ vid.play(); if(ico) ico.style.opacity='0'; }
-  else{ vid.pause(); if(ico) ico.style.opacity='1'; }
+  if(vid.paused){
+    // Pause all other playing videos first
+    document.querySelectorAll('.vid-preview video').forEach(function(v){
+      if(v!==vid&&!v.paused){v.pause();}
+    });
+    vid.play().catch(function(){
+      // Autoplay blocked — try muted
+      vid.muted=true; vid.play();
+    });
+    if(ico) ico.style.opacity='0';
+  } else {
+    vid.pause();
+    if(ico) ico.style.opacity='1';
+  }
 }
 function vcAddErr(m){
   const d=document.createElement('div'); d.className='msg-err';
@@ -1465,9 +1521,13 @@ function vcAddErr(m){
 }
 function vcOpenFull(jobId,idx){
   const b=vcGetBlob(jobId,idx); if(!b) return;
+  // Pause any playing card videos
+  document.querySelectorAll('.vid-preview video').forEach(function(v){if(!v.paused)v.pause();});
   const el=document.getElementById('vc-full');
   const vid=document.getElementById('vc-full-vid');
-  vid.src=URL.createObjectURL(b); el.style.display='flex'; vid.play();
+  vid.src=URL.createObjectURL(b);
+  el.style.display='flex';
+  vid.play().catch(function(){vid.muted=true;vid.play();});
 }
 function vcCloseFull(){
   const el=document.getElementById('vc-full');
