@@ -157,6 +157,15 @@ jobs:
 
           PROMPT_JSON=$(echo "$ZODIAC_TEXT" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read().rstrip('\n')))")
 
+          # Send URLs under the correct key depending on output mode.
+          # Worker /save-session (v5.3) reads outputMode and routes accordingly,
+          # but we also send the right field name so older workers still work.
+          if [ "$OUTPUT_MODE" = "video" ]; then
+            URL_FIELD="videoUrls"
+          else
+            URL_FIELD="imageUrls"
+          fi
+
           HTTP_STATUS=$(curl -s -o /tmp/save_resp.json -w "%{http_code}" \
             -X POST "${WORKER_URL}/save-session" \
             -H "Content-Type: application/json" \
@@ -165,7 +174,7 @@ jobs:
               \"jobId\": \"${JOB_ID}\",
               \"runToken\": \"${RUN_TOKEN}\",
               \"prompt\": ${PROMPT_JSON},
-              \"imageUrls\": ${FILE_URLS},
+              \"${URL_FIELD}\": ${FILE_URLS},
               \"outputMode\": \"${OUTPUT_MODE}\",
               \"status\": \"done\"
             }")
