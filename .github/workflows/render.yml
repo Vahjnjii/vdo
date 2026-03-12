@@ -1,4 +1,4 @@
-name: Render Zodiac Images
+name: Render Zodiac Videos
 
 on:
   workflow_dispatch:
@@ -36,54 +36,60 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Install Chrome system dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update -q
           sudo apt-get install -y --no-install-recommends \
             libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
             libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
             libgbm1 libpango-1.0-0 libcairo2 libasound2t64 \
-            fonts-noto-color-emoji
+            fonts-noto-color-emoji \
+            ffmpeg
 
-      - name: Render images
+      - name: Render videos
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ZODIAC_TEXT: ${{ github.event.inputs.zodiac_text }}
           RUN_TOKEN: ${{ github.event.inputs.run_token }}
         run: node render.js
 
-      - name: Upload images to GitHub Release
+      - name: Upload videos to GitHub Release
         id: upload_release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_TOKEN: ${{ github.event.inputs.run_token }}
           REPO: ${{ github.repository }}
         run: |
-          PNG_COUNT=$(ls output/*.png 2>/dev/null | wc -l)
-          if [ "$PNG_COUNT" -eq 0 ]; then
-            echo "PNG_COUNT=0" >> $GITHUB_OUTPUT
-            echo "No PNG files found" && exit 1
+          MP4_COUNT=$(ls output/*.mp4 2>/dev/null | wc -l)
+          if [ "$MP4_COUNT" -eq 0 ]; then
+            echo "MP4_COUNT=0" >> $GITHUB_OUTPUT
+            echo "No MP4 files found" && exit 1
           fi
-          echo "PNG_COUNT=$PNG_COUNT" >> $GITHUB_OUTPUT
+          echo "MP4_COUNT=$MP4_COUNT" >> $GITHUB_OUTPUT
 
-          gh release create "$RUN_TOKEN" output/*.png \
+          gh release create "$RUN_TOKEN" output/*.mp4 \
             --title "VDO Run $RUN_TOKEN" \
-            --notes "Auto-generated — $PNG_COUNT images" \
+            --notes "Auto-generated — $MP4_COUNT videos" \
             --repo "$REPO"
 
           BASE_URL="https://github.com/${REPO}/releases/download/${RUN_TOKEN}"
-          IMAGE_URLS=$(ls output/*.png | sort | BASE_URL="$BASE_URL" python3 -c "import sys,json,os; base=os.environ['BASE_URL']; files=[os.path.basename(l.strip()) for l in sys.stdin if l.strip()]; print(json.dumps([f'{base}/{f}' for f in sorted(files) if f.endswith('.png')]))")
-          echo "IMAGE_URLS=$IMAGE_URLS" >> $GITHUB_OUTPUT
-          echo "URLs: $IMAGE_URLS"
+          VIDEO_URLS=$(ls output/*.mp4 | sort | BASE_URL="$BASE_URL" python3 -c "
+          import sys, json, os
+          base = os.environ['BASE_URL']
+          files = [os.path.basename(l.strip()) for l in sys.stdin if l.strip()]
+          print(json.dumps([f'{base}/{f}' for f in sorted(files) if f.endswith('.mp4')]))
+          ")
+          echo "VIDEO_URLS=$VIDEO_URLS" >> $GITHUB_OUTPUT
+          echo "URLs: $VIDEO_URLS"
 
       - name: Save session metadata via worker
-        if: steps.upload_release.outputs.PNG_COUNT != '0'
+        if: steps.upload_release.outputs.MP4_COUNT != '0'
         env:
           RUN_TOKEN: ${{ github.event.inputs.run_token }}
           USER_ID: ${{ github.event.inputs.user_id }}
           JOB_ID: ${{ github.event.inputs.job_id }}
           ZODIAC_TEXT: ${{ github.event.inputs.zodiac_text }}
-          IMAGE_URLS: ${{ steps.upload_release.outputs.IMAGE_URLS }}
+          VIDEO_URLS: ${{ steps.upload_release.outputs.VIDEO_URLS }}
           WORKER_URL: 'https://vdo.shreevathsa2k21-4fa.workers.dev'
         run: |
           if [ -z "$USER_ID" ] || [ -z "$JOB_ID" ]; then
@@ -101,7 +107,9 @@ jobs:
               \"jobId\": \"${JOB_ID}\",
               \"runToken\": \"${RUN_TOKEN}\",
               \"prompt\": ${PROMPT_JSON},
-              \"imageUrls\": ${IMAGE_URLS},
+              \"videoUrls\": ${VIDEO_URLS},
+              \"imageUrls\": ${VIDEO_URLS},
+              \"type\": \"video\",
               \"status\": \"done\"
             }")
 
@@ -114,6 +122,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: zodiac-images-${{ github.event.inputs.run_token }}
-          path: output/*.png
+          name: zodiac-videos-${{ github.event.inputs.run_token }}
+          path: output/*.mp4
           retention-days: 1
