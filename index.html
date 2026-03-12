@@ -790,18 +790,11 @@ async function doPoll(jobId) {
   if (!s||s.status!=='generating') return;
 
   try {
-    // ── FAST PATH: Worker already saved imageUrls from GitHub Release ──
-    // GitHub Actions calls /save-session right after upload, often
-    // BEFORE the frontend detects "completed" via /status poll.
-    // Checking Worker directly here catches this case immediately.
-    if (s.run_token) {
-      const ws = await fetchWorkerSession(jobId);
-      if (ws?.status==='done' && ws.imageUrls?.length) {
-        await handleDoneViaUrls(jobId, ws.imageUrls); return;
-      }
-    }
-
     // ── Phase 1: Find GitHub run_id ────────────────────────────────────
+    // NOTE: Do NOT call fetchWorkerSession() here — that reads sessions.json
+    // from GitHub on every tick (every 3s = 20 GitHub API calls/min).
+    // That caused Worker CPU timeout → HTTP 500 before action even finished.
+    // We only check Worker /sessions AFTER run completes (Phase 3 below).
     if (!s.run_id) {
       const d = await fetchJSON(`${WORKER}/poll?run_token=${encodeURIComponent(s.run_token||'')}&_=${Date.now()}`);
       if (d?.found) upsertSess({jobId, run_id:d.run_id, errorCount:0});
