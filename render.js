@@ -4,6 +4,33 @@ const path = require('path');
 
 const WORKER_URL  = 'https://vdo.shreevathsa2k21-4fa.workers.dev';
 const ZODIAC_TEXT = process.env.ZODIAC_TEXT;
+const USER_ID     = process.env.USER_ID  || '';
+const JOB_ID      = process.env.JOB_ID   || '';
+const RUN_TOKEN   = process.env.RUN_TOKEN || '';
+
+// ── Report progress/errors back to Worker KV so frontend sees real-time steps.
+//    Uses /save-session which the Worker already supports — sends minimal fields
+//    so it acts as a patch (Worker merges, not replaces). If no userId/jobId
+//    (older invocations) this is a no-op.
+async function reportProgress(step, extra = {}) {
+  if (!USER_ID || !JOB_ID) return;
+  try {
+    await fetch(`${WORKER_URL}/save-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: USER_ID,
+        jobId: JOB_ID,
+        runToken: RUN_TOKEN,
+        status: extra.status || 'generating',
+        step,
+        ...extra
+      })
+    });
+  } catch(e) {
+    console.warn('⚠️  Progress report failed (non-fatal):', e.message);
+  }
+}
 
 // ── Detect if text contains CJK (Chinese/Japanese/Korean) characters
 function hasCJK(text) {
@@ -12,6 +39,7 @@ function hasCJK(text) {
 
 async function formatWithWorkerAI(text) {
   console.log('🤖 Calling Worker /format ...');
+  await reportProgress('formatting');   // ← frontend shows "AI formatting text…"
   const res = await fetch(`${WORKER_URL}/format`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -24,6 +52,8 @@ async function formatWithWorkerAI(text) {
   const data = await res.json();
   if (!data.posts?.length) throw new Error('Worker returned 0 posts');
   console.log(`✅ Got ${data.posts.length} posts`);
+  // Tell frontend exactly how many images are coming
+  await reportProgress('formatted', { totalPosts: data.posts.length });
   return data.posts;
 }
 
@@ -149,6 +179,8 @@ async function render(posts, useCJK) {
 
   for (let i = 0; i < posts.length; i++) {
     console.log(`📸 [${i+1}/${posts.length}] ${posts[i].title}`);
+    // Report to frontend: "Rendering image N/total"
+    await reportProgress(`rendering_${i+1}_${posts.length}`);
 
     await page.evaluate((idx, total) => {
       for (let j = 0; j < total; j++) {
@@ -177,10 +209,20 @@ async function render(posts, useCJK) {
 
 (async () => {
   if (!ZODIAC_TEXT) throw new Error('ZODIAC_TEXT not set');
-  const posts = await formatWithWorkerAI(ZODIAC_TEXT);
-  const useCJK = hasCJK(ZODIAC_TEXT);
-  console.log(`\n🌐 Language: ${useCJK ? 'CJK (Noto Sans SC)' : 'Latin (Poppins)'}`);
-  console.log(`🎨 Rendering ${posts.length} posts...`);
-  await render(posts, useCJK);
-  console.log('✅ All done!');
-})().catch(e => { console.error('❌', e.message); process.exit(1); });
+  try {
+    const posts = await formatWithWorkerAI(ZODIAC_TEXT);
+    const useCJK = hasCJK(ZODIAC_TEXT);
+    console.log(`\n🌐 Language: ${useCJK ? 'CJK (Noto Sans SC)' : 'Latin (Poppins)'}`);
+    console.log(`🎨 Rendering ${posts.length} posts...`);
+    await render(posts, useCJK);
+    // 'uploading' step — GitHub Actions upload step runs next
+    await reportProgress('uploading');
+    console.log('✅ All done!');
+  } catch(e) {
+    // Report error IMMEDIATELY to Worker so frontend shows it within seconds,
+    // not after a 4-minute polling timeout.
+    console.error('❌', e.message);
+    await reportProgress('error', { status: 'error', errorMsg: e.message });
+    process.exit(1);
+  }
+})();
