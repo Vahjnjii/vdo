@@ -638,31 +638,32 @@ async function enterApp() {
   const h=new Date().getHours();
   $('greet').textContent=`${h<12?'Good morning':h<17?'Good afternoon':'Good evening'}, ${n} 👋`;
 
-  // 1. Instant local render from cache so UI appears immediately
-  _sessions=lsGetSess(_user.id).map(s=>({...s,pollInterval:null}));
-  renderSessBar(); show('templates');
+  // ── Step 1: Show local cache IMMEDIATELY — never block UI on network ──
+  // This means refresh always shows your history instantly, even offline.
+  _sessions = lsGetSess(_user.id).map(s=>({...s, pollInterval:null}));
+  renderSessBar();
+  show('templates');
 
-  // 2. ALWAYS await remote sync — remote is the source of truth for cross-device.
-  //    On mobile you created images → they're saved on server → now laptop fetches them.
-  //    We don't fire-and-forget here; we await so the session list is correct ASAP.
-  try {
-    const remote = await remoteLoad(_user.id);
-    const live = _sessions.filter(s => s.status==='generating' || s.status==='queued');
-    const liveIds = new Set(live.map(s => s.jobId));
-    // Remote sessions are authoritative (have imageUrls). Live in-progress jobs stay.
-    _sessions = [...live, ...remote.filter(s => !liveIds.has(s.jobId))]
-      .map(s => ({...s, pollInterval: s.pollInterval||null}));
-    lsSaveSess(_user.id, _sessions);  // update local cache with fresh remote data
-    renderSessBar();
-  } catch(e) {
-    console.warn('Remote sync failed on enterApp:', e.message);
-    // Fall back to whatever local cache had — already rendered above
-  }
-
-  // 3. Resume any in-flight generations
+  // ── Step 2: Resume any in-flight jobs right away ──
   _sessions.forEach(s=>{ if(s.status==='generating') startPolling(s.jobId); });
 
-  // 4. Load models — filter deprecated, set best as default if active is gone
+  // ── Step 3: Background remote sync — updates with server data (cross-device) ──
+  // Fire-and-forget: never blocks the UI, never causes data loss on failure.
+  remoteLoad(_user.id).then(remote => {
+    if (!remote?.length) return;  // nothing from server, keep local
+    const live = _sessions.filter(s => s.status==='generating' || s.status==='queued');
+    const liveIds = new Set(live.map(s => s.jobId));
+    // Merge: live in-progress jobs stay on top, server sessions fill the rest
+    const merged = [...live, ...remote.filter(s => !liveIds.has(s.jobId))]
+      .map(s => ({...s, pollInterval: s.pollInterval||null}));
+    _sessions = merged;
+    lsSaveSess(_user.id, _sessions);
+    renderSessBar();
+  }).catch(e => {
+    console.warn('Background remote sync failed (local cache is intact):', e.message);
+  });
+
+  // ── Step 4: Load models in background ──
   fetch(`${WORKER}/models`).then(r=>r.json()).then(d=>{
     const raw = (d.models||[]).filter(m => !DEPRECATED_MODELS.has(m.id));
     _models = raw.length ? raw : FALLBACK_MODELS;
@@ -1340,18 +1341,19 @@ document.addEventListener('DOMContentLoaded',()=>{
       if (!u) u = lsGet('vdo_user_v2');
     }
     if (u && u.id) {
-      // Check TTL — re-login only after 30 days of inactivity
-      const age = Date.now() - (u.loginTs || 0);
+      // Check TTL — only re-login if loginTs is explicitly set AND older than 30 days.
+      // If loginTs is missing (old stored users), treat as valid — never expire silently.
+      const age = u.loginTs ? (Date.now() - u.loginTs) : 0;
       if (age < USER_TTL_MS) {
         _user = u;
-        // Refresh both caches with current timestamp so TTL resets on activity
+        // Write to new key + sessionStorage, stamping loginTs so TTL works going forward
         const refreshed = {...u, loginTs: Date.now()};
         lsSet(LS_USER, refreshed);
         ssSet(SS_USER, refreshed);
         _user = refreshed;
         enterApp();
       } else {
-        // TTL expired — clear and show login
+        // TTL genuinely expired — clear and show login
         lsDel(LS_USER); ssDel(SS_USER);
         show('login');
       }
