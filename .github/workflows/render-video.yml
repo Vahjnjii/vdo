@@ -1,0 +1,127 @@
+name: Render Zodiac Video
+
+on:
+  workflow_dispatch:
+    inputs:
+      zodiac_text:
+        description: 'Zodiac text to render'
+        required: true
+      run_token:
+        description: 'Unique run token — used as release tag'
+        required: true
+      user_id:
+        description: 'User ID for session tracking'
+        required: false
+        default: ''
+      job_id:
+        description: 'Job ID for session tracking'
+        required: false
+        default: ''
+      duration:
+        description: 'Video duration in seconds'
+        required: false
+        default: '10'
+
+jobs:
+  render-video:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Install system dependencies (Chrome + ffmpeg + fonts)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends \
+            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+            libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+            libgbm1 libpango-1.0-0 libcairo2 libasound2t64 \
+            fonts-noto-color-emoji \
+            ffmpeg
+
+      - name: Render video frames + encode MP4
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ZODIAC_TEXT: ${{ github.event.inputs.zodiac_text }}
+          RUN_TOKEN: ${{ github.event.inputs.run_token }}
+          DURATION: ${{ github.event.inputs.duration }}
+        run: node render-video.js
+
+      - name: Upload video to GitHub Release
+        id: upload_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_TOKEN: ${{ github.event.inputs.run_token }}
+          REPO: ${{ github.repository }}
+        run: |
+          MP4_FILE="output/zodiac-video.mp4"
+          if [ ! -f "$MP4_FILE" ]; then
+            echo "MP4 not found!" && exit 1
+          fi
+
+          RELEASE_TAG="vid-${RUN_TOKEN}"
+
+          gh release create "$RELEASE_TAG" "$MP4_FILE" \
+            --title "VDO Video $RUN_TOKEN" \
+            --notes "Auto-generated 10s zodiac video" \
+            --repo "$REPO"
+
+          BASE_URL="https://github.com/${REPO}/releases/download/${RELEASE_TAG}"
+          VIDEO_URL="${BASE_URL}/zodiac-video.mp4"
+          echo "VIDEO_URL=$VIDEO_URL" >> $GITHUB_OUTPUT
+          echo "Video URL: $VIDEO_URL"
+
+      - name: Save session metadata via worker
+        env:
+          RUN_TOKEN: ${{ github.event.inputs.run_token }}
+          USER_ID: ${{ github.event.inputs.user_id }}
+          JOB_ID: ${{ github.event.inputs.job_id }}
+          ZODIAC_TEXT: ${{ github.event.inputs.zodiac_text }}
+          VIDEO_URL: ${{ steps.upload_release.outputs.VIDEO_URL }}
+          WORKER_URL: 'https://vdo.shreevathsa2k21-4fa.workers.dev'
+        run: |
+          if [ -z "$USER_ID" ] || [ -z "$JOB_ID" ]; then
+            echo "No userId/jobId — skipping session save"
+            exit 0
+          fi
+
+          PROMPT_JSON=$(echo "$ZODIAC_TEXT" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read().rstrip('\n')))")
+          VIDEO_URLS_JSON=$(echo "$VIDEO_URL" | python3 -c "import sys,json; print(json.dumps([sys.stdin.read().strip()]))")
+
+          HTTP_STATUS=$(curl -s -o /tmp/save_resp.json -w "%{http_code}" \
+            -X POST "${WORKER_URL}/save-session" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"userId\": \"${USER_ID}\",
+              \"jobId\": \"${JOB_ID}\",
+              \"runToken\": \"${RUN_TOKEN}\",
+              \"prompt\": ${PROMPT_JSON},
+              \"videoUrls\": ${VIDEO_URLS_JSON},
+              \"imageUrls\": ${VIDEO_URLS_JSON},
+              \"status\": \"done\",
+              \"type\": \"video\"
+            }")
+
+          echo "Worker response ($HTTP_STATUS): $(cat /tmp/save_resp.json)"
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "Warning: session save returned $HTTP_STATUS"
+          fi
+
+      - name: Upload artifact (1-day fallback)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zodiac-video-${{ github.event.inputs.run_token }}
+          path: output/*.mp4
+          retention-days: 1
