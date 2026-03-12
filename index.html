@@ -179,6 +179,21 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .s-chip::after{content:attr(data-tip);position:absolute;left:30px;top:50%;transform:translateY(-50%);background:#0a0818;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.9);font-size:11px;font-weight:500;padding:4px 10px;border-radius:7px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999}
 .s-chip:hover::after{opacity:1}
 
+/* ═══ VIDEO MODE TOGGLE ═══ */
+.mode-bar{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:7px 12px 0;gap:0}
+.mode-toggle{display:flex;align-items:center;background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:50px;padding:3px;gap:2px;position:relative}
+.mode-opt{display:flex;align-items:center;gap:5px;padding:6px 13px;border-radius:50px;font-size:11.5px;font-weight:600;font-family:'Geist',sans-serif;cursor:pointer;transition:all .22s;color:var(--tx3);border:none;background:none;white-space:nowrap;letter-spacing:.02em}
+.mode-opt.active{color:#fff;background:linear-gradient(135deg,#4a3dc7,#6c5ce7);box-shadow:0 2px 12px rgba(108,92,231,.45)}
+.mode-opt.active.video-active{background:linear-gradient(135deg,#c0392b,#e74c3c);box-shadow:0 2px 12px rgba(231,76,60,.45)}
+.mode-opt i{font-size:10px}
+.mode-badge{font-size:8.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:1px 5px;border-radius:20px;background:rgba(0,214,143,.15);color:var(--gn);border:1px solid rgba(0,214,143,.25);margin-left:2px}
+
+/* video card preview */
+.vid-preview{width:100%;aspect-ratio:9/16;overflow:hidden;background:#000;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center}
+.vid-preview video{width:100%;height:100%;object-fit:cover;display:block}
+.vid-play-ico{position:absolute;width:42px;height:42px;border-radius:50%;background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;pointer-events:none;transition:opacity .2s}
+.vid-preview:hover .vid-play-ico{opacity:0}
+
 /* input bar */
 .ch-bar{flex-shrink:0;display:flex;align-items:flex-end;gap:8px;padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom));background:rgba(4,3,10,.98);backdrop-filter:blur(24px);border-top:1px solid var(--bd)}
 .ch-ta{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:14px;padding:10px 14px;color:var(--tx);font-size:13.5px;font-family:'Geist',sans-serif;outline:none;resize:none;transition:border-color .2s;max-height:130px;overflow-y:auto;line-height:1.5}
@@ -328,8 +343,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
   <div class="ch-nav">
     <button class="ch-back" onclick="show('templates')"><i class="fas fa-arrow-left"></i></button>
     <div class="ch-nav-mid">
-      <div class="ch-nav-ico">🎨</div>
-      <div class="ch-nav-title">Image Generator</div>
+      <div class="ch-nav-ico" id="ch-nav-ico">🎨</div>
+      <div class="ch-nav-title" id="ch-nav-title">Image Generator</div>
     </div>
     <button class="nav-btn nb-model" onclick="openModelSheet()">
       <i class="fas fa-microchip" style="font-size:10px"></i>
@@ -339,6 +354,19 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
       <i class="fas fa-clock-rotate-left" style="font-size:10px"></i>
     </button>
   </div>
+
+  <!-- OUTPUT MODE TOGGLE -->
+  <div class="mode-bar">
+    <div class="mode-toggle">
+      <button class="mode-opt" id="mode-img" onclick="setOutputMode('image')">
+        <i class="fas fa-image"></i> Image
+      </button>
+      <button class="mode-opt video-active active" id="mode-vid" onclick="setOutputMode('video')">
+        <i class="fas fa-film"></i> Video <span class="mode-badge">10s</span>
+      </button>
+    </div>
+  </div>
+
   <div id="sess-bar"></div>
   <div id="ch-msgs" class="ch-msgs">
     <div class="ch-empty" id="ch-empty">
@@ -416,6 +444,7 @@ let _sessions = [];
 let _activeJobId = null;
 let _imgCache = {};   // `${jobId}:${idx}` → Blob
 let _pollGuard = {};  // jobId → bool
+let _outputMode = 'video'; // 'image' | 'video' — default ON (video)
 
 // ═══════════════════════════════════════════════════════════════
 // LOCAL STORAGE
@@ -725,6 +754,29 @@ function show(id){
 function openTemplate(){ _activeJobId=null; clearChat(); show('chat'); }
 
 // ═══════════════════════════════════════════════════════════════
+// OUTPUT MODE TOGGLE  (image ↔ video)
+// ═══════════════════════════════════════════════════════════════
+function setOutputMode(mode) {
+  _outputMode = mode;
+  const imgBtn = $('mode-img'), vidBtn = $('mode-vid');
+  const ico = $('ch-nav-ico'), title = $('ch-nav-title');
+  if (mode === 'video') {
+    vidBtn.classList.add('active','video-active');
+    imgBtn.classList.remove('active','video-active');
+    if (ico) ico.textContent = '🎬';
+    if (title) title.textContent = 'Video Generator';
+    lsSet('vdo_output_mode', 'video');
+  } else {
+    imgBtn.classList.add('active');
+    imgBtn.classList.remove('video-active');
+    vidBtn.classList.remove('active','video-active');
+    if (ico) ico.textContent = '🎨';
+    if (title) title.textContent = 'Image Generator';
+    lsSet('vdo_output_mode', 'image');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // SESSION DOTS BAR
 // Colors: done=green, generating=yellow, error=red, queued=grey
 // ═══════════════════════════════════════════════════════════════
@@ -798,7 +850,7 @@ async function kickGen(jobId) {
   try {
     const d = await fetchWithRetry(`${WORKER}/trigger`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({zodiac_text:s.prompt, userId:_user?.id||'', jobId})
+      body: JSON.stringify({zodiac_text:s.prompt, userId:_user?.id||'', jobId, output_mode:s.outputMode||'image'})
     });
     if (d.error) throw new Error(d.error);
     upsertSess({jobId, run_token:d.run_token, errorCount:0});
@@ -912,26 +964,31 @@ async function handleDoneViaUrls(jobId, imageUrls) {
   if (s?.pollInterval) { clearInterval(s.pollInterval); s.pollInterval=null; }
   delete _pollGuard[jobId];
   const wasActive=_activeJobId===jobId;
+  const isVid=s?.outputMode==='video';
   upsertSess({jobId, status:'done', imageUrls, done:imageUrls.length, total:imageUrls.length});
 
-  // Show images IMMEDIATELY via direct URL — no proxy fetch needed for display
   if (wasActive && _activeJobId===jobId) {
     const row=$('row-'+sid(jobId));
     if(row) row.innerHTML='';
     imageUrls.forEach((url,i)=>{
-      if(url&&url.startsWith('https://')) addImgCard(jobId,url,i);
+      if(url&&url.startsWith('https://')){
+        if(isVid) addVideoCard(jobId,url,i);
+        else addImgCard(jobId,url,i);
+      }
     });
     updateGrpHd(jobId,'done',imageUrls.length);
     scrollDown();
   }
 
-  // Background blob fetch for Save/Share functionality
-  fetchReleaseImgs(imageUrls).then(blobs=>{
-    if(blobs.length){
-      blobs.forEach((b,i)=>{ _imgCache[`${jobId}:${i}`]=b; });
-      lsSaveImgs(jobId, blobs);
-    }
-  }).catch(()=>{});
+  // Background blob fetch for image Save/Share (not needed for video — use direct URL)
+  if(!isVid){
+    fetchReleaseImgs(imageUrls).then(blobs=>{
+      if(blobs.length){
+        blobs.forEach((b,i)=>{ _imgCache[`${jobId}:${i}`]=b; });
+        lsSaveImgs(jobId, blobs);
+      }
+    }).catch(()=>{});
+  }
 
   renderSessBar(); processQueue();
 }
@@ -1001,7 +1058,7 @@ async function extractFallback(buf){
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CHIP CLICK — restore session with 3-tier image loading
+// CHIP CLICK — restore session with 3-tier image/video loading
 // ═══════════════════════════════════════════════════════════════
 async function onChipClick(jobId){
   _activeJobId=jobId; renderSessBar();
@@ -1009,55 +1066,60 @@ async function onChipClick(jobId){
   clearChat(); hideEmpty(); show('chat');
   addUserMsg(s.prompt||''); addSessSep(s.ts); addImgGroup(jobId);
 
+  const isVid=s.outputMode==='video';
+
   if(s.status==='done'||s.imageUrls?.length){
     const urls=s.imageUrls||[];
     const count=urls.length||s.done||0;
 
-    // T1: memory blobs — instant render
-    let cachedAll=true;
-    for(let i=0;i<count;i++){
-      const b=_imgCache[`${jobId}:${i}`];
-      if(b) addImgCard(jobId,b,i);
-      else cachedAll=false;
-    }
-
-    // T2: localStorage blobs
-    if(!cachedAll){
-      const stored=lsLoadImgs(jobId);
-      if(stored.length){
-        stored.forEach((b,i)=>{
-          _imgCache[`${jobId}:${i}`]=b;
-          if(!_imgCache[`${jobId}:${i}`]) addImgCard(jobId,b,i);
-        });
-        // Re-render all from cache
-        $('row-'+sid(jobId)).innerHTML='';
-        stored.forEach((b,i)=>addImgCard(jobId,b,i));
-        cachedAll=true;
-      }
-    }
-
-    // T3: Direct URL render — NO proxy fetch needed just to display!
-    // <img src="https://github-release-url"> works fine in browser.
-    // We show images instantly via URL, then fetch blobs in background for Save/Share.
-    if(!cachedAll&&urls.length){
+    if(isVid){
+      // Videos — always render from direct URL, no blob caching needed
       const row=$('row-'+sid(jobId));
-      if(row) row.innerHTML=''; // clear any partial renders
+      if(row) row.innerHTML='';
       urls.forEach((url,i)=>{
-        if(url&&url.startsWith('https://')) addImgCard(jobId,url,i);
+        if(url&&url.startsWith('https://')) addVideoCard(jobId,url,i);
       });
-      updateGrpHd(jobId,'done',urls.length);
-      // Background blob fetch so Save/Share works without re-fetching
-      fetchReleaseImgs(urls).then(blobs=>{
-        if(blobs.length){
-          blobs.forEach((b,i)=>{ _imgCache[`${jobId}:${i}`]=b; });
-          lsSaveImgs(jobId,blobs);
-        }
-      }).catch(()=>{});
-      scrollDown();
-    } else if(count){
-      updateGrpHd(jobId,'done',count);
+      updateGrpHd(jobId,'done',urls.length||count);
     } else {
-      updateGrpHd(jobId,'error',0,'Images unavailable — may still be processing');
+      // Images — T1: memory blobs
+      let cachedAll=true;
+      for(let i=0;i<count;i++){
+        const b=_imgCache[`${jobId}:${i}`];
+        if(b) addImgCard(jobId,b,i);
+        else cachedAll=false;
+      }
+
+      // T2: localStorage blobs
+      if(!cachedAll){
+        const stored=lsLoadImgs(jobId);
+        if(stored.length){
+          stored.forEach((b,i)=>{ _imgCache[`${jobId}:${i}`]=b; });
+          $('row-'+sid(jobId)).innerHTML='';
+          stored.forEach((b,i)=>addImgCard(jobId,b,i));
+          cachedAll=true;
+        }
+      }
+
+      // T3: Direct URL render
+      if(!cachedAll&&urls.length){
+        const row=$('row-'+sid(jobId));
+        if(row) row.innerHTML='';
+        urls.forEach((url,i)=>{
+          if(url&&url.startsWith('https://')) addImgCard(jobId,url,i);
+        });
+        updateGrpHd(jobId,'done',urls.length);
+        fetchReleaseImgs(urls).then(blobs=>{
+          if(blobs.length){
+            blobs.forEach((b,i)=>{ _imgCache[`${jobId}:${i}`]=b; });
+            lsSaveImgs(jobId,blobs);
+          }
+        }).catch(()=>{});
+        scrollDown();
+      } else if(count){
+        updateGrpHd(jobId,'done',count);
+      } else {
+        updateGrpHd(jobId,'error',0,'Images unavailable — may still be processing');
+      }
     }
   }
   if(s.status!=='done') updateGrpHd(jobId,s.status==='error'?'error':'processing');
@@ -1074,7 +1136,7 @@ function sendMsg(){
   const jobId=`j-${_user?.id||'anon'}-${Date.now()}`;
   _activeJobId=jobId;
   clearChat(); hideEmpty(); addUserMsg(text);
-  upsertSess({jobId,prompt:text,label:text.slice(0,80),ts:Date.now(),status:'queued',done:0,total:0,imageUrls:[],pollInterval:null});
+  upsertSess({jobId,prompt:text,label:text.slice(0,80),ts:Date.now(),status:'queued',done:0,total:0,imageUrls:[],outputMode:_outputMode,pollInterval:null});
   addImgGroup(jobId); scrollDown(); renderSessBar();
   if(activeCount()<6){
     upsertSess({jobId,status:'generating'});
@@ -1099,16 +1161,22 @@ function addSessSep(ts){
 }
 function addImgGroup(jobId){
   const s=sid(jobId),d=document.createElement('div');
+  const sess=getSess(jobId);
+  const isVid=sess?.outputMode==='video';
   d.className='img-group'; d.id='grp-'+s;
-  d.innerHTML=`<div class="grp-hd" id="ghd-${s}"><div class="grp-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>Starting GitHub Actions… (~60s)</span></div></div><div class="img-row" id="row-${s}"></div>`;
+  const startMsg=isVid?'Starting GitHub Actions… (~90s for video)':'Starting GitHub Actions… (~60s)';
+  d.innerHTML=`<div class="grp-hd" id="ghd-${s}"><div class="grp-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>${startMsg}</span></div></div><div class="img-row" id="row-${s}"></div>`;
   msgs().appendChild(d);
 }
 function updateGrpHd(jobId,status,count,msg){
   const s=sid(jobId),hd=$('ghd-'+s); if(!hd)return;
   const sess=getSess(jobId);
+  const isVid=sess?.outputMode==='video';
+  const unit=isVid?'video':'image';
   if(status==='done'){
     const n=count||sess?.done||0;
-    hd.innerHTML=`<div class="grp-hd-l"><i class="fas fa-check-circle" style="color:var(--gn)"></i><span style="color:var(--gn);font-weight:600">${n} image${n!==1?'s':''} ready ✓</span></div><button class="dl-all" onclick="dlAll('${s}',${n})"><i class="fas fa-cloud-arrow-down"></i> Save All (${n})</button>`;
+    const ico=isVid?'fa-circle-play':'fa-check-circle';
+    hd.innerHTML=`<div class="grp-hd-l"><i class="fas ${ico}" style="color:var(--gn)"></i><span style="color:var(--gn);font-weight:600">${n} ${unit}${n!==1?'s':''} ready ✓</span></div><button class="dl-all" onclick="dlAll('${s}',${n})"><i class="fas fa-cloud-arrow-down"></i> Save All (${n})</button>`;
   } else if(status==='error'){
     const m=msg||sess?.errorMsg||'Failed.';
     hd.innerHTML=`<div class="grp-hd-l"><i class="fas fa-circle-exclamation" style="color:var(--rd)"></i><span style="color:var(--rd);font-weight:500">Failed — ${esc(m)}</span></div>`;
@@ -1116,9 +1184,58 @@ function updateGrpHd(jobId,status,count,msg){
     hd.innerHTML=`<div class="grp-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>Loading from GitHub Releases…</span></div>`;
   } else {
     const el=Math.round((Date.now()-(sess?.ts||Date.now()))/1000);
-    const step=el<15?'⚡ Triggering GitHub…':el<35?'⏳ Actions queued…':el<70?'🔄 Rendering images…':'🔄 Almost done…';
+    const step=isVid
+      ?(el<15?'⚡ Triggering GitHub…':el<40?'⏳ Actions queued…':el<80?'🔄 Rendering images…':el<110?'🎬 Converting to video…':'🎬 Almost done…')
+      :(el<15?'⚡ Triggering GitHub…':el<35?'⏳ Actions queued…':el<70?'🔄 Rendering images…':'🔄 Almost done…');
     hd.innerHTML=`<div class="grp-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>${step} <span style="color:var(--tx3);font-size:10.5px">${el}s</span></span></div>`;
   }
+}
+
+// Add a video card (mp4 URL)
+function addVideoCard(jobId,videoUrl,idx){
+  const s=sid(jobId),row=$('row-'+s); if(!row)return;
+  const card=document.createElement('div');
+  card.className='img-card'; card.style.animationDelay=(idx%6*55)+'ms';
+  card.dataset.jobId=jobId; card.dataset.idx=idx;
+  card.dataset.displayUrl=videoUrl;
+  card.innerHTML=`<div class="img-card-lbl">Video ${idx+1}</div>
+    <div class="vid-preview" id="prev-${sid(jobId+'_'+idx)}">
+      <video src="${videoUrl}" loop muted playsinline preload="metadata"
+        onloadedmetadata="this.closest('.vid-preview')?.classList.add('loaded')"
+        onmouseenter="this.play()" onmouseleave="this.pause();this.currentTime=0">
+      </video>
+      <div class="vid-play-ico"><i class="fas fa-play"></i></div>
+    </div>
+    <div class="img-acts">
+      <button class="img-btn-share" data-act="share"><i class="fas fa-share-nodes"></i> Share</button>
+      <div class="img-btns-r">
+        <button class="img-btn" data-act="save"><i class="fas fa-download"></i> Save</button>
+        <button class="img-btn" data-act="view"><i class="fas fa-expand"></i> View</button>
+      </div>
+    </div>`;
+  card.querySelectorAll('[data-act]').forEach(btn=>btn.addEventListener('click',e=>{
+    e.stopPropagation();
+    const act=btn.dataset.act;
+    if(act==='share') shareVideo(videoUrl,idx);
+    else if(act==='save') dlVideo(videoUrl,idx);
+    else window.open(videoUrl,'_blank');
+  }));
+  row.appendChild(card);
+}
+async function shareVideo(url,idx){
+  try{
+    if(navigator.share){
+      await navigator.share({url,title:`VDO Video ${idx+1}`,text:'Generated with VDO'});
+    } else { window.open(url,'_blank'); }
+    toast('Shared ✓');
+  }catch(e){if(e.name!=='AbortError')toast('⚠️ '+e.message);}
+}
+function dlVideo(url,idx){
+  const a=document.createElement('a');
+  const rnd=new Uint32Array(1);crypto.getRandomValues(rnd);
+  a.href=url; a.download=`vdo_${(rnd[0]%900000000)+100000000}.mp4`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  toast('Saved ✓');
 }
 // blobOrUrl: Blob (cached) OR string (direct https:// GitHub Release URL)
 function addImgCard(jobId,blobOrUrl,idx){
@@ -1308,6 +1425,9 @@ function toast(m){
 // ═══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded',()=>{
   try{const u=readPersistedUser();if(u){_user=u;enterApp();}}catch{}
+  // Restore saved output mode (default: video)
+  const savedMode=lsGet('vdo_output_mode');
+  setOutputMode(savedMode==='image'?'image':'video');
   const ta=$('ch-ta');
   if(ta){
     ta.addEventListener('input',()=>resize(ta));
