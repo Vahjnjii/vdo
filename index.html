@@ -913,26 +913,26 @@ async function handleDoneViaUrls(jobId, imageUrls) {
   delete _pollGuard[jobId];
   const wasActive=_activeJobId===jobId;
   upsertSess({jobId, status:'done', imageUrls, done:imageUrls.length, total:imageUrls.length});
-  if (wasActive) updateGrpHd(jobId,'loading');
 
-  let blobs = await fetchReleaseImgs(imageUrls);
-  // GitHub CDN can take ~5s to propagate — retry once if empty
-  if (!blobs.length) {
-    await sleep(5000);
-    blobs = await fetchReleaseImgs(imageUrls);
-  }
-  if (!blobs.length) {
-    if (wasActive && _activeJobId===jobId)
-      updateGrpHd(jobId,'error',0,'Images saved — try refreshing in 30s');
-    renderSessBar(); processQueue(); return;
-  }
-  blobs.forEach((b,i)=>{ _imgCache[`${jobId}:${i}`]=b; });
-  lsSaveImgs(jobId, blobs);
+  // Show images IMMEDIATELY via direct URL — no proxy fetch needed for display
   if (wasActive && _activeJobId===jobId) {
-    blobs.forEach((b,i)=>addImgCard(jobId,b,i));
-    updateGrpHd(jobId,'done',blobs.length);
+    const row=$('row-'+sid(jobId));
+    if(row) row.innerHTML='';
+    imageUrls.forEach((url,i)=>{
+      if(url&&url.startsWith('https://')) addImgCard(jobId,url,i);
+    });
+    updateGrpHd(jobId,'done',imageUrls.length);
     scrollDown();
   }
+
+  // Background blob fetch for Save/Share functionality
+  fetchReleaseImgs(imageUrls).then(blobs=>{
+    if(blobs.length){
+      blobs.forEach((b,i)=>{ _imgCache[`${jobId}:${i}`]=b; });
+      lsSaveImgs(jobId, blobs);
+    }
+  }).catch(()=>{});
+
   renderSessBar(); processQueue();
 }
 
@@ -1010,34 +1010,52 @@ async function onChipClick(jobId){
   addUserMsg(s.prompt||''); addSessSep(s.ts); addImgGroup(jobId);
 
   if(s.status==='done'||s.imageUrls?.length){
-    const count=s.done||s.imageUrls?.length||0;
-    let blobs=[];
+    const urls=s.imageUrls||[];
+    const count=urls.length||s.done||0;
 
-    // T1: memory
-    for(let i=0;i<count;i++){const b=_imgCache[`${jobId}:${i}`];if(b)blobs.push(b);}
+    // T1: memory blobs — instant render
+    let cachedAll=true;
+    for(let i=0;i<count;i++){
+      const b=_imgCache[`${jobId}:${i}`];
+      if(b) addImgCard(jobId,b,i);
+      else cachedAll=false;
+    }
 
-    // T2: localStorage
-    if(blobs.length<count){
+    // T2: localStorage blobs
+    if(!cachedAll){
       const stored=lsLoadImgs(jobId);
-      if(stored.length){stored.forEach((b,i)=>{_imgCache[`${jobId}:${i}`]=b;});blobs=stored;}
+      if(stored.length){
+        stored.forEach((b,i)=>{
+          _imgCache[`${jobId}:${i}`]=b;
+          if(!_imgCache[`${jobId}:${i}`]) addImgCard(jobId,b,i);
+        });
+        // Re-render all from cache
+        $('row-'+sid(jobId)).innerHTML='';
+        stored.forEach((b,i)=>addImgCard(jobId,b,i));
+        cachedAll=true;
+      }
     }
 
-    // T3: GitHub Release URLs — permanent, cross-device
-    // Only fetches full https:// URLs; ignores old broken relative paths
-    if(blobs.length<count&&s.imageUrls?.length){
-      updateGrpHd(jobId,'loading');
-      try{
-        const fetched=await fetchReleaseImgs(s.imageUrls);
-        if(fetched.length){
-          fetched.forEach((b,i)=>{_imgCache[`${jobId}:${i}`]=b;});
-          lsSaveImgs(jobId,fetched); blobs=fetched;
+    // T3: Direct URL render — NO proxy fetch needed just to display!
+    // <img src="https://github-release-url"> works fine in browser.
+    // We show images instantly via URL, then fetch blobs in background for Save/Share.
+    if(!cachedAll&&urls.length){
+      const row=$('row-'+sid(jobId));
+      if(row) row.innerHTML=''; // clear any partial renders
+      urls.forEach((url,i)=>{
+        if(url&&url.startsWith('https://')) addImgCard(jobId,url,i);
+      });
+      updateGrpHd(jobId,'done',urls.length);
+      // Background blob fetch so Save/Share works without re-fetching
+      fetchReleaseImgs(urls).then(blobs=>{
+        if(blobs.length){
+          blobs.forEach((b,i)=>{ _imgCache[`${jobId}:${i}`]=b; });
+          lsSaveImgs(jobId,blobs);
         }
-      }catch(e){console.warn('Release fetch failed:',e);}
-    }
-
-    if(blobs.length){
-      blobs.forEach((b,i)=>addImgCard(jobId,b,i));
-      updateGrpHd(jobId,'done',blobs.length);
+      }).catch(()=>{});
+      scrollDown();
+    } else if(count){
+      updateGrpHd(jobId,'done',count);
     } else {
       updateGrpHd(jobId,'error',0,'Images unavailable — may still be processing');
     }
@@ -1102,9 +1120,17 @@ function updateGrpHd(jobId,status,count,msg){
     hd.innerHTML=`<div class="grp-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>${step} <span style="color:var(--tx3);font-size:10.5px">${el}s</span></span></div>`;
   }
 }
-function addImgCard(jobId,blob,idx){
+// blobOrUrl: Blob (cached) OR string (direct https:// GitHub Release URL)
+function addImgCard(jobId,blobOrUrl,idx){
   const s=sid(jobId),row=$('row-'+s); if(!row)return;
-  const url=URL.createObjectURL(blob);
+  let displayUrl;
+  if(typeof blobOrUrl==='string'){
+    displayUrl=blobOrUrl; // use directly as <img src> — no proxy needed
+  } else {
+    _imgCache[`${jobId}:${idx}`]=blobOrUrl;
+    displayUrl=URL.createObjectURL(blobOrUrl);
+  }
+  const url=displayUrl; // keep rest of function unchanged
   const card=document.createElement('div');
   card.className='img-card'; card.style.animationDelay=(idx%6*55)+'ms';
   card.dataset.jobId=jobId; card.dataset.idx=idx;
@@ -1133,13 +1159,36 @@ function addImgCard(jobId,blob,idx){
 // DOWNLOAD + SHARE
 // ═══════════════════════════════════════════════════════════════
 const rndName=()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return`vdo_${(a[0]%900000000)+100000000}.png`;};
-function getBlob(jobId,idx){
+
+// Sync blob lookup (cache + localStorage)
+function getBlobSync(jobId,idx){
   let b=_imgCache[`${jobId}:${idx}`];
   if(!b){const st=lsLoadImgs(jobId);st.forEach((bl,i)=>{_imgCache[`${jobId}:${i}`]=bl;});b=_imgCache[`${jobId}:${idx}`];}
   return b||null;
 }
+// Async blob: tries cache first, then fetches via proxy from direct URL
+async function getBlob(jobId,idx){
+  const cached=getBlobSync(jobId,idx);
+  if(cached) return cached;
+  // Lazy fetch from GitHub Release URL through proxy
+  const s=getSess(jobId);
+  const url=s?.imageUrls?.[idx];
+  if(url&&url.startsWith('https://')){
+    toast('⏳ Fetching for download…');
+    try{
+      const proxyUrl=`${WORKER}/image?url=${encodeURIComponent(url)}`;
+      const r=await fetch(proxyUrl);
+      if(r.ok){const b=await r.blob();_imgCache[`${jobId}:${idx}`]=b;return b;}
+      // Fallback: direct fetch
+      const r2=await fetch(url);
+      if(r2.ok){const b=await r2.blob();_imgCache[`${jobId}:${idx}`]=b;return b;}
+    }catch{}
+  }
+  return null;
+}
+
 async function shareImg(jobId,idx){
-  const blob=getBlob(jobId,idx); if(!blob){toast('⚠️ Not ready');return;}
+  const blob=await getBlob(jobId,idx); if(!blob){toast('⚠️ Image not available');return;}
   try{
     const file=new File([blob],rndName(),{type:'image/png'});
     if(navigator.share){
@@ -1149,15 +1198,21 @@ async function shareImg(jobId,idx){
     toast('Shared ✓');
   }catch(e){if(e.name!=='AbortError')toast('⚠️ '+e.message);}
 }
-function dlOne(jobId,idx){const b=getBlob(jobId,idx);if(!b){toast('⚠️ Not ready');return;}trigDl(b,rndName());toast('Saved ✓');}
-function openFull(jobId,idx){const b=getBlob(jobId,idx);if(!b)return;window.open(URL.createObjectURL(b),'_blank');}
+async function dlOne(jobId,idx){const b=await getBlob(jobId,idx);if(!b){toast('⚠️ Not ready');return;}trigDl(b,rndName());toast('Saved ✓');}
+function openFull(jobId,idx,fallbackUrl){
+  const b=getBlobSync(jobId,idx);
+  if(b){window.open(URL.createObjectURL(b),'_blank');return;}
+  const s=getSess(jobId);
+  const directUrl=fallbackUrl||(s?.imageUrls?.[idx])||null;
+  if(directUrl) window.open(directUrl,'_blank');
+}
 async function dlAll(safeJobId,count){
   const btn=document.querySelector(`.dl-all[onclick*="${safeJobId}"]`);
   if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch spin"></i> Saving…';}
   const sess=_sessions.find(s=>sid(s.jobId)===safeJobId);
   if(!sess){if(btn){btn.disabled=false;}toast('⚠️ Session not found');return;}
   let done=0;
-  for(let i=0;i<count;i++){const b=getBlob(sess.jobId,i);if(b){trigDl(b,rndName());done++;await new Promise(r=>setTimeout(r,360));}}
+  for(let i=0;i<count;i++){const b=await getBlob(sess.jobId,i);if(b){trigDl(b,rndName());done++;await new Promise(r=>setTimeout(r,360));}}
   if(btn){btn.disabled=false;btn.innerHTML=`<i class="fas fa-cloud-arrow-down"></i> Save All (${count})`;}
   toast(`Downloaded ${done}/${count} ✓`);
 }
