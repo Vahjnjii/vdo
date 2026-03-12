@@ -780,13 +780,9 @@ function startPolling(jobId) {
   const iv = setInterval(()=>{
     if (_pollGuard[jobId]) return;
     _pollGuard[jobId]=true;
-    doPoll(jobId).finally(()=>{
-      delete _pollGuard[jobId];
-      // Only update to 'processing' AFTER doPoll finishes, and only if still generating
-      const ss=getSess(jobId);
-      if (!ss||ss.status!=='generating'){ clearInterval(iv); return; }
-      if (_activeJobId===jobId) updateGrpHd(jobId,'processing');
-    });
+    doPoll(jobId).finally(()=>{ delete _pollGuard[jobId]; });
+    const ss=getSess(jobId);
+    if (ss?.status==='generating' && _activeJobId===jobId) updateGrpHd(jobId,'processing');
   }, 3000);
   s.pollInterval=iv;
 
@@ -895,8 +891,6 @@ async function handleDoneViaUrls(jobId, imageUrls) {
   blobs.forEach((b,i)=>{ _imgCache[`${jobId}:${i}`]=b; });
   lsSaveImgs(jobId, blobs);
   if (wasActive && _activeJobId===jobId) {
-    const row=document.getElementById('row-'+sid(jobId));
-    if(row) row.innerHTML='';
     blobs.forEach((b,i)=>addImgCard(jobId,b,i));
     updateGrpHd(jobId,'done',blobs.length);
     scrollDown();
