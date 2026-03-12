@@ -876,16 +876,17 @@ function startPolling(jobId) {
   }, 3000);
   s.pollInterval=iv;
 
-  // Hard timeout: 4 minutes
+  // Hard timeout: 8 min for video (ffmpeg takes ~5-6 min), 4 min for image
+  const _toMs = (getSess(jobId)?.outputMode==='video') ? 480_000 : 240_000;
   setTimeout(()=>{
     const ss=getSess(jobId);
     if (!ss||ss.status!=='generating') return;
     if (ss.pollInterval) { clearInterval(ss.pollInterval); ss.pollInterval=null; }
     delete _pollGuard[jobId];
-    upsertSess({jobId, status:'error', errorMsg:'Timed out after 4 minutes.'});
+    upsertSess({jobId, status:'error', errorMsg:'Timed out after '+(_toMs/60000)+' minutes.'});
     if (_activeJobId===jobId) { updateGrpHd(jobId,'error'); addErr('Timed out — check GitHub Actions tab.'); }
     renderSessBar(); processQueue();
-  }, 240_000);
+  }, _toMs);
 
   if (_activeJobId===jobId) updateGrpHd(jobId,'processing');
 }
@@ -919,17 +920,21 @@ async function doPoll(jobId) {
       renderSessBar(); processQueue(); return;
     }
 
-    // ── Phase 3: Re-check Worker (may have saved imageUrls by now) ────
-    // Poll up to 4 times with 2.5s gap (10s total) for Worker callback
+    // ── Phase 3: Re-check Worker (may have saved URLs by now) ───────
+    // Poll up to 4 times with 2.5s gap (10s total) for Worker callback.
+    // Video jobs save to videoUrls; image jobs save to imageUrls.
+    const _isVidJob = getSess(jobId)?.outputMode==='video';
     let ws = null;
     for (let i=0; i<4; i++) {
       await sleep(i===0 ? 800 : 2500);
       ws = await fetchWorkerSession(jobId);
-      if (ws?.status==='done' && ws.imageUrls?.length) break;
+      const _urls = _isVidJob ? (ws?.videoUrls||ws?.imageUrls) : ws?.imageUrls;
+      if (ws?.status==='done' && _urls?.length) break;
       ws = null;
     }
-    if (ws?.imageUrls?.length) {
-      await handleDoneViaUrls(jobId, ws.imageUrls); return;
+    const _p3urls = ws ? (_isVidJob ? (ws.videoUrls?.length ? ws.videoUrls : ws.imageUrls) : ws.imageUrls) : null;
+    if (_p3urls?.length) {
+      await handleDoneViaUrls(jobId, _p3urls); return;
     }
 
     // ── Phase 4: Fallback — artifact ZIP ──────────────────────────────
@@ -965,7 +970,11 @@ async function handleDoneViaUrls(jobId, imageUrls) {
   delete _pollGuard[jobId];
   const wasActive=_activeJobId===jobId;
   const isVid=s?.outputMode==='video';
-  upsertSess({jobId, status:'done', imageUrls, done:imageUrls.length, total:imageUrls.length});
+  // Store URLs in the correct field so onChipClick and session restore work
+  const _urlsUpdate = isVid
+    ? {videoUrls: imageUrls, imageUrls: []}
+    : {imageUrls};
+  upsertSess({jobId, status:'done', ..._urlsUpdate, done:imageUrls.length, total:imageUrls.length});
 
   if (wasActive && _activeJobId===jobId) {
     const row=$('row-'+sid(jobId));
@@ -996,24 +1005,82 @@ async function handleDoneViaUrls(jobId, imageUrls) {
 // FALLBACK completion handler — artifact ZIP
 async function downloadAndShow(jobId, artifactId) {
   const wasActive=_activeJobId===jobId;
+  const s=getSess(jobId);
+  const isVid=s?.outputMode==='video';
   const r=await fetch(`${WORKER}/download?artifact_id=${artifactId}`);
   if (!r.ok) throw new Error(`Download HTTP ${r.status}`);
   const buf=await r.arrayBuffer();
-  const pngs=await extractPNGs(buf);
-  if (!pngs.length) throw new Error('No PNGs in artifact ZIP');
-  pngs.forEach((b,i)=>{ _imgCache[`${jobId}:${i}`]=b; });
-  lsSaveImgs(jobId, pngs);
-  upsertSess({jobId, status:'done', done:pngs.length, total:pngs.length});
-  if (wasActive && _activeJobId===jobId) {
-    pngs.forEach((b,i)=>addImgCard(jobId,b,i));
-    updateGrpHd(jobId,'done',pngs.length);
-    scrollDown();
+
+  if (isVid) {
+    // For video jobs: extract MP4 URLs from the ZIP by building blob URLs
+    const mp4s = await extractMP4s(buf);
+    if (!mp4s.length) throw new Error('No MP4s in artifact ZIP');
+    upsertSess({jobId, status:'done', videoUrls:[], done:mp4s.length, total:mp4s.length});
+    if (wasActive && _activeJobId===jobId) {
+      mp4s.forEach((b,i)=>addVideoCard(jobId, URL.createObjectURL(b), i));
+      updateGrpHd(jobId,'done',mp4s.length);
+      scrollDown();
+    }
+  } else {
+    const pngs=await extractPNGs(buf);
+    if (!pngs.length) throw new Error('No PNGs in artifact ZIP');
+    pngs.forEach((b,i)=>{ _imgCache[`${jobId}:${i}`]=b; });
+    lsSaveImgs(jobId, pngs);
+    upsertSess({jobId, status:'done', done:pngs.length, total:pngs.length});
+    if (wasActive && _activeJobId===jobId) {
+      pngs.forEach((b,i)=>addImgCard(jobId,b,i));
+      updateGrpHd(jobId,'done',pngs.length);
+      scrollDown();
+    }
   }
 }
 
 // ═══════════════════════════════════════════════════════════════
 // ZIP
 // ═══════════════════════════════════════════════════════════════
+function extractMP4s(buf){
+  return new Promise((res,rej)=>{
+    if(typeof fflate==='undefined'){extractFilesByExt(buf,'.mp4').then(res).catch(rej);return;}
+    fflate.unzip(new Uint8Array(buf),(err,files)=>{
+      if(err){extractFilesByExt(buf,'.mp4').then(res).catch(()=>rej(new Error('ZIP: '+err.message)));return;}
+      const mp4s=Object.keys(files).filter(n=>n.toLowerCase().endsWith('.mp4')&&files[n].length>0)
+        .sort().map(n=>new Blob([files[n]],{type:'video/mp4'}));
+      res(mp4s);
+    });
+  });
+}
+async function extractFilesByExt(buf,ext){
+  const b=new Uint8Array(buf),entries=[]; let i=0;
+  while(i<b.length-4){
+    if(b[i]===0x50&&b[i+1]===0x4b&&b[i+2]===0x03&&b[i+3]===0x04){
+      const comp=(b[i+8]|(b[i+9]<<8))>>>0,cSz=(b[i+18]|(b[i+19]<<8)|(b[i+20]<<16)|(b[i+21]<<24))>>>0;
+      const fnL=(b[i+26]|(b[i+27]<<8))>>>0,exL=(b[i+28]|(b[i+29]<<8))>>>0;
+      const fn=new TextDecoder().decode(b.slice(i+30,i+30+fnL)),dOff=i+30+fnL+exL;
+      if(fn.toLowerCase().endsWith(ext)&&cSz>0) entries.push({fn,comp,data:b.slice(dOff,dOff+cSz)});
+      i=dOff+Math.max(cSz,1);
+    } else i++;
+  }
+  entries.sort((a,b)=>a.fn.localeCompare(b.fn));
+  const blobs=[];
+  for(const e of entries){
+    try{
+      let out;
+      if(e.comp===0){out=e.data;}
+      else if(e.comp===8){
+        const ds=new DecompressionStream('deflate-raw');
+        const w=ds.writable.getWriter(),rd=ds.readable.getReader();
+        w.write(e.data);w.close();
+        const chunks=[];let tot=0;
+        for(;;){const{done,value}=await rd.read();if(done)break;chunks.push(value);tot+=value.length;}
+        out=new Uint8Array(tot);let off=0;
+        for(const c of chunks){out.set(c,off);off+=c.length;}
+      } else continue;
+      const mime=ext==='.mp4'?'video/mp4':'application/octet-stream';
+      blobs.push(new Blob([out],{type:mime}));
+    }catch{}
+  }
+  return blobs;
+}
 function extractPNGs(buf){
   return new Promise((res,rej)=>{
     if(typeof fflate==='undefined'){extractFallback(buf).then(res).catch(rej);return;}
@@ -1067,9 +1134,11 @@ async function onChipClick(jobId){
   addUserMsg(s.prompt||''); addSessSep(s.ts); addImgGroup(jobId);
 
   const isVid=s.outputMode==='video';
+  // Video jobs store URLs in videoUrls; image jobs use imageUrls
+  const _chipUrls = isVid ? (s.videoUrls?.length ? s.videoUrls : s.imageUrls||[]) : (s.imageUrls||[]);
 
-  if(s.status==='done'||s.imageUrls?.length){
-    const urls=s.imageUrls||[];
+  if(s.status==='done'||_chipUrls.length){
+    const urls=_chipUrls;
     const count=urls.length||s.done||0;
 
     if(isVid){
@@ -1365,7 +1434,8 @@ function renderHistList(sessions){
     const sc=e.status==='done'?'ok':e.status==='error'?'err':'';
     const dotCls=e.status==='done'?'ok':e.status==='error'?'err':e.status==='generating'?'sy':'q';
     const stLbl=e.status==='done'?'Complete':e.status==='error'?'Failed':e.status==='generating'?'Rendering…':'Queued';
-    const perm=(e.imageUrls||[]).some(u=>u&&u.startsWith('https://'));
+    const _allUrls=[...(e.videoUrls||[]),...(e.imageUrls||[])];
+  const perm=_allUrls.some(u=>u&&u.startsWith('https://'));
     return `<div class="hist-item" onclick="loadHistSess('${esc(e.jobId)}')">
       <div class="hist-item-top">
         <div class="hist-date">${d}</div>
@@ -1376,7 +1446,7 @@ function renderHistList(sessions){
       </div>
       ${e.prompt?`<div class="hist-prompt">"${esc(e.prompt.slice(0,52))}${e.prompt.length>52?'…':''}"</div>`:''}
       <div class="hist-label">${esc(e.label||'')}</div>
-      <div class="hist-st ${sc}"><span class="hst-dot ${dotCls}"></span>${stLbl}${(e.imageUrls||[]).length?` · ${e.imageUrls.length} images`:''}</div>
+      <div class="hist-st ${sc}"><span class="hst-dot ${dotCls}"></span>${stLbl}${(()=>{const _vu=(e.videoUrls||[]).length,_iu=(e.imageUrls||[]).length;return _vu?` · ${_vu} videos`:_iu?` · ${_iu} images`:'';})()}</div>
     </div>`;
   }).join('');
 }
