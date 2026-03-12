@@ -403,14 +403,55 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
 const WORKER  = 'https://vdo.shreevathsa2k21-4fa.workers.dev';
-const LS_USER = 'vdo_user_v2';
+const LS_USER = 'vdo_user_v3';   // bumped so old corrupt entries are ignored
 const LS_SESS = 'vdo_sess_v2';
 const LS_IMG  = 'vdo_img_v2_';
+const SS_USER = 'vdo_ss_user';   // sessionStorage key (survives refresh, cleared on tab close)
+const USER_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days before asking to re-login
 
+// ═══════════════════════════════════════════════════════════════
+// MODEL CATALOGUE — based on Cloudflare Workers AI docs (2025-2026)
+// Source: developers.cloudflare.com/workers-ai/models/
+// ═══════════════════════════════════════════════════════════════
+// Best model for this app: multilingual text formatting, structured JSON output,
+// 9 languages (EN NL FR DE ES IT PL 中文 SV), fast response needed.
+// Winner: llama-3.3-70b-instruct-fp8-fast — 70B quality, 2-4× faster via fp8 + speculative decoding
+const RECOMMENDED_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+
+// Models confirmed removed/deprecated on Cloudflare Workers AI as of Oct 2025.
+// These will be hidden even if the Worker returns them.
+const DEPRECATED_MODELS = new Set([
+  '@hf/thebloke/zephyr-7b-beta-awq',
+  '@hf/thebloke/mistral-7b-instruct-v0.1-awq',
+  '@hf/thebloke/llama-2-13b-chat-awq',
+  '@hf/thebloke/openhermes-2.5-mistral-7b-awq',
+  '@hf/thebloke/neural-chat-7b-v3-1-awq',
+  '@hf/thebloke/llamaguard-7b-awq',
+  '@hf/thebloke/deepseek-coder-6.7b-base-awq',
+  '@hf/thebloke/deepseek-coder-6.7b-instruct-awq',
+  '@cf/deepseek-ai/deepseek-math-7b-instruct',
+  '@cf/openchat/openchat-3.5-0106',
+  '@cf/tiiuae/falcon-7b-instruct',
+  '@cf/thebloke/discolm-german-7b-v1-awq',
+  '@cf/qwen/qwen1.5-0.5b-chat',
+  '@cf/qwen/qwen1.5-7b-chat-awq',
+  '@cf/qwen/qwen1.5-14b-chat-awq',
+  '@cf/meta/llama-2-7b-chat-int8',
+  '@cf/meta/llama-2-7b-chat-fp16',
+  '@hf/meta-llama/meta-llama-3-8b-instruct',
+]);
+
+// Fallback catalogue shown if Worker /models fails — all confirmed active on CF Workers AI
+const FALLBACK_MODELS = [
+  { id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', label: 'Llama 3.3 70B (Fast ⚡)', recommended: true },
+  { id: '@cf/meta/llama-4-scout-17b-16e-instruct',  label: 'Llama 4 Scout 17B',       recommended: false },
+  { id: '@cf/meta/llama-3.1-8b-instruct-fast',      label: 'Llama 3.1 8B (Fast ⚡)',  recommended: false },
+  { id: '@cf/google/gemma-3-12b-it',                label: 'Gemma 3 12B (140 langs)', recommended: false },
+  { id: '@cf/mistralai/mistral-small-3.1-24b-instruct', label: 'Mistral Small 3.1 24B', recommended: false },
+];
 // ═══════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════
-let _user = null, _gcid = null;
 let _models = [], _activeModel = '', _selectedModel = '';
 let _sessions = [];
 let _activeJobId = null;
@@ -423,6 +464,10 @@ let _pollGuard = {};  // jobId → bool
 const lsGet = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const lsSet = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 const lsDel = k => { try { localStorage.removeItem(k); } catch {} };
+// sessionStorage helpers — survive page refresh, cleared when tab closes
+const ssGet = k => { try { return JSON.parse(sessionStorage.getItem(k)); } catch { return null; } };
+const ssSet = (k,v) => { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch {} };
+const ssDel = k => { try { sessionStorage.removeItem(k); } catch {} };
 
 function lsGetSess(uid) { return (lsGet(LS_SESS)||{})[uid]||[]; }
 function lsSaveSess(uid, arr) {
@@ -570,7 +615,13 @@ async function doGoogleLogin() {
   }
 }
 
-function setUser(u){ _user=u; lsSet(LS_USER,u); enterApp(); }
+function setUser(u){
+  const stamped = {...u, loginTs: Date.now()};
+  _user = stamped;
+  lsSet(LS_USER, stamped);
+  ssSet(SS_USER, stamped);  // fast cache for refresh
+  enterApp();
+}
 
 async function enterApp() {
   const n=_user.name.split(' ')[0];
@@ -586,32 +637,44 @@ async function enterApp() {
   const h=new Date().getHours();
   $('greet').textContent=`${h<12?'Good morning':h<17?'Good afternoon':'Good evening'}, ${n} 👋`;
 
-  // 1. Instant local render
+  // 1. Instant local render from cache so UI appears immediately
   _sessions=lsGetSess(_user.id).map(s=>({...s,pollInterval:null}));
   renderSessBar(); show('templates');
 
-  // 2. Background remote sync — updates session list and image URLs
-  remoteLoad(_user.id).then(remote=>{
-    const live=_sessions.filter(s=>s.status==='generating'||s.status==='queued');
-    const liveIds=new Set(live.map(s=>s.jobId));
-    _sessions=[...live,...remote.filter(s=>!liveIds.has(s.jobId))].map(s=>({...s,pollInterval:s.pollInterval||null}));
+  // 2. ALWAYS await remote sync — remote is the source of truth for cross-device.
+  //    On mobile you created images → they're saved on server → now laptop fetches them.
+  //    We don't fire-and-forget here; we await so the session list is correct ASAP.
+  try {
+    const remote = await remoteLoad(_user.id);
+    const live = _sessions.filter(s => s.status==='generating' || s.status==='queued');
+    const liveIds = new Set(live.map(s => s.jobId));
+    // Remote sessions are authoritative (have imageUrls). Live in-progress jobs stay.
+    _sessions = [...live, ...remote.filter(s => !liveIds.has(s.jobId))]
+      .map(s => ({...s, pollInterval: s.pollInterval||null}));
+    lsSaveSess(_user.id, _sessions);  // update local cache with fresh remote data
     renderSessBar();
-  });
+  } catch(e) {
+    console.warn('Remote sync failed on enterApp:', e.message);
+    // Fall back to whatever local cache had — already rendered above
+  }
 
   // 3. Resume any in-flight generations
   _sessions.forEach(s=>{ if(s.status==='generating') startPolling(s.jobId); });
 
-  // 4. Load models
+  // 4. Load models — filter deprecated, set best as default if active is gone
   fetch(`${WORKER}/models`).then(r=>r.json()).then(d=>{
-    _models=d.models||[]; _activeModel=d.active||''; updateNavLabel();
-  }).catch(()=>{});
+    const raw = (d.models||[]).filter(m => !DEPRECATED_MODELS.has(m.id));
+    _models = raw.length ? raw : FALLBACK_MODELS;
+    _activeModel = d.active && !DEPRECATED_MODELS.has(d.active) ? d.active : (raw.find(m=>m.recommended)?.id || FALLBACK_MODELS[0].id);
+    updateNavLabel();
+  }).catch(()=>{ _models = FALLBACK_MODELS; _activeModel = _activeModel || RECOMMENDED_MODEL; updateNavLabel(); });
 }
 
 function signOut(){
   _sessions.forEach(s=>{if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}});
   _sessions=[]; _imgCache={};
   try{window.google?.accounts?.oauth2?.revoke?.();}catch{}
-  lsDel(LS_USER); _user=null; _activeJobId=null;
+  lsDel(LS_USER); ssDel(SS_USER); _user=null; _activeJobId=null;
   $('so-menu').classList.remove('open');
   renderSessBar(); show('login');
 }
@@ -631,11 +694,22 @@ async function loadModels(){
   $('model-list').innerHTML='<div style="padding:18px;text-align:center;color:var(--tx3);font-size:12px">Fetching…</div>';
   try{
     const d=await fetch(`${WORKER}/models`).then(r=>{if(!r.ok)throw new Error(r.status);return r.json();});
-    _models=d.models||[]; _activeModel=d.active||''; _selectedModel=_activeModel;
+    // Filter out deprecated models, keep only active ones
+    const raw = (d.models||[]).filter(m => !DEPRECATED_MODELS.has(m.id));
+    // If Worker returns no valid models (all deprecated or empty), use fallback catalogue
+    _models = raw.length ? raw : FALLBACK_MODELS;
+    _activeModel = d.active && !DEPRECATED_MODELS.has(d.active) ? d.active : (raw.find(m=>m.recommended)?.id || FALLBACK_MODELS[0].id);
+    _selectedModel = _activeModel;
     renderModels(); updateNavLabel();
   }catch(e){
-    $('model-active-name').textContent='Error';
-    $('model-list').innerHTML=`<div style="padding:18px;text-align:center;color:var(--rd);font-size:12px">⚠️ ${e.message}</div>`;
+    // Worker unreachable — use fallback catalogue
+    _models = FALLBACK_MODELS;
+    _activeModel = _activeModel || RECOMMENDED_MODEL;
+    _selectedModel = _activeModel;
+    $('model-active-name').textContent = labelFor(_activeModel);
+    $('model-list').innerHTML = '';
+    renderModels();
+    toast('⚠️ Could not reach Worker — showing known models');
   }
 }
 function renderModels(){
@@ -818,7 +892,29 @@ async function doPoll(jobId) {
 
     // ── Phase 2: Check GitHub run status ──────────────────────────────
     const st = await fetchJSON(`${WORKER}/status?run_id=${s.run_id}`);
-    if (st?.status!=='completed') return;
+
+    // While GitHub run is still in-progress, check Worker session every ~15s
+    // for live step updates (set by render.js callbacks) and instant error detection.
+    if (st?.status !== 'completed') {
+      const tick = Math.round((Date.now() - (s.ts||Date.now())) / 1000);
+      if (tick % 15 < 4) {  // roughly every 15 seconds
+        const ws = await fetchWorkerSession(jobId);
+        if (ws) {
+          // Instant error detection — render.js reports errors to Worker immediately
+          if (ws.status === 'error') {
+            clearInterval(s.pollInterval); s.pollInterval = null; delete _pollGuard[jobId];
+            const errMsg = ws.errorMsg || 'Render failed.';
+            upsertSess({jobId, status:'error', errorMsg: errMsg});
+            if (_activeJobId===jobId) { updateGrpHd(jobId,'error'); addErr(errMsg); }
+            renderSessBar(); processQueue(); return;
+          }
+          // Merge step info into local session so updateGrpHd can show it
+          if (ws.step) upsertSess({jobId, step: ws.step, totalPosts: ws.totalPosts});
+        }
+      }
+      if (_activeJobId===jobId) updateGrpHd(jobId,'processing');
+      return;
+    }
 
     // Completed — stop polling immediately
     clearInterval(s.pollInterval); s.pollInterval=null; delete _pollGuard[jobId];
@@ -1059,8 +1155,23 @@ function updateGrpHd(jobId,status,count,msg){
   } else if(status==='loading'){
     hd.innerHTML=`<div class="grp-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>Loading from GitHub Releases…</span></div>`;
   } else {
+    // 'processing' — show real step label from session if available, else time-based fallback
     const el=Math.round((Date.now()-(sess?.ts||Date.now()))/1000);
-    const step=el<15?'⚡ Triggering GitHub…':el<35?'⏳ Actions queued…':el<70?'🔄 Rendering images…':'🔄 Almost done…';
+    let step;
+    // Real step info sent by render.js progress callbacks
+    const remoteStep = sess?.step || '';
+    if (remoteStep === 'formatting')       step = '🤖 AI formatting text…';
+    else if (remoteStep === 'formatted')   step = `✅ Formatted — ${sess?.totalPosts||'?'} posts found`;
+    else if (remoteStep.startsWith('rendering_')) {
+      const [,cur,tot] = remoteStep.split('_');  // 'rendering_2_9'
+      step = `📸 Rendering image ${cur}/${tot}…`;
+    } else if (remoteStep === 'uploading') step = '📦 Uploading to GitHub Releases…';
+    // Fallback: elapsed-time hints (when no remote step yet)
+    else if (el<12)  step = '⚡ Triggering GitHub Actions…';
+    else if (el<30)  step = '⏳ Workflow queued…';
+    else if (el<55)  step = '🤖 AI formatting text…';
+    else if (el<90)  step = '📸 Rendering images…';
+    else             step = '📦 Uploading to GitHub…';
     hd.innerHTML=`<div class="grp-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>${step} <span style="color:var(--tx3);font-size:10.5px">${el}s</span></span></div>`;
   }
 }
@@ -1214,7 +1325,42 @@ function toast(m){
 // INIT
 // ═══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded',()=>{
-  try{const u=lsGet(LS_USER);if(u){_user=u;enterApp();}}catch{}
+  // Restore session on page load / refresh — do NOT ask for login unless:
+  // 1. User explicitly signed out, OR
+  // 2. No stored user found anywhere, OR
+  // 3. Stored user is older than 30 days (TTL)
+  try {
+    // sessionStorage is fastest — survives refresh within same browser session
+    let u = ssGet(SS_USER);
+    if (!u) {
+      // Fall back to localStorage (persists across browser restarts)
+      u = lsGet(LS_USER);
+      // Migrate old key (vdo_user_v2) if new key not found
+      if (!u) u = lsGet('vdo_user_v2');
+    }
+    if (u && u.id) {
+      // Check TTL — re-login only after 30 days of inactivity
+      const age = Date.now() - (u.loginTs || 0);
+      if (age < USER_TTL_MS) {
+        _user = u;
+        // Refresh both caches with current timestamp so TTL resets on activity
+        const refreshed = {...u, loginTs: Date.now()};
+        lsSet(LS_USER, refreshed);
+        ssSet(SS_USER, refreshed);
+        _user = refreshed;
+        enterApp();
+      } else {
+        // TTL expired — clear and show login
+        lsDel(LS_USER); ssDel(SS_USER);
+        show('login');
+      }
+    } else {
+      show('login');
+    }
+  } catch(e) {
+    console.warn('Init restore failed:', e);
+    show('login');
+  }
   const ta=$('ch-ta');
   if(ta){
     ta.addEventListener('input',()=>resize(ta));
