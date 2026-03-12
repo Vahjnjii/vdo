@@ -512,16 +512,31 @@ function delSess(jid) {
 // T3: GitHub Release HTTPS URLs  ← THE FIX for cross-device
 // ═══════════════════════════════════════════════════════════════
 async function fetchReleaseImgs(imageUrls) {
-  // Only fetch full HTTPS URLs — filters out old broken relative paths
+  // Only fetch full HTTPS GitHub URLs
   const valid = (imageUrls||[]).filter(u => u && u.startsWith('https://'));
   if (!valid.length) return [];
+  // Route through Worker /image proxy — GitHub Release URLs redirect to S3
+  // which has CORS restrictions that block direct browser fetch().
+  // Worker fetches server-side (no CORS) and streams back with open headers.
   const results = await Promise.allSettled(
-    valid.map(url => fetch(url).then(r => {
-      if (!r.ok) throw new Error(`${r.status} ${url}`);
-      return r.blob();
-    }))
+    valid.map(url => {
+      const proxyUrl = `${WORKER}/image?url=${encodeURIComponent(url)}`;
+      return fetch(proxyUrl).then(r => {
+        if (!r.ok) throw new Error(`${r.status} for ${url}`);
+        return r.blob();
+      });
+    })
   );
-  return results.filter(r=>r.status==='fulfilled').map(r=>r.value);
+  const blobs = results.filter(r=>r.status==='fulfilled').map(r=>r.value);
+  // If proxy failed for all, try direct fetch as last resort
+  if (!blobs.length) {
+    const direct = await Promise.allSettled(
+      valid.map(url => fetch(url, { headers:{ Accept:'application/octet-stream' }})
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.blob(); }))
+    );
+    return direct.filter(r=>r.status==='fulfilled').map(r=>r.value);
+  }
+  return blobs;
 }
 
 // ═══════════════════════════════════════════════════════════════
