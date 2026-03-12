@@ -98,7 +98,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .so-out:hover{background:rgba(255,107,107,.07)}
 
 /* ═══ CHAT ═══ */
-#screen-chat{flex-direction:column;overflow:hidden}
+#screen-chat,#screen-video-chat{flex-direction:column;overflow:hidden}
 .ch-nav{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top));background:rgba(4,3,10,.96);backdrop-filter:blur(24px);border-bottom:1px solid var(--bd);z-index:10}
 .ch-back{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border:1px solid var(--bd);color:var(--tx2);font-size:12px;cursor:pointer;transition:all .2s;flex-shrink:0}
 .ch-back:hover{background:rgba(255,255,255,.08);color:var(--tx)}
