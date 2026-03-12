@@ -880,9 +880,13 @@ function startPolling(jobId) {
   const iv = setInterval(()=>{
     if (_pollGuard[jobId]) return;
     _pollGuard[jobId]=true;
-    doPoll(jobId).finally(()=>{ delete _pollGuard[jobId]; });
-    const ss=getSess(jobId);
-    if (ss?.status==='generating' && _activeJobId===jobId) updateGrpHd(jobId,'processing');
+    doPoll(jobId).finally(()=>{
+      delete _pollGuard[jobId];
+      // Only update progress display if still actually generating
+      const ss=getSess(jobId);
+      if (!ss||ss.status!=='generating') { clearInterval(iv); return; }
+      if (ss?.status==='generating' && _activeJobId===jobId) updateGrpHd(jobId,'processing');
+    });
   }, 3000);
   s.pollInterval=iv;
 
@@ -973,9 +977,9 @@ async function handleDoneViaUrls(jobId, imageUrls) {
   const s=getSess(jobId);
   if (s?.pollInterval) { clearInterval(s.pollInterval); s.pollInterval=null; }
   delete _pollGuard[jobId];
-  const wasActive=_activeJobId===jobId;
   upsertSess({jobId, status:'done', imageUrls, done:imageUrls.length, total:imageUrls.length});
-  if (wasActive) updateGrpHd(jobId,'loading');
+  // Show loading spinner if still on this job
+  if (_activeJobId===jobId) updateGrpHd(jobId,'loading');
 
   let blobs = await fetchReleaseImgs(imageUrls);
   // GitHub CDN can take ~5s to propagate — retry once if empty
@@ -984,13 +988,17 @@ async function handleDoneViaUrls(jobId, imageUrls) {
     blobs = await fetchReleaseImgs(imageUrls);
   }
   if (!blobs.length) {
-    if (wasActive && _activeJobId===jobId)
+    if (_activeJobId===jobId)
       updateGrpHd(jobId,'error',0,'Images saved — try refreshing in 30s');
     renderSessBar(); processQueue(); return;
   }
   blobs.forEach((b,i)=>{ _imgCache[`${jobId}:${i}`]=b; });
   lsSaveImgs(jobId, blobs);
-  if (wasActive && _activeJobId===jobId) {
+  // Re-check after async — user may have navigated during blob fetch
+  if (_activeJobId===jobId) {
+    // Clear existing cards to prevent duplicates
+    const row=document.getElementById('row-'+sid(jobId));
+    if(row) row.innerHTML='';
     blobs.forEach((b,i)=>addImgCard(jobId,b,i));
     updateGrpHd(jobId,'done',blobs.length);
     scrollDown();
@@ -1342,24 +1350,43 @@ async function kickVideoGen(jobId){
   }
 }
 
+// Video poll guard — prevents re-entrant calls (same bug fix as image polling)
+const _vPollGuard = {};
+
 function startVideoPolling(jobId){
   const s=_videoSessions.find(function(v){return v.jobId===jobId;}); if(!s) return;
   if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}
-  const iv=setInterval(async function(){
-    await doVideoPoll(jobId);
-    const ss=_videoSessions.find(function(v){return v.jobId===jobId;});
-    if(!ss||ss.status!=='generating') clearInterval(iv);
-    if(_activeVideoJobId===jobId) vcUpdateGrpHd(jobId,'processing');
+  delete _vPollGuard[jobId];
+
+  const iv=setInterval(function(){
+    // Skip if already running a poll cycle for this job
+    if(_vPollGuard[jobId]) return;
+    _vPollGuard[jobId]=true;
+    doVideoPoll(jobId).finally(function(){
+      delete _vPollGuard[jobId];
+      // Only update to "processing" if still actually generating
+      const ss=_videoSessions.find(function(v){return v.jobId===jobId;});
+      if(!ss||ss.status!=='generating'){
+        clearInterval(iv);
+        return;
+      }
+      if(_activeVideoJobId===jobId) vcUpdateGrpHd(jobId,'processing');
+    });
   },4000);
   s.pollInterval=iv;
+
+  // Hard timeout: 5 minutes
   setTimeout(function(){
     const ss=_videoSessions.find(function(v){return v.jobId===jobId;});
     if(!ss||ss.status!=='generating') return;
     if(ss.pollInterval){clearInterval(ss.pollInterval);ss.pollInterval=null;}
+    delete _vPollGuard[jobId];
     ss.status='error'; ss.errorMsg='Timed out after 5 minutes.';
-    if(_activeVideoJobId===jobId){vcUpdateGrpHd(jobId,'error');vcAddErr('Timed out.');}
+    if(_user) lsSaveVidSess(_user.id,_videoSessions);
+    if(_activeVideoJobId===jobId){vcUpdateGrpHd(jobId,'error');vcAddErr('Timed out — check GitHub Actions.');}
     vcRenderSessBar();
   },300000);
+
   if(_activeVideoJobId===jobId) vcUpdateGrpHd(jobId,'processing');
 }
 
@@ -1367,43 +1394,63 @@ async function doVideoPoll(jobId){
   const s=_videoSessions.find(function(v){return v.jobId===jobId;});
   if(!s||s.status!=='generating') return;
   try{
+    // Phase 1: Find run_id from run_token
     if(!s.run_id){
       const d=await fetchJSON(WORKER+'/poll?run_token='+encodeURIComponent(s.run_token||'')+'&_='+Date.now());
       if(d&&d.found){s.run_id=d.run_id;s.errorCount=0;}
       return;
     }
+    // Phase 2: Check if GitHub Actions run is complete
     const st=await fetchJSON(WORKER+'/status?run_id='+s.run_id);
     if(!st||st.status!=='completed') return;
+
+    // Stop the interval immediately — we handle completion from here
     if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}
+
     if(st.conclusion!=='success'){
       s.status='error'; s.errorMsg='Workflow failed.';
+      if(_user) lsSaveVidSess(_user.id,_videoSessions);
       if(_activeVideoJobId===jobId){vcUpdateGrpHd(jobId,'error');vcAddErr('Workflow failed.');}
       vcRenderSessBar(); return;
     }
-    let ws=null;
-    for(let i=0;i<4;i++){
-      await sleep(i===0?800:2500);
+
+    // Phase 3: Poll Worker /sessions for videoUrls (saved by GitHub Action callback)
+    // Try up to 6 times with increasing delay — video upload can take a few seconds
+    let videoUrls=null;
+    for(let i=0;i<6;i++){
+      await sleep(i===0?1000:3000);
       try{
         const r=await fetch(WORKER+'/sessions?userId='+encodeURIComponent(_user?_user.id:'')+'&_='+Date.now());
-        if(r.ok){const data=await r.json();ws=(data.sessions||[]).find(function(sv){return sv.jobId===jobId;})||null;}
-      }catch(err){}
-      // Only accept videoUrls (must be an array with entries), ignore imageUrls
-      const vurls=(ws&&ws.videoUrls)||[];
-      if(ws&&ws.status==='done'&&vurls.length) break; else ws=null;
+        if(r.ok){
+          const data=await r.json();
+          const ws=(data.sessions||[]).find(function(sv){return sv.jobId===jobId;})||null;
+          // Only accept videoUrls — never imageUrls (those are for image jobs)
+          if(ws&&ws.status==='done'&&ws.videoUrls&&ws.videoUrls.length){
+            videoUrls=ws.videoUrls; break;
+          }
+        }
+      }catch(err){console.warn('Session fetch attempt '+(i+1)+' failed:',err.message);}
     }
-    // Only use videoUrls, never imageUrls — imageUrls belong to image jobs
-    const urls=(ws&&ws.videoUrls)||[];
-    if(urls.length){await handleVideosDone(jobId,urls);return;}
+
+    if(videoUrls&&videoUrls.length){
+      await handleVideosDone(jobId,videoUrls); return;
+    }
+
+    // Phase 4: Fallback — download artifact ZIP
+    console.warn('videoUrls not found in worker sessions, trying artifact ZIP');
     if(_activeVideoJobId===jobId) vcUpdateGrpHd(jobId,'loading');
     const art=await fetchJSON(WORKER+'/artifacts?run_id='+s.run_id);
-    if(!art||!art.artifact_id) throw new Error('No artifact found');
+    if(!art||!art.artifact_id) throw new Error('No artifact found and no videoUrls — workflow may have saved nothing');
     await downloadAndShowVideos(jobId,art.artifact_id);
+
   }catch(e){
     const n=(s.errorCount||0)+1;
+    console.warn('Video poll error '+n+'/3:',e.message);
     if(n>=3){
       if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}
       s.status='error'; s.errorMsg=e.message;
-      if(_activeVideoJobId===jobId){vcUpdateGrpHd(jobId,'error');vcAddErr('Failed: '+e.message);}
+      if(_user) lsSaveVidSess(_user.id,_videoSessions);
+      if(_activeVideoJobId===jobId){vcUpdateGrpHd(jobId,'error');vcAddErr('Failed after retries: '+e.message);}
       vcRenderSessBar();
     }else{s.errorCount=n;}
   }
@@ -1412,12 +1459,13 @@ async function doVideoPoll(jobId){
 async function handleVideosDone(jobId,urls){
   const s=_videoSessions.find(function(v){return v.jobId===jobId;}); if(!s) return;
   if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}
+  delete _vPollGuard[jobId];
   s.status='done'; s.videoUrls=urls; s.done=urls.length;
-  const wasActive=_activeVideoJobId===jobId;
-  // Persist to localStorage
+  // Persist immediately so history works even if blob fetch fails
   if(_user) lsSaveVidSess(_user.id,_videoSessions);
   vcRenderSessBar();
-  if(wasActive) vcUpdateGrpHd(jobId,'loading');
+  // Show loading spinner if still on this job
+  if(_activeVideoJobId===jobId) vcUpdateGrpHd(jobId,'loading');
 
   async function fetchVideoBlobs(urlList){
     const results=await Promise.allSettled(urlList.map(function(u){
@@ -1426,18 +1474,26 @@ async function handleVideosDone(jobId,urls){
     return results.filter(function(r){return r.status==='fulfilled';}).map(function(r){return r.value;});
   }
 
-  let blobs = await fetchVideoBlobs(urls);
+  let blobs=await fetchVideoBlobs(urls);
   if(!blobs.length){
     await sleep(5000);
-    blobs = await fetchVideoBlobs(urls);
+    blobs=await fetchVideoBlobs(urls);
   }
+
   if(!blobs.length){
-    if(wasActive && _activeVideoJobId===jobId)
+    // Blobs unavailable now but URLs are saved — user can refresh history to retry
+    if(_activeVideoJobId===jobId)
       vcUpdateGrpHd(jobId,'error',0,'Videos saved — try refreshing in 30s');
     return;
   }
+
   blobs.forEach(function(b,i){_vidCache[jobId+':'+i]=b;});
-  if(wasActive && _activeVideoJobId===jobId){
+
+  // Re-check if still on this job — user may have navigated during blob fetch
+  if(_activeVideoJobId===jobId){
+    // Clear any existing cards first to avoid duplicates
+    const row=document.getElementById('vrow-'+jobId.replace(/[^a-zA-Z0-9_-]/g,'_'));
+    if(row) row.innerHTML='';
     blobs.forEach(function(b,i){vcAddVideoCard(jobId,b,i);});
     vcUpdateGrpHd(jobId,'done',blobs.length);
     vcScrollDown();
