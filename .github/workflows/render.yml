@@ -17,6 +17,10 @@ on:
         description: 'Job ID for session tracking'
         required: false
         default: ''
+      output_mode:
+        description: 'Output mode: image or video'
+        required: false
+        default: 'image'
 
 jobs:
   render:
@@ -36,14 +40,14 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Install Chrome system dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update -q
           sudo apt-get install -y --no-install-recommends \
             libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
             libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
             libgbm1 libpango-1.0-0 libcairo2 libasound2t64 \
-            fonts-noto-color-emoji
+            fonts-noto-color-emoji ffmpeg
 
       - name: Render images
         env:
@@ -52,8 +56,26 @@ jobs:
           RUN_TOKEN: ${{ github.event.inputs.run_token }}
         run: node render.js
 
-      - name: Upload images to GitHub Release
+      - name: Convert images to 10-second videos (video mode)
+        if: ${{ github.event.inputs.output_mode == 'video' }}
+        run: |
+          mkdir -p output_video
+          for f in output/*.png; do
+            base=$(basename "$f" .png)
+            ffmpeg -y \
+              -loop 1 -i "$f" \
+              -c:v libx264 -preset fast -crf 18 \
+              -t 10 \
+              -vf "scale=1080:1920:flags=lanczos,format=yuv420p" \
+              -movflags +faststart \
+              "output_video/${base}.mp4"
+            echo "✅ Video: ${base}.mp4"
+          done
+          echo "🎬 All videos created: $(ls output_video/*.mp4 | wc -l)"
+
+      - name: Upload IMAGES to GitHub Release
         id: upload_release
+        if: ${{ github.event.inputs.output_mode != 'video' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_TOKEN: ${{ github.event.inputs.run_token }}
@@ -61,10 +83,11 @@ jobs:
         run: |
           PNG_COUNT=$(ls output/*.png 2>/dev/null | wc -l)
           if [ "$PNG_COUNT" -eq 0 ]; then
-            echo "PNG_COUNT=0" >> $GITHUB_OUTPUT
+            echo "FILE_COUNT=0" >> $GITHUB_OUTPUT
             echo "No PNG files found" && exit 1
           fi
-          echo "PNG_COUNT=$PNG_COUNT" >> $GITHUB_OUTPUT
+          echo "FILE_COUNT=$PNG_COUNT" >> $GITHUB_OUTPUT
+          echo "FILE_TYPE=image" >> $GITHUB_OUTPUT
 
           gh release create "$RUN_TOKEN" output/*.png \
             --title "VDO Run $RUN_TOKEN" \
@@ -72,22 +95,63 @@ jobs:
             --repo "$REPO"
 
           BASE_URL="https://github.com/${REPO}/releases/download/${RUN_TOKEN}"
-          IMAGE_URLS=$(ls output/*.png | sort | BASE_URL="$BASE_URL" python3 -c "import sys,json,os; base=os.environ['BASE_URL']; files=[os.path.basename(l.strip()) for l in sys.stdin if l.strip()]; print(json.dumps([f'{base}/{f}' for f in sorted(files) if f.endswith('.png')]))")
-          echo "IMAGE_URLS=$IMAGE_URLS" >> $GITHUB_OUTPUT
-          echo "URLs: $IMAGE_URLS"
+          FILE_URLS=$(ls output/*.png | sort | BASE_URL="$BASE_URL" python3 -c "
+          import sys,json,os
+          base=os.environ['BASE_URL']
+          files=[os.path.basename(l.strip()) for l in sys.stdin if l.strip()]
+          print(json.dumps([f'{base}/{f}' for f in sorted(files) if f.endswith('.png')]))
+          ")
+          echo "FILE_URLS=$FILE_URLS" >> $GITHUB_OUTPUT
+          echo "URLs: $FILE_URLS"
+
+      - name: Upload VIDEOS to GitHub Release
+        id: upload_release_video
+        if: ${{ github.event.inputs.output_mode == 'video' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_TOKEN: ${{ github.event.inputs.run_token }}
+          REPO: ${{ github.repository }}
+        run: |
+          MP4_COUNT=$(ls output_video/*.mp4 2>/dev/null | wc -l)
+          if [ "$MP4_COUNT" -eq 0 ]; then
+            echo "FILE_COUNT=0" >> $GITHUB_OUTPUT
+            echo "No MP4 files found" && exit 1
+          fi
+          echo "FILE_COUNT=$MP4_COUNT" >> $GITHUB_OUTPUT
+          echo "FILE_TYPE=video" >> $GITHUB_OUTPUT
+
+          gh release create "$RUN_TOKEN" output_video/*.mp4 \
+            --title "VDO Run $RUN_TOKEN" \
+            --notes "Auto-generated — $MP4_COUNT videos" \
+            --repo "$REPO"
+
+          BASE_URL="https://github.com/${REPO}/releases/download/${RUN_TOKEN}"
+          FILE_URLS=$(ls output_video/*.mp4 | sort | BASE_URL="$BASE_URL" python3 -c "
+          import sys,json,os
+          base=os.environ['BASE_URL']
+          files=[os.path.basename(l.strip()) for l in sys.stdin if l.strip()]
+          print(json.dumps([f'{base}/{f}' for f in sorted(files) if f.endswith('.mp4')]))
+          ")
+          echo "FILE_URLS=$FILE_URLS" >> $GITHUB_OUTPUT
+          echo "URLs: $FILE_URLS"
 
       - name: Save session metadata via worker
-        if: steps.upload_release.outputs.PNG_COUNT != '0'
         env:
           RUN_TOKEN: ${{ github.event.inputs.run_token }}
           USER_ID: ${{ github.event.inputs.user_id }}
           JOB_ID: ${{ github.event.inputs.job_id }}
           ZODIAC_TEXT: ${{ github.event.inputs.zodiac_text }}
-          IMAGE_URLS: ${{ steps.upload_release.outputs.IMAGE_URLS }}
+          OUTPUT_MODE: ${{ github.event.inputs.output_mode }}
+          FILE_URLS: ${{ github.event.inputs.output_mode == 'video' && steps.upload_release_video.outputs.FILE_URLS || steps.upload_release.outputs.FILE_URLS }}
+          FILE_COUNT: ${{ github.event.inputs.output_mode == 'video' && steps.upload_release_video.outputs.FILE_COUNT || steps.upload_release.outputs.FILE_COUNT }}
           WORKER_URL: 'https://vdo.shreevathsa2k21-4fa.workers.dev'
         run: |
           if [ -z "$USER_ID" ] || [ -z "$JOB_ID" ]; then
             echo "No userId/jobId — skipping session save"
+            exit 0
+          fi
+          if [ "$FILE_COUNT" = "0" ] || [ -z "$FILE_URLS" ]; then
+            echo "No files to save"
             exit 0
           fi
 
@@ -101,7 +165,8 @@ jobs:
               \"jobId\": \"${JOB_ID}\",
               \"runToken\": \"${RUN_TOKEN}\",
               \"prompt\": ${PROMPT_JSON},
-              \"imageUrls\": ${IMAGE_URLS},
+              \"imageUrls\": ${FILE_URLS},
+              \"outputMode\": \"${OUTPUT_MODE}\",
               \"status\": \"done\"
             }")
 
@@ -110,10 +175,12 @@ jobs:
             echo "Warning: session save returned $HTTP_STATUS"
           fi
 
-      - name: Upload artifact (1-day fallback)
+      - name: Upload artifact fallback
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: zodiac-images-${{ github.event.inputs.run_token }}
-          path: output/*.png
+          name: zodiac-output-${{ github.event.inputs.run_token }}
+          path: |
+            output/*.png
+            output_video/*.mp4
           retention-days: 1
