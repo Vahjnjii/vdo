@@ -424,6 +424,44 @@ const lsGet = k => { try { return JSON.parse(localStorage.getItem(k)); } catch {
 const lsSet = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 const lsDel = k => { try { localStorage.removeItem(k); } catch {} };
 
+// ═══════════════════════════════════════════════════════════════
+// COOKIE HELPERS — Android Chrome keeps cookies across refreshes
+// even when localStorage is wiped by the OS/browser.
+// We store the user object in a cookie as a backup.
+// ═══════════════════════════════════════════════════════════════
+function cookieSet(name, value, days) {
+  try {
+    const exp = new Date(Date.now() + days * 864e5).toUTCString();
+    // SameSite=Lax works for same-origin; no Secure needed for http
+    document.cookie = `${name}=${encodeURIComponent(JSON.stringify(value))}; expires=${exp}; path=/; SameSite=Lax`;
+  } catch {}
+}
+function cookieGet(name) {
+  try {
+    const match = document.cookie.split('; ').find(r => r.startsWith(name + '='));
+    if (!match) return null;
+    return JSON.parse(decodeURIComponent(match.split('=').slice(1).join('=')));
+  } catch { return null; }
+}
+function cookieDel(name) {
+  try { document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax`; } catch {}
+}
+
+// Unified user read: localStorage first, fall back to cookie
+function readPersistedUser() {
+  return lsGet(LS_USER) || cookieGet('vdo_user_ck');
+}
+// Unified user write: both stores
+function writePersistedUser(u) {
+  lsSet(LS_USER, u);
+  cookieSet('vdo_user_ck', u, 90); // 90-day cookie
+}
+// Unified user delete: both stores
+function clearPersistedUser() {
+  lsDel(LS_USER);
+  cookieDel('vdo_user_ck');
+}
+
 function lsGetSess(uid) { return (lsGet(LS_SESS)||{})[uid]||[]; }
 function lsSaveSess(uid, arr) {
   const all = lsGet(LS_SESS)||{};
@@ -570,7 +608,7 @@ async function doGoogleLogin() {
   }
 }
 
-function setUser(u){ _user=u; lsSet(LS_USER,u); enterApp(); }
+function setUser(u){ _user=u; writePersistedUser(u); enterApp(); }
 
 async function enterApp() {
   const n=_user.name.split(' ')[0];
@@ -611,7 +649,7 @@ function signOut(){
   _sessions.forEach(s=>{if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}});
   _sessions=[]; _imgCache={};
   try{window.google?.accounts?.oauth2?.revoke?.();}catch{}
-  lsDel(LS_USER); _user=null; _activeJobId=null;
+  clearPersistedUser(); _user=null; _activeJobId=null;
   $('so-menu').classList.remove('open');
   renderSessBar(); show('login');
 }
@@ -1214,7 +1252,7 @@ function toast(m){
 // INIT
 // ═══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded',()=>{
-  try{const u=lsGet(LS_USER);if(u){_user=u;enterApp();}}catch{}
+  try{const u=readPersistedUser();if(u){_user=u;enterApp();}}catch{}
   const ta=$('ch-ta');
   if(ta){
     ta.addEventListener('input',()=>resize(ta));
