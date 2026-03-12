@@ -1,4 +1,4 @@
-name: Render Zodiac Video
+name: Render Zodiac Videos
 
 on:
   workflow_dispatch:
@@ -18,12 +18,12 @@ on:
         required: false
         default: ''
       duration:
-        description: 'Video duration in seconds'
+        description: 'Duration per video in seconds'
         required: false
         default: '10'
 
 jobs:
-  render-video:
+  render:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -37,10 +37,10 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Node dependencies
+      - name: Install dependencies
         run: npm install
 
-      - name: Install system dependencies (Chrome + ffmpeg + fonts)
+      - name: Install system dependencies
         run: |
           sudo apt-get update -q
           sudo apt-get install -y --no-install-recommends \
@@ -50,7 +50,7 @@ jobs:
             fonts-noto-color-emoji \
             ffmpeg
 
-      - name: Render video frames + encode MP4
+      - name: Render videos
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ZODIAC_TEXT: ${{ github.event.inputs.zodiac_text }}
@@ -58,37 +58,43 @@ jobs:
           DURATION: ${{ github.event.inputs.duration }}
         run: node render-video.js
 
-      - name: Upload video to GitHub Release
+      - name: Upload videos to GitHub Release
         id: upload_release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_TOKEN: ${{ github.event.inputs.run_token }}
           REPO: ${{ github.repository }}
         run: |
-          MP4_FILE="output/zodiac-video.mp4"
-          if [ ! -f "$MP4_FILE" ]; then
-            echo "MP4 not found!" && exit 1
+          MP4_COUNT=$(ls output/*.mp4 2>/dev/null | wc -l)
+          if [ "$MP4_COUNT" -eq 0 ]; then
+            echo "MP4_COUNT=0" >> $GITHUB_OUTPUT
+            echo "No MP4 files found" && exit 1
           fi
+          echo "MP4_COUNT=$MP4_COUNT" >> $GITHUB_OUTPUT
 
-          RELEASE_TAG="vid-${RUN_TOKEN}"
-
-          gh release create "$RELEASE_TAG" "$MP4_FILE" \
-            --title "VDO Video $RUN_TOKEN" \
-            --notes "Auto-generated 10s zodiac video" \
+          gh release create "$RUN_TOKEN" output/*.mp4 \
+            --title "VDO Video Run $RUN_TOKEN" \
+            --notes "Auto-generated — $MP4_COUNT videos" \
             --repo "$REPO"
 
-          BASE_URL="https://github.com/${REPO}/releases/download/${RELEASE_TAG}"
-          VIDEO_URL="${BASE_URL}/zodiac-video.mp4"
-          echo "VIDEO_URL=$VIDEO_URL" >> $GITHUB_OUTPUT
-          echo "Video URL: $VIDEO_URL"
+          BASE_URL="https://github.com/${REPO}/releases/download/${RUN_TOKEN}"
+          VIDEO_URLS=$(ls output/*.mp4 | sort | BASE_URL="$BASE_URL" python3 -c "
+          import sys, json, os
+          base = os.environ['BASE_URL']
+          files = [os.path.basename(l.strip()) for l in sys.stdin if l.strip()]
+          print(json.dumps([f'{base}/{f}' for f in sorted(files) if f.endswith('.mp4')]))
+          ")
+          echo "VIDEO_URLS=$VIDEO_URLS" >> $GITHUB_OUTPUT
+          echo "URLs: $VIDEO_URLS"
 
       - name: Save session metadata via worker
+        if: steps.upload_release.outputs.MP4_COUNT != '0'
         env:
           RUN_TOKEN: ${{ github.event.inputs.run_token }}
           USER_ID: ${{ github.event.inputs.user_id }}
           JOB_ID: ${{ github.event.inputs.job_id }}
           ZODIAC_TEXT: ${{ github.event.inputs.zodiac_text }}
-          VIDEO_URL: ${{ steps.upload_release.outputs.VIDEO_URL }}
+          VIDEO_URLS: ${{ steps.upload_release.outputs.VIDEO_URLS }}
           WORKER_URL: 'https://vdo.shreevathsa2k21-4fa.workers.dev'
         run: |
           if [ -z "$USER_ID" ] || [ -z "$JOB_ID" ]; then
@@ -97,7 +103,6 @@ jobs:
           fi
 
           PROMPT_JSON=$(echo "$ZODIAC_TEXT" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read().rstrip('\n')))")
-          VIDEO_URLS_JSON=$(echo "$VIDEO_URL" | python3 -c "import sys,json; print(json.dumps([sys.stdin.read().strip()]))")
 
           HTTP_STATUS=$(curl -s -o /tmp/save_resp.json -w "%{http_code}" \
             -X POST "${WORKER_URL}/save-session" \
@@ -107,10 +112,10 @@ jobs:
               \"jobId\": \"${JOB_ID}\",
               \"runToken\": \"${RUN_TOKEN}\",
               \"prompt\": ${PROMPT_JSON},
-              \"videoUrls\": ${VIDEO_URLS_JSON},
-              \"imageUrls\": ${VIDEO_URLS_JSON},
-              \"status\": \"done\",
-              \"type\": \"video\"
+              \"videoUrls\": ${VIDEO_URLS},
+              \"imageUrls\": ${VIDEO_URLS},
+              \"type\": \"video\",
+              \"status\": \"done\"
             }")
 
           echo "Worker response ($HTTP_STATUS): $(cat /tmp/save_resp.json)"
@@ -122,6 +127,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: zodiac-video-${{ github.event.inputs.run_token }}
+          name: zodiac-videos-${{ github.event.inputs.run_token }}
           path: output/*.mp4
           retention-days: 1
