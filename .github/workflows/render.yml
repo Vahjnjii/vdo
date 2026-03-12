@@ -22,7 +22,7 @@ jobs:
   render:
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # required to create GitHub Releases
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -52,55 +52,30 @@ jobs:
           RUN_TOKEN: ${{ github.event.inputs.run_token }}
         run: node render.js
 
-      # ── PERMANENT STORAGE via GitHub Releases ───────────────────────────────
-      # Images are uploaded as release assets — they do NOT bloat the repo.
-      # Release asset URLs are permanent and publicly accessible:
-      #   https://github.com/{owner}/{repo}/releases/download/{tag}/{filename}
-      # This approach supports unlimited images forever at zero cost.
-      # ─────────────────────────────────────────────────────────────────────────
       - name: Upload images to GitHub Release
         id: upload_release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_TOKEN: ${{ github.event.inputs.run_token }}
+          REPO: ${{ github.repository }}
         run: |
-          # Verify PNGs exist
           PNG_COUNT=$(ls output/*.png 2>/dev/null | wc -l)
           if [ "$PNG_COUNT" -eq 0 ]; then
-            echo "❌ No PNG files found in output/"
             echo "PNG_COUNT=0" >> $GITHUB_OUTPUT
-            exit 1
+            echo "No PNG files found" && exit 1
           fi
           echo "PNG_COUNT=$PNG_COUNT" >> $GITHUB_OUTPUT
-          echo "✅ Found $PNG_COUNT PNG files"
 
-          # Create a GitHub Release and upload all PNGs as assets
-          # Tag = run_token (unique per job, safe for git tags)
-          gh release create "$RUN_TOKEN" \
-            output/*.png \
+          gh release create "$RUN_TOKEN" output/*.png \
             --title "VDO Run $RUN_TOKEN" \
-            --notes "Auto-generated zodiac images — $PNG_COUNT files" \
-            --repo "${{ github.repository }}"
+            --notes "Auto-generated — $PNG_COUNT images" \
+            --repo "$REPO"
 
-          echo "✅ Release created: $RUN_TOKEN"
-
-          # Build JSON array of permanent download URLs
-          # Format: https://github.com/{owner}/{repo}/releases/download/{tag}/{filename}
-          REPO="${{ github.repository }}"
           BASE_URL="https://github.com/${REPO}/releases/download/${RUN_TOKEN}"
-
-          IMAGE_URLS=$(ls output/*.png | sort | python3 -c "
-import sys, json, os
-base = os.environ['BASE_URL']
-files = [os.path.basename(line.strip()) for line in sys.stdin if line.strip()]
-urls = [f'{base}/{f}' for f in sorted(files) if f.endswith('.png')]
-print(json.dumps(urls))
-" BASE_URL="$BASE_URL")
-
+          IMAGE_URLS=$(ls output/*.png | sort | BASE_URL="$BASE_URL" python3 -c "import sys,json,os; base=os.environ['BASE_URL']; files=[os.path.basename(l.strip()) for l in sys.stdin if l.strip()]; print(json.dumps([f'{base}/{f}' for f in sorted(files) if f.endswith('.png')]))")
           echo "IMAGE_URLS=$IMAGE_URLS" >> $GITHUB_OUTPUT
-          echo "✅ Image URLs: $IMAGE_URLS"
+          echo "URLs: $IMAGE_URLS"
 
-      # ── NOTIFY WORKER — save session metadata ────────────────────────────────
       - name: Save session metadata via worker
         if: steps.upload_release.outputs.PNG_COUNT != '0'
         env:
@@ -112,7 +87,7 @@ print(json.dumps(urls))
           WORKER_URL: 'https://vdo.shreevathsa2k21-4fa.workers.dev'
         run: |
           if [ -z "$USER_ID" ] || [ -z "$JOB_ID" ]; then
-            echo "No userId/jobId provided — skipping session save"
+            echo "No userId/jobId — skipping session save"
             exit 0
           fi
 
@@ -132,13 +107,10 @@ print(json.dumps(urls))
 
           echo "Worker response ($HTTP_STATUS): $(cat /tmp/save_resp.json)"
           if [ "$HTTP_STATUS" != "200" ]; then
-            echo "⚠️ Warning: session save returned $HTTP_STATUS — images are still in GitHub Release"
-          else
-            echo "✅ Session saved successfully"
+            echo "Warning: session save returned $HTTP_STATUS"
           fi
 
-      # Keep artifact as short-term fallback (available immediately via API)
-      - name: Upload artifact (short-term fallback)
+      - name: Upload artifact (1-day fallback)
         if: always()
         uses: actions/upload-artifact@v4
         with:
