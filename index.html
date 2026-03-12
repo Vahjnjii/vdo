@@ -1285,26 +1285,72 @@ function addVideoCard(jobId,videoUrl,idx){
   card.querySelectorAll('[data-act]').forEach(btn=>btn.addEventListener('click',e=>{
     e.stopPropagation();
     const act=btn.dataset.act;
-    if(act==='share') shareVideo(videoUrl,idx);
+    if(act==='share') shareVideo(videoUrl,idx,jobId);
     else if(act==='save') dlVideo(videoUrl,idx);
     else window.open(videoUrl,'_blank');
   }));
   row.appendChild(card);
 }
-async function shareVideo(url,idx){
+// Fetch video as blob — route through /image proxy (same as images) to bypass
+// GitHub Release CORS redirect. Falls back to direct fetch if proxy fails.
+async function fetchVideoBlob(url){
   try{
-    if(navigator.share){
-      await navigator.share({url,title:`VDO Video ${idx+1}`,text:'Generated with VDO'});
-    } else { window.open(url,'_blank'); }
-    toast('Shared ✓');
-  }catch(e){if(e.name!=='AbortError')toast('⚠️ '+e.message);}
+    const proxyUrl=`${WORKER}/image?url=${encodeURIComponent(url)}`;
+    const r=await fetch(proxyUrl);
+    if(r.ok) return await r.blob();
+  }catch{}
+  // Direct fallback (works on desktop, may fail on mobile due to CORS)
+  try{ const r=await fetch(url); if(r.ok) return await r.blob(); }catch{}
+  return null;
 }
-function dlVideo(url,idx){
-  const a=document.createElement('a');
-  const rnd=new Uint32Array(1);crypto.getRandomValues(rnd);
-  a.href=url; a.download=`vdo_${(rnd[0]%900000000)+100000000}.mp4`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  toast('Saved ✓');
+
+// Generate a random MP4 filename
+const rndMp4Name=()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return`vdo_${(a[0]%900000000)+100000000}.mp4`;};
+
+async function shareVideo(url,idx,jobId){
+  // Get the title from the session prompt (same as image share uses Image N)
+  const sess=jobId?getSess(jobId):null;
+  const title=sess?.label ? sess.label.slice(0,80) : `VDO Video ${idx+1}`;
+
+  if(!navigator.share){ window.open(url,'_blank'); return; }
+
+  // Show a loading toast while fetching
+  toast('⏳ Preparing video…');
+  const blob=await fetchVideoBlob(url);
+
+  if(!blob){
+    // Blob fetch failed — fall back to URL share (link only, better than nothing)
+    try{ await navigator.share({url,title,text:title}); toast('Shared ✓'); }
+    catch(e){ if(e.name!=='AbortError') toast('⚠️ '+e.message); }
+    return;
+  }
+
+  try{
+    const file=new File([blob], rndMp4Name(), {type:'video/mp4'});
+    // canShare({files}) check — not all browsers/apps support file sharing
+    if(navigator.canShare?.({files:[file]})){
+      await navigator.share({files:[file], title, text:title});
+    } else {
+      // Fallback: share URL if files not supported
+      await navigator.share({url, title, text:title});
+    }
+    toast('Shared ✓');
+  }catch(e){ if(e.name!=='AbortError') toast('⚠️ '+e.message); }
+}
+
+async function dlVideo(url,idx){
+  toast('⏳ Preparing download…');
+  const blob=await fetchVideoBlob(url);
+  if(blob){
+    trigDl(blob, rndMp4Name());
+    toast('Saved ✓');
+  } else {
+    // Fallback: direct anchor (works on desktop)
+    const a=document.createElement('a');
+    a.href=url; a.download=rndMp4Name();
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    toast('Saved ✓');
+  }
 }
 // blobOrUrl: Blob (cached) OR string (direct https:// GitHub Release URL)
 function addImgCard(jobId,blobOrUrl,idx){
