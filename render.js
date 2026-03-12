@@ -1,129 +1,186 @@
-name: Render Zodiac Images
+const puppeteer = require('puppeteer');
+const fs   = require('fs');
+const path = require('path');
 
-on:
-  workflow_dispatch:
-    inputs:
-      zodiac_text:
-        description: 'Zodiac text to render'
-        required: true
-      run_token:
-        description: 'Unique run token — used as release tag'
-        required: true
-      user_id:
-        description: 'User ID for session tracking'
-        required: false
-        default: ''
-      job_id:
-        description: 'Job ID for session tracking'
-        required: false
-        default: ''
+const WORKER_URL  = 'https://vdo.shreevathsa2k21-4fa.workers.dev';
+const ZODIAC_TEXT = process.env.ZODIAC_TEXT;
 
-jobs:
-  render:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
+// ── Detect if text contains CJK (Chinese/Japanese/Korean) characters
+function hasCJK(text) {
+  return /[\u3000-\u9fff\u4e00-\u9fff\uff00-\uffef\u3400-\u4dbf]/.test(text);
+}
 
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+async function formatWithWorkerAI(text) {
+  console.log('🤖 Calling Worker /format ...');
+  const res = await fetch(`${WORKER_URL}/format`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text })
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Worker /format failed: ${res.status} — ${body}`);
+  }
+  const data = await res.json();
+  if (!data.posts?.length) throw new Error('Worker returned 0 posts');
+  console.log(`✅ Got ${data.posts.length} posts`);
+  return data.posts;
+}
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+function buildHTML(posts, useCJK) {
 
-      - name: Register run with Worker (enables instant /poll via KV)
-        env:
-          RUN_TOKEN: ${{ github.event.inputs.run_token }}
-          RUN_ID: ${{ github.run_id }}
-          WORKER_URL: 'https://vdo.shreevathsa2k21-4fa.workers.dev'
-        run: |
-          curl -s -X POST "${WORKER_URL}/register-run" \
-            -H "Content-Type: application/json" \
-            -d '{"run_token":"'"${RUN_TOKEN}"'","run_id":"'"${RUN_ID}"'"}' || true
+  // ── Font stack based on language
+  // Poppins has ZERO CJK support → boxes appear for Chinese
+  // Noto Sans SC covers all Chinese characters perfectly
+  const fontFamily = useCJK
+    ? "'Noto Sans SC', 'Noto Sans', sans-serif"
+    : "'Poppins', sans-serif";
 
-      - name: Install dependencies
-        run: npm install
+  const fontLink = useCJK
+    ? '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">'
+    : '<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">';
 
-      - name: Install Chrome system dependencies
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install -y --no-install-recommends \
-            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
-            libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
-            libgbm1 libpango-1.0-0 libcairo2 libasound2t64 \
-            fonts-noto-color-emoji
+  // ── Clean title: strip emojis, #, * — keep all text/numbers exactly
+  function cleanTitle(t) {
+    return (t || '')
+      .replace(/^[#\s]+/, '')
+      .replace(/\*+/g, '')
+      .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
+      .replace(/[\u2600-\u27BF]/g, '')
+      .trim();
+  }
 
-      - name: Render images
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          ZODIAC_TEXT: ${{ github.event.inputs.zodiac_text }}
-          RUN_TOKEN: ${{ github.event.inputs.run_token }}
-        run: node render.js
+  // ── Render one line: emoji prefix floated left, text right
+  function renderLine(line, bodySize) {
+    if (!line || line.trim() === '') return `<div style="height:18px"></div>`;
 
-      - name: Upload images to GitHub Release
-        id: upload_release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RUN_TOKEN: ${{ github.event.inputs.run_token }}
-          REPO: ${{ github.repository }}
-        run: |
-          PNG_COUNT=$(ls output/*.png 2>/dev/null | wc -l)
-          if [ "$PNG_COUNT" -eq 0 ]; then
-            echo "PNG_COUNT=0" >> $GITHUB_OUTPUT
-            echo "No PNG files found" && exit 1
-          fi
-          echo "PNG_COUNT=$PNG_COUNT" >> $GITHUB_OUTPUT
+    const html = line
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^#+\s*/, '');
 
-          gh release create "$RUN_TOKEN" output/*.png \
-            --title "VDO Run $RUN_TOKEN" \
-            --notes "Auto-generated — $PNG_COUNT images" \
-            --repo "$REPO"
+    const emojiRe = /^((?:[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDD00-\uDFFF])+\s*)/u;
+    const m = html.match(emojiRe);
+    if (m) {
+      const emoji = m[1];
+      const rest  = html.slice(emoji.length);
+      return `<div style="display:flex;flex-direction:row;align-items:flex-start;gap:10px;margin-bottom:10px;font-family:${fontFamily}">
+        <span style="flex-shrink:0;font-size:${bodySize}px;font-family:'Noto Color Emoji','Segoe UI Emoji',sans-serif">${emoji.trim()}</span>
+        <span style="flex:1;text-align:left;font-family:${fontFamily}">${rest}</span>
+      </div>`;
+    }
+    return `<div style="margin-bottom:10px;text-align:left;font-family:${fontFamily}">${html}</div>`;
+  }
 
-          BASE_URL="https://github.com/${REPO}/releases/download/${RUN_TOKEN}"
-          IMAGE_URLS=$(ls output/*.png | sort | BASE_URL="$BASE_URL" python3 -c "import sys,json,os; base=os.environ['BASE_URL']; files=[os.path.basename(l.strip()) for l in sys.stdin if l.strip()]; print(json.dumps([f'{base}/{f}' for f in sorted(files) if f.endswith('.png')]))")
-          echo "IMAGE_URLS=$IMAGE_URLS" >> $GITHUB_OUTPUT
-          echo "URLs: $IMAGE_URLS"
+  // ── Auto-scale font by content length
+  function layout(totalChars) {
+    if (totalChars < 200)  return { title:80, body:44, titleMB:65, px:88, py:240 };
+    if (totalChars < 400)  return { title:68, body:40, titleMB:55, px:88, py:220 };
+    if (totalChars < 600)  return { title:58, body:36, titleMB:47, px:88, py:200 };
+    if (totalChars < 800)  return { title:50, body:32, titleMB:40, px:88, py:185 };
+    if (totalChars < 1000) return { title:44, body:29, titleMB:34, px:88, py:170 };
+    return                         { title:38, body:26, titleMB:28, px:88, py:155 };
+  }
 
-      - name: Save session metadata via worker
-        if: steps.upload_release.outputs.PNG_COUNT != '0'
-        env:
-          RUN_TOKEN: ${{ github.event.inputs.run_token }}
-          USER_ID: ${{ github.event.inputs.user_id }}
-          JOB_ID: ${{ github.event.inputs.job_id }}
-          ZODIAC_TEXT: ${{ github.event.inputs.zodiac_text }}
-          IMAGE_URLS: ${{ steps.upload_release.outputs.IMAGE_URLS }}
-          WORKER_URL: 'https://vdo.shreevathsa2k21-4fa.workers.dev'
-        run: |
-          if [ -z "$USER_ID" ] || [ -z "$JOB_ID" ]; then
-            echo "No userId/jobId — skipping session save"
-            exit 0
-          fi
+  const cards = posts.map((post, i) => {
+    const title  = cleanTitle(post.title);
+    const lines  = post.content || [];
+    const total  = title.length + lines.join('').length;
+    const s      = layout(total);
+    const bodyHTML = lines.map(line => renderLine(line, s.body)).join('');
 
-          PROMPT_JSON=$(echo "$ZODIAC_TEXT" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read().rstrip('\n')))")
+    return `<div id="p${i}" style="
+      width:1080px;height:1920px;
+      background:#000;
+      padding:${s.py}px ${s.px}px;
+      box-sizing:border-box;
+      display:flex;flex-direction:column;justify-content:center;
+      position:absolute;top:0;left:0;">
+      <h1 style="
+        font-family:${fontFamily};
+        font-size:${s.title}px;font-weight:700;color:#fff;
+        line-height:1.2;margin:0 0 ${s.titleMB}px 0;
+        text-align:left;word-break:break-word;hyphens:none;">${title}</h1>
+      <div style="
+        font-family:${fontFamily};
+        font-size:${s.body}px;font-weight:400;color:#fff;
+        line-height:1.65;text-align:left;">${bodyHTML}</div>
+    </div>`;
+  }).join('');
 
-          HTTP_STATUS=$(curl -s -o /tmp/save_resp.json -w "%{http_code}" \
-            -X POST "${WORKER_URL}/save-session" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"userId\": \"${USER_ID}\",
-              \"jobId\": \"${JOB_ID}\",
-              \"runToken\": \"${RUN_TOKEN}\",
-              \"prompt\": ${PROMPT_JSON},
-              \"imageUrls\": ${IMAGE_URLS},
-              \"status\": \"done\"
-            }")
+  return `<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+${fontLink}
+<link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#000;width:1080px}
+  strong{font-weight:700}
+</style>
+</head><body>
+<div style="position:relative;width:1080px;height:1920px">${cards}</div>
+</body></html>`;
+}
 
-          echo "Worker response ($HTTP_STATUS): $(cat /tmp/save_resp.json)"
-          if [ "$HTTP_STATUS" != "200" ]; then
-            echo "Warning: session save returned $HTTP_STATUS"
-          fi
+async function render(posts, useCJK) {
+  const outDir = path.join(__dirname, 'output');
+  fs.mkdirSync(outDir, { recursive: true });
 
-      - name: Upload artifact (1-day fallback)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: zodiac-images-${{ github.event.inputs.run_token }}
-          path: output/*.png
-          retention-days: 1
+  const browser = await puppeteer.launch({
+    headless: 'new',
+    args: [
+      '--no-sandbox','--disable-setuid-sandbox',
+      '--disable-dev-shm-usage','--disable-gpu',
+      '--font-render-hinting=none','--enable-font-antialiasing'
+    ]
+  });
+
+  const page = await browser.newPage();
+  await page.setViewport({ width:1080, height:1920, deviceScaleFactor:2 });
+
+  const html = buildHTML(posts, useCJK);
+  await page.setContent(html, { waitUntil: 'networkidle0' });
+
+  // Wait for fonts
+  await page.waitForFunction(() => document.fonts.ready.then(() => true));
+  await new Promise(r => setTimeout(r, 2000));
+
+  for (let i = 0; i < posts.length; i++) {
+    console.log(`📸 [${i+1}/${posts.length}] ${posts[i].title}`);
+
+    await page.evaluate((idx, total) => {
+      for (let j = 0; j < total; j++) {
+        const el = document.getElementById(`p${j}`);
+        if (el) el.style.display = j === idx ? 'flex' : 'none';
+      }
+    }, i, posts.length);
+
+    const safe = (posts[i].title || `post${i}`)
+      .substring(0, 40)
+      .replace(/[^\w\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .toLowerCase() || `post${i}`;
+
+    const el = await page.$(`#p${i}`);
+    await el.screenshot({
+      path: path.join(outDir, `${String(i+1).padStart(3,'0')}-${safe}.png`),
+      type: 'png'
+    });
+    console.log(`  ✅ saved`);
+  }
+
+  await browser.close();
+}
+
+(async () => {
+  if (!ZODIAC_TEXT) throw new Error('ZODIAC_TEXT not set');
+  const posts = await formatWithWorkerAI(ZODIAC_TEXT);
+  const useCJK = hasCJK(ZODIAC_TEXT);
+  console.log(`\n🌐 Language: ${useCJK ? 'CJK (Noto Sans SC)' : 'Latin (Poppins)'}`);
+  console.log(`🎨 Rendering ${posts.length} posts...`);
+  await render(posts, useCJK);
+  console.log('✅ All done!');
+})().catch(e => { console.error('❌', e.message); process.exit(1); });
