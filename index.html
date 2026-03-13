@@ -10,7 +10,7 @@
 <title>VDO — AI Image Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -22,7 +22,7 @@
   --gn:#00d68f;--rd:#ff6b6b;--yw:#ffd166;
   --r8:8px;--r12:12px;--r16:16px;--r20:20px;--r24:24px;
 }
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font-family:'Geist',sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
 ::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-thumb{background:var(--s3);border-radius:4px}
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -49,8 +49,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 /* ═══ LOGIN ═══ */
 #screen-login{flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow-y:auto}
 .login-wrap{position:relative;z-index:2;width:100%;max-width:340px;animation:fadeUp .65s cubic-bezier(.16,1,.3,1) both}
-.login-logo{font-family:'Instrument Serif',serif;font-size:56px;font-style:italic;letter-spacing:-3px;text-align:center;margin-bottom:2px;background:linear-gradient(135deg,#fff 20%,var(--acc2) 65%,var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.login-tag{font-size:11.5px;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--tx3);text-align:center;margin-bottom:36px}
+.login-logo{font-family:'Geist',sans-serif;font-size:48px;font-weight:800;letter-spacing:-4px;text-align:center;margin-bottom:2px;color:#fff}
+.login-tag{font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--tx3);text-align:center;margin-bottom:36px}
 .login-card{background:rgba(13,11,26,.92);backdrop-filter:blur(32px);border:1px solid var(--bd);border-radius:var(--r24);padding:26px 22px 22px;box-shadow:0 32px 80px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.05)}
 .g-btn{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:var(--r12);padding:13px 16px;color:var(--tx);font-size:14px;font-weight:500;font-family:'Geist',sans-serif;cursor:pointer;transition:all .22s;display:flex;align-items:center;justify-content:center;gap:10px}
 .g-btn:hover{background:rgba(255,255,255,.08);border-color:var(--bdh);transform:translateY(-1px)}
@@ -62,29 +62,31 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 /* ═══ TEMPLATES ═══ */
 #screen-templates{flex-direction:column;overflow-y:auto}
 .tmpl-nav{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:18px 18px 14px;background:linear-gradient(to bottom,var(--bg) 55%,transparent);max-width:480px;margin:0 auto;width:100%}
-.tmpl-brand{font-family:'Instrument Serif',serif;font-size:22px;font-style:italic;letter-spacing:-1px;background:linear-gradient(135deg,#fff,var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.tmpl-brand{font-family:'Geist',sans-serif;font-size:20px;font-weight:800;letter-spacing:-1.5px;color:#fff}
 .user-chip{display:flex;align-items:center;gap:7px;background:var(--s1);border:1px solid var(--bd);border-radius:50px;padding:5px 12px 5px 5px;cursor:pointer;transition:all .2s;font-size:12.5px;font-weight:500;color:var(--tx2)}
 .user-chip:hover{border-color:var(--bdh);color:var(--tx)}
 .user-av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;overflow:hidden;flex-shrink:0}
 .user-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .tmpl-body{padding:0 18px 60px;max-width:480px;margin:0 auto;width:100%}
-.tmpl-greet{font-family:'Instrument Serif',serif;font-size:30px;font-style:italic;letter-spacing:-.3px;margin-bottom:3px;line-height:1.2}
-.tmpl-sub{font-size:12px;color:var(--tx3);margin-bottom:28px}
-.sec-lbl{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:11px}
-.tcard{border-radius:var(--r20);overflow:hidden;cursor:pointer;background:var(--s1);border:1px solid var(--bd);transition:transform .3s cubic-bezier(.16,1,.3,1),border-color .25s,box-shadow .25s;box-shadow:0 12px 40px rgba(0,0,0,.35);animation:fadeUp .5s cubic-bezier(.16,1,.3,1) both}
-.tcard:hover{transform:translateY(-4px);border-color:rgba(108,92,231,.28);box-shadow:0 20px 56px rgba(0,0,0,.5)}
-.tcard:active{transform:scale(.985)}
-.tcard-stripe{height:2px;background:linear-gradient(90deg,transparent,var(--acc),var(--acc2),transparent)}
-.tcard-body{padding:20px 18px 16px;display:flex;gap:14px}
-.tcard-ico{width:44px;height:44px;flex-shrink:0;border-radius:12px;font-size:19px;background:rgba(108,92,231,.1);border:1px solid rgba(108,92,231,.14);display:flex;align-items:center;justify-content:center}
-.tcard-info{flex:1;min-width:0}
-.tcard-badge{font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(162,155,254,.55);margin-bottom:5px}
-.tcard-name{font-family:'Instrument Serif',serif;font-size:20px;font-style:italic;color:var(--tx);margin-bottom:4px}
-.tcard-desc{font-size:12px;color:var(--tx3);line-height:1.65}
-.tcard-foot{padding:10px 18px 14px;border-top:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
-.tcard-tags{display:flex;gap:5px;flex-wrap:wrap}
-.tcard-tag{font-size:10px;color:var(--tx3);background:rgba(255,255,255,.025);border:1px solid var(--bd);border-radius:50px;padding:3px 8px}
-.tcard-arr{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(108,92,231,.08);border:1px solid rgba(108,92,231,.12);color:var(--acc2);font-size:10px;flex-shrink:0}
+.tmpl-greet{font-family:'Geist',sans-serif;font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:3px;line-height:1.2}
+.tmpl-sub{font-size:12px;color:var(--tx3);margin-bottom:24px}
+.sec-lbl{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px}
+
+/* Compact 2-col template grid */
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tcard{border-radius:16px;overflow:hidden;cursor:pointer;background:var(--s1);border:1px solid var(--bd);transition:transform .25s cubic-bezier(.16,1,.3,1),border-color .2s,box-shadow .2s;box-shadow:0 8px 28px rgba(0,0,0,.3);animation:fadeUp .4s cubic-bezier(.16,1,.3,1) both;padding:16px 15px 14px;display:flex;flex-direction:column;gap:10px}
+.tcard:hover{transform:translateY(-3px);border-color:rgba(108,92,231,.3);box-shadow:0 16px 40px rgba(0,0,0,.45)}
+.tcard:active{transform:scale(.97)}
+.tcard.vid:hover{border-color:rgba(231,76,60,.3)}
+.tcard-top{display:flex;align-items:center;justify-content:space-between}
+.tcard-ico{width:38px;height:38px;flex-shrink:0;border-radius:10px;font-size:17px;background:rgba(108,92,231,.1);border:1px solid rgba(108,92,231,.15);display:flex;align-items:center;justify-content:center}
+.tcard.vid .tcard-ico{background:rgba(231,76,60,.1);border-color:rgba(231,76,60,.18)}
+.tcard-arr{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(108,92,231,.08);border:1px solid rgba(108,92,231,.12);color:var(--acc2);font-size:9px;flex-shrink:0}
+.tcard.vid .tcard-arr{background:rgba(231,76,60,.08);border-color:rgba(231,76,60,.14);color:#ff8c7a}
+.tcard-name{font-family:'Geist',sans-serif;font-size:13px;font-weight:700;color:var(--tx);letter-spacing:-.2px;line-height:1.25}
+.tcard-meta{font-size:10.5px;color:var(--tx3);font-weight:400}
+.tcard-strip{height:2px;border-radius:1px;background:linear-gradient(90deg,var(--acc),var(--acc2));margin-top:2px}
+.tcard.vid .tcard-strip{background:linear-gradient(90deg,#c0392b,#e74c3c)}
 
 /* SO menu */
 .so-menu{position:fixed;top:62px;right:14px;z-index:500;background:#0a0818;border:1px solid var(--bd);border-radius:var(--r16);padding:6px;min-width:200px;display:none;box-shadow:0 16px 48px rgba(0,0,0,.8);animation:fadeUp .15s ease both}
@@ -104,7 +106,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .ch-back:hover{background:rgba(255,255,255,.08);color:var(--tx)}
 .ch-nav-mid{flex:1;display:flex;align-items:center;gap:9px;min-width:0}
 .ch-nav-ico{width:30px;height:30px;border-radius:9px;flex-shrink:0;background:rgba(108,92,231,.1);border:1px solid rgba(108,92,231,.16);display:flex;align-items:center;justify-content:center;font-size:13px}
-.ch-nav-title{font-family:'Instrument Serif',serif;font-size:15px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-nav-title{font-family:'Geist',sans-serif;font-size:14px;font-weight:700;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nav-btn{display:flex;align-items:center;gap:5px;border-radius:var(--r8);padding:6px 11px;font-size:11.5px;font-weight:500;cursor:pointer;font-family:'Geist',sans-serif;transition:all .2s;white-space:nowrap;border:1px solid;flex-shrink:0}
 .nb-model{background:rgba(108,92,231,.08);border-color:rgba(108,92,231,.2);color:var(--acc2)}
 .nb-model:hover{background:rgba(108,92,231,.15);border-color:rgba(108,92,231,.35)}
@@ -115,7 +117,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .ch-msgs{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:14px 14px 8px;display:flex;flex-direction:column;gap:10px}
 .ch-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:40px 20px}
 .empty-ico{width:60px;height:60px;border-radius:18px;font-size:26px;background:rgba(108,92,231,.07);border:1px solid rgba(108,92,231,.1);display:flex;align-items:center;justify-content:center;animation:float 5s ease-in-out infinite}
-.empty-title{font-family:'Instrument Serif',serif;font-size:18px;font-style:italic;color:rgba(255,255,255,.38)}
+.empty-title{font-family:'Geist',sans-serif;font-size:16px;font-weight:600;letter-spacing:-.2px;color:rgba(255,255,255,.35)}
 .empty-sub{font-size:12.5px;color:var(--tx3);line-height:1.7;max-width:220px}
 .msg-user{align-self:flex-end;max-width:80%;background:rgba(108,92,231,.1);border:1px solid rgba(108,92,231,.18);border-radius:16px 16px 3px 16px;padding:10px 14px;font-size:13.5px;color:rgba(255,255,255,.88);line-height:1.6;white-space:pre-wrap;word-break:break-word;animation:fadeUp .2s ease both}
 .msg-err{align-self:flex-start;background:rgba(255,107,107,.06);border:1px solid rgba(255,107,107,.14);border-radius:10px;padding:10px 13px;font-size:12.5px;color:#ffb3b3;display:flex;align-items:flex-start;gap:7px;line-height:1.55;animation:fadeUp .2s ease both}
@@ -151,30 +153,26 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .img-btn:hover{background:rgba(255,255,255,.07);color:var(--tx2)}
 .img-btn:active{transform:scale(.93)}
 
-/* ═══ SESSION DOTS — correct colors ═══
-   GREEN  (#00d68f) = done, images ready
-   YELLOW (#ffd166) = generating / processing
-   RED    (#ff6b6b) = error / failed
-   GREY   (#4a4a6a) = queued (waiting to start)
-*/
-#sess-bar{position:absolute;left:8px;bottom:76px;top:58px;width:26px;display:none;flex-direction:column-reverse;align-items:center;justify-content:flex-start;gap:9px;padding:6px 0;z-index:10}
-#sess-bar.vis{display:flex}
+/* ═══ SESSION DOTS — image bar (purple) + video bar (red) ═══ */
+#sess-bar-img,#sess-bar-vid{position:absolute;left:8px;bottom:76px;top:58px;width:26px;display:none;flex-direction:column-reverse;align-items:center;justify-content:flex-start;gap:9px;padding:6px 0;z-index:10}
+#sess-bar-img.vis,#sess-bar-vid.vis{display:flex}
 .s-chip{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0;border:2px solid rgba(255,255,255,.15);transition:transform .18s,border-color .18s;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both;position:relative;font-family:'Geist',sans-serif}
 .s-chip:hover{transform:scale(1.3)!important}
 .s-chip.cur{border-color:rgba(255,255,255,.6)!important}
-
-/* DONE = solid green, gentle pulse */
+/* Image chips — green/purple */
 .s-chip.s-done{background:#00d68f;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseGn 2.5s ease 1}
-
-/* PROCESSING = solid yellow/amber, repeating pulse */
 .s-chip.s-gen{background:#ffd166;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseYw 1.4s ease infinite}
-
-/* ERROR = solid red, brief pulse */
 .s-chip.s-err{background:#ff6b6b;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseRd 2s ease 2}
-
-/* QUEUED = muted grey, no pulse */
 .s-chip.s-q{background:#4a4a6a}
-
+/* Video chips — use same status colors but bar has red accent dot indicator */
+#sess-bar-vid .s-chip.s-done{background:#00d68f;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseGn 2.5s ease 1}
+#sess-bar-vid .s-chip.s-gen{background:#e74c3c;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseRd 1.4s ease infinite}
+#sess-bar-vid .s-chip.s-err{background:#ff6b6b;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseRd 2s ease 2}
+#sess-bar-vid .s-chip.s-q{background:#5a2a2a}
+/* bar type indicator dot at top */
+#sess-bar-img::before,#sess-bar-vid::before{content:'';width:4px;height:4px;border-radius:50%;flex-shrink:0;margin-bottom:2px}
+#sess-bar-img::before{background:var(--acc2)}
+#sess-bar-vid::before{background:#e74c3c}
 /* tooltip */
 .s-chip::after{content:attr(data-tip);position:absolute;left:30px;top:50%;transform:translateY(-50%);background:#0a0818;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.9);font-size:11px;font-weight:500;padding:4px 10px;border-radius:7px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999}
 .s-chip:hover::after{opacity:1}
@@ -209,8 +207,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .hist-panel.open{display:block;pointer-events:auto}
 .hist-bg{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);animation:fadeIn .2s ease both}
 .hist-drawer{position:fixed;right:0;top:0;bottom:0;width:min(90%,360px);background:#07060f;border-left:1px solid var(--bd);display:flex;flex-direction:column;animation:slideR .28s cubic-bezier(.16,1,.3,1) both;box-shadow:-16px 0 56px rgba(0,0,0,.7)}
+.hist-drawer-vid{border-left-color:rgba(231,76,60,.2)}
 .hist-hd{display:flex;align-items:flex-start;justify-content:space-between;padding:18px 16px;border-bottom:1px solid var(--bd);flex-shrink:0}
-.hist-hd-t{font-family:'Instrument Serif',serif;font-size:20px;font-style:italic;margin-bottom:4px}
+.hist-hd-t{font-family:'Geist',sans-serif;font-size:17px;font-weight:700;letter-spacing:-.3px;margin-bottom:4px}
 .hist-sync{font-size:11px;display:flex;align-items:center;gap:5px}
 .sd{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .sd.ok{background:var(--gn);box-shadow:0 0 6px var(--gn)}
@@ -245,7 +244,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .model-sheet{position:fixed;bottom:0;left:0;right:0;background:#07060f;border-top:1px solid var(--bd);border-radius:22px 22px 0 0;max-height:80vh;display:flex;flex-direction:column;animation:slideU .28s cubic-bezier(.16,1,.3,1) both;box-shadow:0 -16px 56px rgba(0,0,0,.7)}
 .model-handle{width:36px;height:3px;border-radius:3px;background:rgba(255,255,255,.1);margin:12px auto 0;flex-shrink:0}
 .model-hd{display:flex;align-items:center;justify-content:space-between;padding:13px 17px 10px;flex-shrink:0;border-bottom:1px solid var(--bd)}
-.model-hd-t{font-family:'Instrument Serif',serif;font-size:17px;font-style:italic}
+.model-hd-t{font-family:'Geist',sans-serif;font-size:16px;font-weight:700;letter-spacing:-.3px}
 .model-hd-x{width:28px;height:28px;border-radius:7px;border:1px solid var(--bd);background:rgba(255,255,255,.03);color:var(--tx3);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .model-active-row{display:flex;align-items:center;gap:9px;padding:10px 17px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--bd);flex-shrink:0}
 .model-active-dot{width:7px;height:7px;border-radius:50%;background:var(--gn);box-shadow:0 0 7px var(--gn);flex-shrink:0}
@@ -307,39 +306,29 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
   <div class="tmpl-body">
     <div id="greet" class="tmpl-greet">Hello 👋</div>
     <div class="tmpl-sub">Create · save permanently · access anywhere</div>
-    <div class="sec-lbl">Generator</div>
-    <div class="tcard" style="animation-delay:.05s" onclick="openImageTemplate()">
-      <div class="tcard-stripe"></div>
-      <div class="tcard-body">
-        <div class="tcard-ico">🎨</div>
-        <div class="tcard-info">
-          <div class="tcard-badge">Image · 9 Languages · Permanent</div>
-          <div class="tcard-name">Zodiac Image Generator</div>
-          <div class="tcard-desc">Paste zodiac content in any language. AI formats it, renders 9:16 images, stores them permanently in GitHub Releases — accessible on any device after login.</div>
+    <div class="sec-lbl">Choose a generator</div>
+    <div class="tgrid">
+      <div class="tcard" style="animation-delay:.05s" onclick="openImageTemplate()">
+        <div class="tcard-top">
+          <div class="tcard-ico">🎨</div>
+          <div class="tcard-arr"><i class="fas fa-arrow-right"></i></div>
         </div>
+        <div>
+          <div class="tcard-name">Image</div>
+          <div class="tcard-meta">9:16 · Permanent</div>
+        </div>
+        <div class="tcard-strip"></div>
       </div>
-      <div class="tcard-foot">
-        <div class="tcard-tags">
-          <span class="tcard-tag">Cross-device</span><span class="tcard-tag">Unlimited</span><span class="tcard-tag">9:16</span><span class="tcard-tag">CJK ✓</span>
+      <div class="tcard vid" style="animation-delay:.1s" onclick="openVideoTemplate()">
+        <div class="tcard-top">
+          <div class="tcard-ico">🎬</div>
+          <div class="tcard-arr"><i class="fas fa-arrow-right"></i></div>
         </div>
-        <div class="tcard-arr"><i class="fas fa-arrow-right"></i></div>
-      </div>
-    </div>
-    <div class="tcard" style="animation-delay:.13s;margin-top:12px" onclick="openVideoTemplate()">
-      <div class="tcard-stripe" style="background:linear-gradient(90deg,transparent,#c0392b,#e74c3c,transparent)"></div>
-      <div class="tcard-body">
-        <div class="tcard-ico" style="background:rgba(231,76,60,.1);border-color:rgba(231,76,60,.18)">🎬</div>
-        <div class="tcard-info">
-          <div class="tcard-badge" style="color:rgba(255,120,100,.6)">Video · 9 Languages · Permanent</div>
-          <div class="tcard-name">Zodiac Video Generator</div>
-          <div class="tcard-desc">Paste zodiac content in any language. AI renders 9:16 video clips with your chosen duration — stored permanently in GitHub Releases.</div>
+        <div>
+          <div class="tcard-name">Video</div>
+          <div class="tcard-meta">5–20s · MP4</div>
         </div>
-      </div>
-      <div class="tcard-foot">
-        <div class="tcard-tags">
-          <span class="tcard-tag">Cross-device</span><span class="tcard-tag">5–20s</span><span class="tcard-tag">9:16</span><span class="tcard-tag">MP4</span>
-        </div>
-        <div class="tcard-arr" style="background:rgba(231,76,60,.08);border-color:rgba(231,76,60,.14);color:#ff8c7a"><i class="fas fa-arrow-right"></i></div>
+        <div class="tcard-strip"></div>
       </div>
     </div>
   </div>
@@ -385,7 +374,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
     </div>
   </div>
 
-  <div id="sess-bar"></div>
+  <div id="sess-bar-img"></div>
+  <div id="sess-bar-vid"></div>
   <div id="ch-msgs" class="ch-msgs">
     <div class="ch-empty" id="ch-empty">
       <div class="empty-ico">✨</div>
@@ -399,18 +389,33 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
   </div>
 </div>
 
-<!-- HISTORY -->
-<div class="hist-panel" id="hist-panel">
+<!-- IMAGE HISTORY -->
+<div class="hist-panel" id="hist-panel-img">
   <div class="hist-bg" onclick="closeHistory()"></div>
   <div class="hist-drawer">
     <div class="hist-hd">
       <div>
-        <div class="hist-hd-t" id="hist-hd-t">History</div>
+        <div class="hist-hd-t">Image History</div>
         <div class="hist-sync"><div class="sd ok" id="sync-dot"></div><span id="sync-txt">Synced</span></div>
       </div>
       <button class="hist-close" onclick="closeHistory()"><i class="fas fa-xmark"></i></button>
     </div>
-    <div class="hist-list" id="hist-list"></div>
+    <div class="hist-list" id="hist-list-img"></div>
+  </div>
+</div>
+
+<!-- VIDEO HISTORY -->
+<div class="hist-panel" id="hist-panel-vid">
+  <div class="hist-bg" onclick="closeHistory()"></div>
+  <div class="hist-drawer hist-drawer-vid">
+    <div class="hist-hd">
+      <div>
+        <div class="hist-hd-t">Video History</div>
+        <div class="hist-sync"><div class="sd ok" id="sync-dot-vid"></div><span id="sync-txt-vid">Synced</span></div>
+      </div>
+      <button class="hist-close" onclick="closeHistory()"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="hist-list" id="hist-list-vid"></div>
   </div>
 </div>
 
@@ -575,9 +580,11 @@ async function remoteDel(jobId) {
   } catch {}
 }
 function setSyncUI(s) {
-  const dot=$('sync-dot'), txt=$('sync-txt'); if(!dot) return;
-  dot.className='sd '+s;
-  txt.textContent = s==='ok'?'Synced · GitHub Releases · any device': s==='sy'?'Syncing…':'Offline — cached';
+  const dot=$('sync-dot'), txt=$('sync-txt');
+  const dotV=$('sync-dot-vid'), txtV=$('sync-txt-vid');
+  const msg = s==='ok'?'Synced': s==='sy'?'Syncing…':'Offline';
+  if(dot){dot.className='sd '+s; txt.textContent=msg;}
+  if(dotV){dotV.className='sd '+s; txtV.textContent=msg;}
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -818,24 +825,29 @@ function setVideoDur(s){
 // Colors: done=green, generating=yellow, error=red, queued=grey
 // ═══════════════════════════════════════════════════════════════
 function renderSessBar(){
-  const bar=$('sess-bar'); if(!bar)return;
-  const sess=_sessions();
-  if(!sess.length){bar.classList.remove('vis');return;}
-  bar.classList.add('vis');
-  bar.innerHTML=sess.slice(0,7).map((s,i)=>{
-    // Correct color classes
-    const sc = s.status==='done'       ? 's-done'
-             : s.status==='generating' ? 's-gen'
-             : s.status==='error'      ? 's-err'
-             : 's-q';
-    const cur = s.jobId===_activeJobId ? 'cur':'';
-    const stLbl = s.status==='done'       ? '✓ Done'
-                : s.status==='generating' ? '⏳ Rendering…'
-                : s.status==='error'      ? '✗ Failed'
-                : '⏳ Queued';
-    const tip = `${(s.prompt||'').slice(0,22)} · ${stLbl}`;
-    return `<div class="s-chip ${sc} ${cur}" onclick="onChipClick('${esc(s.jobId)}')" data-tip="${esc(tip)}">${i+1}</div>`;
-  }).join('');
+  const imgBar=$('sess-bar-img'), vidBar=$('sess-bar-vid');
+  if(!imgBar||!vidBar) return;
+
+  const renderBar=(bar, arr)=>{
+    if(!arr.length){bar.classList.remove('vis');return;}
+    bar.classList.add('vis');
+    bar.innerHTML=arr.slice(0,7).map((s,i)=>{
+      const sc = s.status==='done'       ? 's-done'
+               : s.status==='generating' ? 's-gen'
+               : s.status==='error'      ? 's-err'
+               : 's-q';
+      const cur = s.jobId===_activeJobId ? 'cur':'';
+      const stLbl = s.status==='done'       ? '✓ Done'
+                  : s.status==='generating' ? '⏳ Rendering…'
+                  : s.status==='error'      ? '✗ Failed'
+                  : '⏳ Queued';
+      const tip = `${(s.prompt||'').slice(0,22)} · ${stLbl}`;
+      return `<div class="s-chip ${sc} ${cur}" onclick="onChipClick('${esc(s.jobId)}')" data-tip="${esc(tip)}">${i+1}</div>`;
+    }).join('');
+  };
+
+  renderBar(imgBar, _imageSessions);
+  renderBar(vidBar, _videoSessions);
 }
 function activeCount(){ return _sessions().filter(s=>s.status==='generating').length; }
 function processQueue(){
@@ -1521,21 +1533,25 @@ function trigDl(blob,name){
 // HISTORY
 // ═══════════════════════════════════════════════════════════════
 function openHistory(){
-  const hdTitle=$('hist-hd-t');
-  if(hdTitle) hdTitle.textContent=_outputMode==='video'?'Video History':'Image History';
-  renderHistList(_sessions());
-  $('hist-panel').classList.add('open');
+  const isVid=_outputMode==='video';
+  const panelId=isVid?'hist-panel-vid':'hist-panel-img';
+  const listId=isVid?'hist-list-vid':'hist-list-img';
+  renderHistList(_sessions(), listId);
+  $(panelId).classList.add('open');
   if(_user) remoteLoad(_user.id).then(remote=>{
     const live=_sessions().filter(s=>s.status==='generating'||s.status==='queued');
     const liveIds=new Set(live.map(s=>s.jobId));
     const merged=[...live,...remote.filter(s=>!liveIds.has(s.jobId))].map(s=>({...s,pollInterval:s.pollInterval||null}));
-    if(_outputMode==='video') _videoSessions=merged; else _imageSessions=merged;
-    renderHistList(_sessions()); renderSessBar();
+    if(isVid) _videoSessions=merged; else _imageSessions=merged;
+    renderHistList(_sessions(), listId); renderSessBar();
   });
 }
-function closeHistory(){$('hist-panel').classList.remove('open');}
-function renderHistList(sessions){
-  const list=$('hist-list');
+function closeHistory(){
+  $('hist-panel-img')?.classList.remove('open');
+  $('hist-panel-vid')?.classList.remove('open');
+}
+function renderHistList(sessions, listId){
+  const list=$(listId||(_outputMode==='video'?'hist-list-vid':'hist-list-img'));
   if(!sessions?.length){
     list.innerHTML='<div class="hist-empty"><div style="font-size:36px;opacity:.2">📭</div><div style="font-size:13px;color:var(--tx3);margin-top:8px">No history yet</div></div>';
     return;
