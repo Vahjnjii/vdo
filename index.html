@@ -179,14 +179,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .s-chip::after{content:attr(data-tip);position:absolute;left:30px;top:50%;transform:translateY(-50%);background:#0a0818;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.9);font-size:11px;font-weight:500;padding:4px 10px;border-radius:7px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999}
 .s-chip:hover::after{opacity:1}
 
-/* ═══ VIDEO MODE TOGGLE ═══ */
-.mode-bar{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:7px 12px 0;gap:0}
-.mode-toggle{display:flex;align-items:center;background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:50px;padding:3px;gap:2px;position:relative}
-.mode-opt{display:flex;align-items:center;gap:5px;padding:6px 13px;border-radius:50px;font-size:11.5px;font-weight:600;font-family:'Geist',sans-serif;cursor:pointer;transition:all .22s;color:var(--tx3);border:none;background:none;white-space:nowrap;letter-spacing:.02em}
-.mode-opt.active{color:#fff;background:linear-gradient(135deg,#4a3dc7,#6c5ce7);box-shadow:0 2px 12px rgba(108,92,231,.45)}
-.mode-opt.active.video-active{background:linear-gradient(135deg,#c0392b,#e74c3c);box-shadow:0 2px 12px rgba(231,76,60,.45)}
-.mode-opt i{font-size:10px}
-.mode-badge{font-size:8.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:1px 5px;border-radius:20px;background:rgba(0,214,143,.15);color:var(--gn);border:1px solid rgba(0,214,143,.25);margin-left:2px}
+/* ═══ VIDEO DURATION BAR ═══ */
+.dur-bar{flex-shrink:0;display:flex;align-items:center;gap:9px;padding:7px 12px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.dur-bar::-webkit-scrollbar{height:0}
+.dur-label{font-size:10.5px;font-weight:600;color:var(--tx3);white-space:nowrap;letter-spacing:.06em;text-transform:uppercase;flex-shrink:0;display:flex;align-items:center;gap:5px}
+.dur-opts{display:flex;gap:5px;flex-shrink:0}
+.dur-opt{background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:50px;padding:5px 11px;font-size:11.5px;font-weight:600;color:var(--tx3);cursor:pointer;font-family:'Geist',sans-serif;transition:all .2s;white-space:nowrap}
+.dur-opt:hover{background:rgba(231,76,60,.08);border-color:rgba(231,76,60,.2);color:rgba(255,140,122,.9)}
+.dur-opt.active{background:linear-gradient(135deg,#c0392b,#e74c3c);border-color:transparent;color:#fff;box-shadow:0 2px 10px rgba(231,76,60,.35)}
 
 /* video card preview */
 .vid-preview{width:100%;aspect-ratio:9/16;overflow:hidden;background:#000;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center}
@@ -308,7 +308,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
     <div id="greet" class="tmpl-greet">Hello 👋</div>
     <div class="tmpl-sub">Create · save permanently · access anywhere</div>
     <div class="sec-lbl">Generator</div>
-    <div class="tcard" onclick="openTemplate()">
+    <div class="tcard" style="animation-delay:.05s" onclick="openImageTemplate()">
       <div class="tcard-stripe"></div>
       <div class="tcard-body">
         <div class="tcard-ico">🎨</div>
@@ -323,6 +323,23 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
           <span class="tcard-tag">Cross-device</span><span class="tcard-tag">Unlimited</span><span class="tcard-tag">9:16</span><span class="tcard-tag">CJK ✓</span>
         </div>
         <div class="tcard-arr"><i class="fas fa-arrow-right"></i></div>
+      </div>
+    </div>
+    <div class="tcard" style="animation-delay:.13s;margin-top:12px" onclick="openVideoTemplate()">
+      <div class="tcard-stripe" style="background:linear-gradient(90deg,transparent,#c0392b,#e74c3c,transparent)"></div>
+      <div class="tcard-body">
+        <div class="tcard-ico" style="background:rgba(231,76,60,.1);border-color:rgba(231,76,60,.18)">🎬</div>
+        <div class="tcard-info">
+          <div class="tcard-badge" style="color:rgba(255,120,100,.6)">Video · 9 Languages · Permanent</div>
+          <div class="tcard-name">Zodiac Video Generator</div>
+          <div class="tcard-desc">Paste zodiac content in any language. AI renders 9:16 video clips with your chosen duration — stored permanently in GitHub Releases.</div>
+        </div>
+      </div>
+      <div class="tcard-foot">
+        <div class="tcard-tags">
+          <span class="tcard-tag">Cross-device</span><span class="tcard-tag">5–20s</span><span class="tcard-tag">9:16</span><span class="tcard-tag">MP4</span>
+        </div>
+        <div class="tcard-arr" style="background:rgba(231,76,60,.08);border-color:rgba(231,76,60,.14);color:#ff8c7a"><i class="fas fa-arrow-right"></i></div>
       </div>
     </div>
   </div>
@@ -355,15 +372,16 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
     </button>
   </div>
 
-  <!-- OUTPUT MODE TOGGLE -->
-  <div class="mode-bar">
-    <div class="mode-toggle">
-      <button class="mode-opt" id="mode-img" onclick="setOutputMode('image')">
-        <i class="fas fa-image"></i> Image
-      </button>
-      <button class="mode-opt video-active active" id="mode-vid" onclick="setOutputMode('video')">
-        <i class="fas fa-film"></i> Video <span class="mode-badge">10s</span>
-      </button>
+  <!-- VIDEO DURATION SELECTOR (only shown in video template) -->
+  <div class="dur-bar" id="dur-bar" style="display:none">
+    <div class="dur-label"><i class="fas fa-clock" style="font-size:10px"></i> Duration</div>
+    <div class="dur-opts" id="dur-opts">
+      <button class="dur-opt" data-s="5" onclick="setVideoDur(5)">5s</button>
+      <button class="dur-opt active" data-s="10" onclick="setVideoDur(10)">10s</button>
+      <button class="dur-opt" data-s="11" onclick="setVideoDur(11)">11s</button>
+      <button class="dur-opt" data-s="12" onclick="setVideoDur(12)">12s</button>
+      <button class="dur-opt" data-s="15" onclick="setVideoDur(15)">15s</button>
+      <button class="dur-opt" data-s="20" onclick="setVideoDur(20)">20s</button>
     </div>
   </div>
 
@@ -387,7 +405,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
   <div class="hist-drawer">
     <div class="hist-hd">
       <div>
-        <div class="hist-hd-t">History</div>
+        <div class="hist-hd-t" id="hist-hd-t">History</div>
         <div class="hist-sync"><div class="sd ok" id="sync-dot"></div><span id="sync-txt">Synced</span></div>
       </div>
       <button class="hist-close" onclick="closeHistory()"><i class="fas fa-xmark"></i></button>
@@ -433,6 +451,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 const WORKER  = 'https://vdo.shreevathsa2k21-4fa.workers.dev';
 const LS_USER = 'vdo_user_v2';
 const LS_SESS = 'vdo_sess_v2';
+const LS_SESS_VID = 'vdo_sess_vid_v2';
 const LS_IMG  = 'vdo_img_v2_';
 
 // ═══════════════════════════════════════════════════════════════
@@ -440,11 +459,13 @@ const LS_IMG  = 'vdo_img_v2_';
 // ═══════════════════════════════════════════════════════════════
 let _user = null, _gcid = null;
 let _models = [], _activeModel = '', _selectedModel = '';
-let _sessions = [];
+let _imageSessions = [];   // isolated image history
+let _videoSessions = [];   // isolated video history
 let _activeJobId = null;
 let _imgCache = {};   // `${jobId}:${idx}` → Blob
 let _pollGuard = {};  // jobId → bool
-let _outputMode = 'video'; // 'image' | 'video' — default ON (video)
+let _outputMode = 'image'; // 'image' | 'video' — set by template selection
+let _videoDur = 10; // default video duration in seconds
 
 // ═══════════════════════════════════════════════════════════════
 // LOCAL STORAGE
@@ -491,11 +512,15 @@ function clearPersistedUser() {
   cookieDel('vdo_user_ck');
 }
 
-function lsGetSess(uid) { return (lsGet(LS_SESS)||{})[uid]||[]; }
-function lsSaveSess(uid, arr) {
-  const all = lsGet(LS_SESS)||{};
+function lsGetSess(uid, mode) {
+  const key = mode === 'video' ? LS_SESS_VID : LS_SESS;
+  return (lsGet(key)||{})[uid]||[];
+}
+function lsSaveSess(uid, arr, mode) {
+  const key = mode === 'video' ? LS_SESS_VID : LS_SESS;
+  const all = lsGet(key)||{};
   all[uid] = arr.slice(0,150).map(({pollInterval,...s})=>s);
-  lsSet(LS_SESS, all);
+  lsSet(key, all);
 }
 
 // Image blobs in localStorage (tier 2)
@@ -558,18 +583,21 @@ function setSyncUI(s) {
 // ═══════════════════════════════════════════════════════════════
 // SESSION HELPERS
 // ═══════════════════════════════════════════════════════════════
-const getSess = jid => _sessions.find(s=>s.jobId===jid);
+const _sessions = () => _outputMode === 'video' ? _videoSessions : _imageSessions;
+const getSess = jid => _sessions().find(s=>s.jobId===jid);
 function upsertSess(p) {
-  const i=_sessions.findIndex(s=>s.jobId===p.jobId);
-  if(i>=0) Object.assign(_sessions[i],p); else _sessions.unshift(p);
-  if(_user) lsSaveSess(_user.id,_sessions);
+  const arr = _sessions();
+  const i=arr.findIndex(s=>s.jobId===p.jobId);
+  if(i>=0) Object.assign(arr[i],p); else arr.unshift(p);
+  if(_user) lsSaveSess(_user.id, arr, _outputMode);
 }
 function delSess(jid) {
   const s=getSess(jid);
   if(s?.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}
   delete _pollGuard[jid];
-  _sessions=_sessions.filter(s=>s.jobId!==jid);
-  if(_user) lsSaveSess(_user.id,_sessions);
+  if(_outputMode==='video') _videoSessions=_videoSessions.filter(s=>s.jobId!==jid);
+  else _imageSessions=_imageSessions.filter(s=>s.jobId!==jid);
+  if(_user) lsSaveSess(_user.id, _sessions(), _outputMode);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -654,19 +682,21 @@ async function enterApp() {
   $('greet').textContent=`${h<12?'Good morning':h<17?'Good afternoon':'Good evening'}, ${n} 👋`;
 
   // 1. Instant local render
-  _sessions=lsGetSess(_user.id).map(s=>({...s,pollInterval:null}));
+  _imageSessions=lsGetSess(_user.id,'image').map(s=>({...s,pollInterval:null}));
+  _videoSessions=lsGetSess(_user.id,'video').map(s=>({...s,pollInterval:null}));
   renderSessBar(); show('templates');
 
   // 2. Background remote sync — updates session list and image URLs
   remoteLoad(_user.id).then(remote=>{
-    const live=_sessions.filter(s=>s.status==='generating'||s.status==='queued');
+    const live=_sessions().filter(s=>s.status==='generating'||s.status==='queued');
     const liveIds=new Set(live.map(s=>s.jobId));
-    _sessions=[...live,...remote.filter(s=>!liveIds.has(s.jobId))].map(s=>({...s,pollInterval:s.pollInterval||null}));
+    const merged=[...live,...remote.filter(s=>!liveIds.has(s.jobId))].map(s=>({...s,pollInterval:s.pollInterval||null}));
+    if(_outputMode==='video') _videoSessions=merged; else _imageSessions=merged;
     renderSessBar();
   });
 
   // 3. Resume any in-flight generations
-  _sessions.forEach(s=>{ if(s.status==='generating') startPolling(s.jobId); });
+  _sessions().forEach(s=>{ if(s.status==='generating') startPolling(s.jobId); });
 
   // 4. Load models
   fetch(`${WORKER}/models`).then(r=>r.json()).then(d=>{
@@ -675,8 +705,8 @@ async function enterApp() {
 }
 
 function signOut(){
-  _sessions.forEach(s=>{if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}});
-  _sessions=[]; _imgCache={};
+  [..._imageSessions,..._videoSessions].forEach(s=>{if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}});
+  _imageSessions=[]; _videoSessions=[]; _imgCache={};
   try{window.google?.accounts?.oauth2?.revoke?.();}catch{}
   clearPersistedUser(); _user=null; _activeJobId=null;
   $('so-menu').classList.remove('open');
@@ -751,29 +781,36 @@ function show(id){
   $('screen-'+id).classList.add('active');
   if(id==='chat') scrollDown();
 }
-function openTemplate(){ _activeJobId=null; clearChat(); show('chat'); }
+function openImageTemplate(){
+  _outputMode='image'; _activeJobId=null;
+  const ico=$('ch-nav-ico'), title=$('ch-nav-title'), durBar=$('dur-bar');
+  if(ico) ico.textContent='🎨';
+  if(title) title.textContent='Image Generator';
+  if(durBar) durBar.style.display='none';
+  // Restore correct sessions for this mode
+  renderSessBar();
+  clearChat(); show('chat');
+}
+function openVideoTemplate(){
+  _outputMode='video'; _activeJobId=null;
+  const ico=$('ch-nav-ico'), title=$('ch-nav-title'), durBar=$('dur-bar');
+  if(ico) ico.textContent='🎬';
+  if(title) title.textContent='Video Generator';
+  if(durBar) durBar.style.display='flex';
+  // Restore correct sessions for this mode
+  renderSessBar();
+  clearChat(); show('chat');
+}
 
 // ═══════════════════════════════════════════════════════════════
-// OUTPUT MODE TOGGLE  (image ↔ video)
+// VIDEO DURATION SELECTOR
 // ═══════════════════════════════════════════════════════════════
-function setOutputMode(mode) {
-  _outputMode = mode;
-  const imgBtn = $('mode-img'), vidBtn = $('mode-vid');
-  const ico = $('ch-nav-ico'), title = $('ch-nav-title');
-  if (mode === 'video') {
-    vidBtn.classList.add('active','video-active');
-    imgBtn.classList.remove('active','video-active');
-    if (ico) ico.textContent = '🎬';
-    if (title) title.textContent = 'Video Generator';
-    lsSet('vdo_output_mode', 'video');
-  } else {
-    imgBtn.classList.add('active');
-    imgBtn.classList.remove('video-active');
-    vidBtn.classList.remove('active','video-active');
-    if (ico) ico.textContent = '🎨';
-    if (title) title.textContent = 'Image Generator';
-    lsSet('vdo_output_mode', 'image');
-  }
+function setVideoDur(s){
+  _videoDur=s;
+  document.querySelectorAll('.dur-opt').forEach(b=>{
+    b.classList.toggle('active', +b.dataset.s===s);
+  });
+  lsSet('vdo_video_dur', s);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -782,9 +819,10 @@ function setOutputMode(mode) {
 // ═══════════════════════════════════════════════════════════════
 function renderSessBar(){
   const bar=$('sess-bar'); if(!bar)return;
-  if(!_sessions.length){bar.classList.remove('vis');return;}
+  const sess=_sessions();
+  if(!sess.length){bar.classList.remove('vis');return;}
   bar.classList.add('vis');
-  bar.innerHTML=_sessions.slice(0,7).map((s,i)=>{
+  bar.innerHTML=sess.slice(0,7).map((s,i)=>{
     // Correct color classes
     const sc = s.status==='done'       ? 's-done'
              : s.status==='generating' ? 's-gen'
@@ -799,10 +837,10 @@ function renderSessBar(){
     return `<div class="s-chip ${sc} ${cur}" onclick="onChipClick('${esc(s.jobId)}')" data-tip="${esc(tip)}">${i+1}</div>`;
   }).join('');
 }
-function activeCount(){ return _sessions.filter(s=>s.status==='generating').length; }
+function activeCount(){ return _sessions().filter(s=>s.status==='generating').length; }
 function processQueue(){
   let n=activeCount(); const toStart=[];
-  [..._sessions].reverse().filter(s=>s.status==='queued').forEach(s=>{
+  [..._sessions()].reverse().filter(s=>s.status==='queued').forEach(s=>{
     if(n>=6)return; s.status='generating'; n++; toStart.push(s.jobId);
   });
   if(!toStart.length)return;
@@ -848,9 +886,11 @@ async function fetchWorkerSession(jobId) {
 async function kickGen(jobId) {
   const s=getSess(jobId); if(!s) return;
   try {
+    const payload = {zodiac_text:s.prompt, userId:_user?.id||'', jobId, output_mode:s.outputMode||'image'};
+    if(s.outputMode==='video' && s.videoDuration) payload.video_duration=s.videoDuration;
     const d = await fetchWithRetry(`${WORKER}/trigger`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({zodiac_text:s.prompt, userId:_user?.id||'', jobId, output_mode:s.outputMode||'image'})
+      body: JSON.stringify(payload)
     });
     if (d.error) throw new Error(d.error);
     upsertSess({jobId, run_token:d.run_token, errorCount:0});
@@ -1128,18 +1168,37 @@ async function extractFallback(buf){
 // CHIP CLICK — restore session with 3-tier image/video loading
 // ═══════════════════════════════════════════════════════════════
 async function onChipClick(jobId){
+  // Find the session — it may be in either array
+  const sImg=_imageSessions.find(s=>s.jobId===jobId);
+  const sVid=_videoSessions.find(s=>s.jobId===jobId);
+  const sess=sImg||sVid; if(!sess) return;
+
+  // Sync _outputMode to match the session being loaded
+  if(sVid && !sImg) {
+    _outputMode='video';
+    const durBar=$('dur-bar'), ico=$('ch-nav-ico'), title=$('ch-nav-title');
+    if(durBar) durBar.style.display='flex';
+    if(ico) ico.textContent='🎬';
+    if(title) title.textContent='Video Generator';
+  } else {
+    _outputMode='image';
+    const durBar=$('dur-bar'), ico=$('ch-nav-ico'), title=$('ch-nav-title');
+    if(durBar) durBar.style.display='none';
+    if(ico) ico.textContent='🎨';
+    if(title) title.textContent='Image Generator';
+  }
+
   _activeJobId=jobId; renderSessBar();
-  const s=getSess(jobId); if(!s)return;
   clearChat(); hideEmpty(); show('chat');
-  addUserMsg(s.prompt||''); addSessSep(s.ts); addImgGroup(jobId);
+  addUserMsg(sess.prompt||''); addSessSep(sess.ts); addImgGroup(jobId);
 
-  const isVid=s.outputMode==='video';
+  const isVid=sess.outputMode==='video';
   // Video jobs store URLs in videoUrls; image jobs use imageUrls
-  const _chipUrls = isVid ? (s.videoUrls?.length ? s.videoUrls : s.imageUrls||[]) : (s.imageUrls||[]);
+  const _chipUrls = isVid ? (sess.videoUrls?.length ? sess.videoUrls : sess.imageUrls||[]) : (sess.imageUrls||[]);
 
-  if(s.status==='done'||_chipUrls.length){
+  if(sess.status==='done'||_chipUrls.length){
     const urls=_chipUrls;
-    const count=urls.length||s.done||0;
+    const count=urls.length||sess.done||0;
 
     if(isVid){
       // Videos — always render from direct URL, no blob caching needed
@@ -1191,8 +1250,8 @@ async function onChipClick(jobId){
       }
     }
   }
-  if(s.status!=='done') updateGrpHd(jobId,s.status==='error'?'error':'processing');
-  if(s.status==='error') addErr(s.errorMsg||'Generation failed.');
+  if(sess.status!=='done') updateGrpHd(jobId,sess.status==='error'?'error':'processing');
+  if(sess.status==='error') addErr(sess.errorMsg||'Generation failed.');
   scrollDown();
 }
 
@@ -1205,7 +1264,9 @@ function sendMsg(){
   const jobId=`j-${_user?.id||'anon'}-${Date.now()}`;
   _activeJobId=jobId;
   clearChat(); hideEmpty(); addUserMsg(text);
-  upsertSess({jobId,prompt:text,label:text.slice(0,80),ts:Date.now(),status:'queued',done:0,total:0,imageUrls:[],outputMode:_outputMode,pollInterval:null});
+  const sessData={jobId,prompt:text,label:text.slice(0,80),ts:Date.now(),status:'queued',done:0,total:0,imageUrls:[],outputMode:_outputMode,pollInterval:null};
+  if(_outputMode==='video') sessData.videoDuration=_videoDur;
+  upsertSess(sessData);
   addImgGroup(jobId); scrollDown(); renderSessBar();
   if(activeCount()<6){
     upsertSess({jobId,status:'generating'});
@@ -1233,7 +1294,8 @@ function addImgGroup(jobId){
   const sess=getSess(jobId);
   const isVid=sess?.outputMode==='video';
   d.className='img-group'; d.id='grp-'+s;
-  const startMsg=isVid?'Starting GitHub Actions… (~90s for video)':'Starting GitHub Actions… (~60s)';
+  const durLbl=isVid&&sess?.videoDuration?` (${sess.videoDuration}s)`:'';
+  const startMsg=isVid?`Starting GitHub Actions… (~90s for video${durLbl})`:'Starting GitHub Actions… (~60s)';
   d.innerHTML=`<div class="grp-hd" id="ghd-${s}"><div class="grp-hd-l"><div class="dots"><span></span><span></span><span></span></div><span>${startMsg}</span></div></div><div class="img-row" id="row-${s}"></div>`;
   msgs().appendChild(d);
 }
@@ -1441,7 +1503,7 @@ function openFull(jobId,idx,fallbackUrl){
 async function dlAll(safeJobId,count){
   const btn=document.querySelector(`.dl-all[onclick*="${safeJobId}"]`);
   if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-circle-notch spin"></i> Saving…';}
-  const sess=_sessions.find(s=>sid(s.jobId)===safeJobId);
+  const sess=[..._imageSessions,..._videoSessions].find(s=>sid(s.jobId)===safeJobId);
   if(!sess){if(btn){btn.disabled=false;}toast('⚠️ Session not found');return;}
   let done=0;
   for(let i=0;i<count;i++){const b=await getBlob(sess.jobId,i);if(b){trigDl(b,rndName());done++;await new Promise(r=>setTimeout(r,360));}}
@@ -1459,13 +1521,16 @@ function trigDl(blob,name){
 // HISTORY
 // ═══════════════════════════════════════════════════════════════
 function openHistory(){
-  renderHistList(_sessions);
+  const hdTitle=$('hist-hd-t');
+  if(hdTitle) hdTitle.textContent=_outputMode==='video'?'Video History':'Image History';
+  renderHistList(_sessions());
   $('hist-panel').classList.add('open');
   if(_user) remoteLoad(_user.id).then(remote=>{
-    const live=_sessions.filter(s=>s.status==='generating'||s.status==='queued');
+    const live=_sessions().filter(s=>s.status==='generating'||s.status==='queued');
     const liveIds=new Set(live.map(s=>s.jobId));
-    _sessions=[...live,...remote.filter(s=>!liveIds.has(s.jobId))].map(s=>({...s,pollInterval:s.pollInterval||null}));
-    renderHistList(_sessions); renderSessBar();
+    const merged=[...live,...remote.filter(s=>!liveIds.has(s.jobId))].map(s=>({...s,pollInterval:s.pollInterval||null}));
+    if(_outputMode==='video') _videoSessions=merged; else _imageSessions=merged;
+    renderHistList(_sessions()); renderSessBar();
   });
 }
 function closeHistory(){$('hist-panel').classList.remove('open');}
@@ -1507,7 +1572,7 @@ async function loadHistSess(jobId){
 async function delHistSess(e,jobId){
   e.stopPropagation();
   delSess(jobId); lsDelImgs(jobId);
-  renderHistList(_sessions); renderSessBar();
+  renderHistList(_sessions()); renderSessBar();
   await remoteDel(jobId);
 }
 
@@ -1541,9 +1606,10 @@ function toast(m){
 // ═══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded',()=>{
   try{const u=readPersistedUser();if(u){_user=u;enterApp();}}catch{}
-  // Restore saved output mode (default: video)
-  const savedMode=lsGet('vdo_output_mode');
-  setOutputMode(savedMode==='image'?'image':'video');
+  // Restore saved video duration (default: 10s)
+  const savedDur=lsGet('vdo_video_dur');
+  if(savedDur && [5,10,11,12,15,20].includes(+savedDur)) setVideoDur(+savedDur);
+  else setVideoDur(10);
   const ta=$('ch-ta');
   if(ta){
     ta.addEventListener('input',()=>resize(ta));
