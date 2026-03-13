@@ -725,7 +725,7 @@ function setSyncUI(s) {
 // ═══════════════════════════════════════════════════════════════
 // SESSION HELPERS
 // ═══════════════════════════════════════════════════════════════
-const getSess = jid => _sessions.find(s=>s.jobId===jid) || _imgSessions.find(s=>s.jobId===jid) || _vidSessions.find(s=>s.jobId===jid);
+function getSess(jid){ return _sessions.find(s=>s.jobId===jid) || _imgSessions.find(s=>s.jobId===jid) || _vidSessions.find(s=>s.jobId===jid); }
 function upsertSess(p) {
   // Always update both the mode-specific array and _sessions (they are the same ref when in correct mode)
   const arr=p.outputMode==='video'?_vidSessions:(p.outputMode==='image'?_imgSessions:_sessions);
