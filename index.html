@@ -1697,18 +1697,23 @@ function trigDl(blob,name){
 // HISTORY
 // ═══════════════════════════════════════════════════════════════
 function openHistory(){
-  const panelId=_activeMode==='video'?'hist-panel-vid':'hist-panel-img';
+  const mode=_activeMode;
+  // Always make sure _sessions points to the correct mode array before rendering
+  _sessions = mode==='video' ? _vidSessions : _imgSessions;
+  const panelId=mode==='video'?'hist-panel-vid':'hist-panel-img';
+  // Render immediately with whatever we have (even empty) so panel is never black
   renderHistList(_sessions);
   $(panelId).classList.add('open');
   if(_user) remoteLoad(_user.id).then(remote=>{
-    const mode=_activeMode;
     const allRemote=remote.filter(s=>s.outputMode===mode||(mode==='image'&&!s.outputMode));
     const live=_sessions.filter(s=>s.status==='generating'||s.status==='queued');
     const liveIds=new Set(live.map(s=>s.jobId));
     const merged=[...live,...allRemote.filter(s=>!liveIds.has(s.jobId))].map(s=>({...s,pollInterval:s.pollInterval||null}));
-    if(mode==='video') _vidSessions=merged; else _imgSessions=merged;
+    if(mode==='video') { _vidSessions=merged; } else { _imgSessions=merged; }
     _sessions=merged;
     renderHistList(_sessions); renderSessBar();
+  }).catch(()=>{
+    // Remote load failed — already showing local data, nothing to do
   });
 }
 function closeHistory(){
@@ -1716,13 +1721,15 @@ function closeHistory(){
   $('hist-panel-vid').classList.remove('open');
 }
 function renderHistList(sessions){
-  const listId=_activeMode==='video'?'hist-list-vid':'hist-list-img';
+  const mode=_activeMode;
+  const listId=mode==='video'?'hist-list-vid':'hist-list-img';
   const list=$(listId); if(!list)return;
-  if(!sessions?.length){
+  const arr=sessions||[];
+  if(!arr.length){
     list.innerHTML='<div class="hist-empty"><div style="font-size:36px;opacity:.2">📭</div><div style="font-size:13px;color:var(--tx3);margin-top:8px">No history yet</div></div>';
     return;
   }
-  list.innerHTML=sessions.map(e=>{
+  list.innerHTML=arr.map(e=>{
     const d=new Date(e.ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});
     const sc=e.status==='done'?'ok':e.status==='error'?'err':'';
     const dotCls=e.status==='done'?'ok':e.status==='error'?'err':e.status==='generating'?'sy':'q';
@@ -1745,6 +1752,8 @@ function renderHistList(sessions){
 }
 async function loadHistSess(jobId){
   closeHistory();
+  // Ensure _sessions is synced before lookup
+  _sessions = _activeMode==='video' ? _vidSessions : _imgSessions;
   if(getSess(jobId)){onChipClick(jobId);return;}
   const remote=await remoteLoad(_user.id).catch(()=>[]);
   const found=remote.find(e=>e.jobId===jobId);
