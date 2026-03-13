@@ -164,27 +164,60 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
    RED    (#ff6b6b) = error / failed
    GREY   (#4a4a6a) = queued (waiting to start)
 */
-#sess-bar{position:absolute;left:8px;bottom:76px;top:58px;width:26px;display:none;flex-direction:column-reverse;align-items:center;justify-content:flex-start;gap:9px;padding:6px 0;z-index:10}
-#sess-bar.vis{display:flex}
-.s-chip{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0;border:2px solid rgba(255,255,255,.15);transition:transform .18s,border-color .18s;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both;position:relative;font-family:'Inter',sans-serif}
-.s-chip:hover{transform:scale(1.3)!important}
-.s-chip.cur{border-color:rgba(255,255,255,.6)!important}
+/* ─── SESSION SIDE BARS (one per mode) ─── */
+.sess-bar-side{position:absolute;left:6px;bottom:76px;top:58px;width:28px;display:none;flex-direction:column-reverse;align-items:center;justify-content:flex-start;gap:8px;padding:6px 0;z-index:10}
+.sess-bar-side.vis{display:flex}
 
-/* DONE = solid green, gentle pulse */
-.s-chip.s-done{background:#00d68f;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseGn 2.5s ease 1}
+/* IMAGE dots: rounded squares, purple palette */
+.s-chip{width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0;border:2px solid rgba(255,255,255,.15);transition:transform .18s,border-color .18s;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both;position:relative;font-family:'Inter',sans-serif}
+.sess-bar-img .s-chip{border-radius:6px}
+/* VIDEO dots: pill/capsule shape, red palette */
+.sess-bar-vid .s-chip{border-radius:50px;width:22px;height:14px;font-size:8px}
+.s-chip:hover{transform:scale(1.25)!important}
+.s-chip.cur{border-color:rgba(255,255,255,.7)!important;box-shadow:0 0 0 2px rgba(255,255,255,.15)}
 
-/* PROCESSING = solid yellow/amber, repeating pulse */
-.s-chip.s-gen{background:#ffd166;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseYw 1.4s ease infinite}
+/* IMAGE mode chip colors */
+.sess-bar-img .s-chip.s-done{background:#6c5ce7;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseAcc 2.5s ease 1}
+.sess-bar-img .s-chip.s-gen{background:#a29bfe;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseAcc 1.4s ease infinite}
+.sess-bar-img .s-chip.s-err{background:#ff6b6b;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseRd 2s ease 2}
+.sess-bar-img .s-chip.s-q{background:#2d2a4a}
 
-/* ERROR = solid red, brief pulse */
-.s-chip.s-err{background:#ff6b6b;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseRd 2s ease 2}
-
-/* QUEUED = muted grey, no pulse */
-.s-chip.s-q{background:#4a4a6a}
+/* VIDEO mode chip colors */
+.sess-bar-vid .s-chip.s-done{background:#e74c3c;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseRd 2.5s ease 1}
+.sess-bar-vid .s-chip.s-gen{background:#ff8a80;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseRd 1.4s ease infinite}
+.sess-bar-vid .s-chip.s-err{background:#c0392b;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseRd 2s ease 2}
+.sess-bar-vid .s-chip.s-q{background:#3a1a18}
 
 /* tooltip */
-.s-chip::after{content:attr(data-tip);position:absolute;left:30px;top:50%;transform:translateY(-50%);background:#0a0818;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.9);font-size:11px;font-weight:500;padding:4px 10px;border-radius:7px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999}
+.s-chip::after{content:attr(data-tip);position:absolute;left:32px;top:50%;transform:translateY(-50%);background:#0a0818;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.9);font-size:11px;font-weight:500;padding:4px 10px;border-radius:7px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999}
 .s-chip:hover::after{opacity:1}
+
+/* ─── PER-SCREEN NAV ACCENT COLORS ─── */
+.ch-nav-img{border-bottom-color:rgba(108,92,231,.2)}
+.ch-ico-img{background:rgba(108,92,231,.12);border-color:rgba(108,92,231,.2)}
+.ch-nav-vid{border-bottom-color:rgba(231,76,60,.2);background:rgba(4,3,10,.97)}
+.ch-ico-vid{background:rgba(231,76,60,.12);border-color:rgba(231,76,60,.2)}
+.nb-model-vid{background:rgba(231,76,60,.08);border-color:rgba(231,76,60,.2);color:#ff8a80}
+.nb-model-vid:hover{background:rgba(231,76,60,.15);border-color:rgba(231,76,60,.4)}
+.nb-hist-vid{background:rgba(231,76,60,.04);border-color:rgba(231,76,60,.12);color:rgba(255,138,128,.5)}
+.nb-hist-vid:hover{background:rgba(231,76,60,.08);color:#ff8a80}
+.ch-ta-vid:focus{border-color:rgba(231,76,60,.35)}
+.send-btn-vid{background:linear-gradient(135deg,#c0392b,#e74c3c);box-shadow:0 4px 16px rgba(231,76,60,.4);animation:none}
+.send-btn-vid:disabled{opacity:.4;cursor:wait;transform:none}
+
+/* Black background for video screen */
+.screen-vid{background:#000}
+.screen-vid .ch-msgs{background:#000}
+.screen-vid .ch-bar-vid{background:rgba(0,0,0,.98);border-top-color:rgba(231,76,60,.15)}
+.screen-vid .ch-nav-vid{background:rgba(0,0,0,.97)}
+.screen-vid .dur-bar{background:rgba(0,0,0,.9);border-bottom:1px solid rgba(231,76,60,.1)}
+
+/* Image screen keeps dark purple bg (default) */
+.ch-bar-img{border-top-color:rgba(108,92,231,.12)}
+
+/* History drawer accent */
+.hist-drawer-img{border-left-color:rgba(108,92,231,.2)}
+.hist-drawer-vid{border-left-color:rgba(231,76,60,.2)}
 
 /* ═══ VIDEO MODE TOGGLE ═══ */
 .mode-bar{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:7px 12px 0;gap:0}
@@ -362,74 +395,105 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
   <button class="so-out" onclick="signOut()"><i class="fas fa-right-from-bracket"></i> Sign out</button>
 </div>
 
-<!-- CHAT -->
-<div id="screen-chat" class="screen">
-  <div class="ch-nav">
+<!-- IMAGE CHAT SCREEN -->
+<div id="screen-chat-img" class="screen">
+  <div class="ch-nav ch-nav-img">
     <button class="ch-back" onclick="show('templates')"><i class="fas fa-arrow-left"></i></button>
     <div class="ch-nav-mid">
-      <div class="ch-nav-ico" id="ch-nav-ico">🎨</div>
-      <div class="ch-nav-title" id="ch-nav-title">Image Generator</div>
+      <div class="ch-nav-ico ch-ico-img">🖼</div>
+      <div class="ch-nav-title">IMAGE GEN</div>
     </div>
     <button class="nav-btn nb-model" onclick="openModelSheet()">
       <i class="fas fa-microchip" style="font-size:10px"></i>
       <span id="nav-model-label">Model</span>
     </button>
-    <button class="nav-btn nb-hist" onclick="openHistory()">
+    <button class="nav-btn nb-hist nb-hist-img" onclick="openHistory()">
       <i class="fas fa-clock-rotate-left" style="font-size:10px"></i>
     </button>
   </div>
-
-  <!-- OUTPUT MODE TOGGLE -->
-  <div class="mode-bar">
-    <div class="mode-toggle">
-      <button class="mode-opt" id="mode-img" onclick="setOutputMode('image')">
-        <i class="fas fa-image"></i> Image
-      </button>
-      <button class="mode-opt" id="mode-vid" onclick="setOutputMode('video')">
-        <i class="fas fa-film"></i> Video <span class="mode-badge">10s</span>
-      </button>
+  <div id="sess-bar-img" class="sess-bar-side sess-bar-img"></div>
+  <div id="ch-msgs-img" class="ch-msgs">
+    <div class="ch-empty" id="ch-empty-img">
+      <div class="empty-ico" style="background:rgba(108,92,231,.07);border-color:rgba(108,92,231,.1)">🖼</div>
+      <div class="empty-title">Image Generator</div>
+      <div class="empty-sub">Paste zodiac content — AI renders permanent 9:16 images</div>
     </div>
   </div>
+  <div class="ch-bar ch-bar-img">
+    <textarea id="ch-ta-img" class="ch-ta" placeholder="Paste zodiac content for images…" rows="1"></textarea>
+    <button id="ch-send-img" class="send-btn send-btn-img" onclick="sendMsg()"><i class="fas fa-arrow-up"></i></button>
+  </div>
+</div>
 
-  <!-- DURATION BAR (video only) -->
-  <div class="dur-bar" id="dur-bar">
+<!-- VIDEO CHAT SCREEN -->
+<div id="screen-chat-vid" class="screen screen-vid">
+  <div class="ch-nav ch-nav-vid">
+    <button class="ch-back" onclick="show('templates')"><i class="fas fa-arrow-left"></i></button>
+    <div class="ch-nav-mid">
+      <div class="ch-nav-ico ch-ico-vid">🎬</div>
+      <div class="ch-nav-title">VIDEO GEN</div>
+    </div>
+    <button class="nav-btn nb-model nb-model-vid" onclick="openModelSheet()">
+      <i class="fas fa-microchip" style="font-size:10px"></i>
+      <span id="nav-model-label-vid">Model</span>
+    </button>
+    <button class="nav-btn nb-hist nb-hist-vid" onclick="openHistory()">
+      <i class="fas fa-clock-rotate-left" style="font-size:10px"></i>
+    </button>
+  </div>
+  <!-- DURATION BAR -->
+  <div class="dur-bar vis" id="dur-bar">
     <span class="dur-lbl">Duration</span>
     <div class="dur-opts">
       <button class="dur-opt" onclick="setDuration(5)">5s</button>
       <button class="dur-opt" onclick="setDuration(7)">7s</button>
-      <button class="dur-opt active" id="dur-10" onclick="setDuration(10)">10s</button>
+      <button class="dur-opt active" onclick="setDuration(10)">10s</button>
       <button class="dur-opt" onclick="setDuration(12)">12s</button>
       <button class="dur-opt" onclick="setDuration(15)">15s</button>
       <button class="dur-opt" onclick="setDuration(20)">20s</button>
     </div>
   </div>
-
-  <div id="sess-bar"></div>
-  <div id="ch-msgs" class="ch-msgs">
-    <div class="ch-empty" id="ch-empty">
-      <div class="empty-ico">✨</div>
-      <div class="empty-title">Ready to create</div>
-      <div class="empty-sub">Paste zodiac content in any language — EN NL FR DE ES IT PL 中文 SV</div>
+  <div id="sess-bar-vid" class="sess-bar-side sess-bar-vid"></div>
+  <div id="ch-msgs-vid" class="ch-msgs">
+    <div class="ch-empty" id="ch-empty-vid">
+      <div class="empty-ico" style="background:rgba(231,76,60,.07);border-color:rgba(231,76,60,.12)">🎬</div>
+      <div class="empty-title">Video Generator</div>
+      <div class="empty-sub">Paste zodiac content — AI renders 9:16 MP4 videos</div>
     </div>
   </div>
-  <div class="ch-bar">
-    <textarea id="ch-ta" class="ch-ta" placeholder="Paste zodiac content…" rows="1"></textarea>
-    <button id="ch-send" class="send-btn" onclick="sendMsg()"><i class="fas fa-arrow-up"></i></button>
+  <div class="ch-bar ch-bar-vid">
+    <textarea id="ch-ta-vid" class="ch-ta ch-ta-vid" placeholder="Paste zodiac content for video…" rows="1"></textarea>
+    <button id="ch-send-vid" class="send-btn send-btn-vid" onclick="sendMsg()"><i class="fas fa-arrow-up"></i></button>
   </div>
 </div>
 
-<!-- HISTORY -->
-<div class="hist-panel" id="hist-panel">
+<!-- IMAGE HISTORY PANEL -->
+<div class="hist-panel" id="hist-panel-img">
   <div class="hist-bg" onclick="closeHistory()"></div>
-  <div class="hist-drawer">
+  <div class="hist-drawer hist-drawer-img">
     <div class="hist-hd">
       <div>
-        <div class="hist-hd-t">History</div>
+        <div class="hist-hd-t" style="color:var(--acc2)">🖼 Image History</div>
         <div class="hist-sync"><div class="sd ok" id="sync-dot"></div><span id="sync-txt">Synced</span></div>
       </div>
       <button class="hist-close" onclick="closeHistory()"><i class="fas fa-xmark"></i></button>
     </div>
-    <div class="hist-list" id="hist-list"></div>
+    <div class="hist-list" id="hist-list-img"></div>
+  </div>
+</div>
+
+<!-- VIDEO HISTORY PANEL -->
+<div class="hist-panel" id="hist-panel-vid">
+  <div class="hist-bg" onclick="closeHistory()"></div>
+  <div class="hist-drawer hist-drawer-vid">
+    <div class="hist-hd">
+      <div>
+        <div class="hist-hd-t" style="color:#ff8a80">🎬 Video History</div>
+        <div class="hist-sync"><div class="sd ok" id="sync-dot-vid"></div><span id="sync-txt-vid">Synced</span></div>
+      </div>
+      <button class="hist-close" onclick="closeHistory()"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="hist-list" id="hist-list-vid"></div>
   </div>
 </div>
 
@@ -477,11 +541,17 @@ const LS_IMG  = 'vdo_img_v2_';
 // ═══════════════════════════════════════════════════════════════
 let _user = null, _gcid = null;
 let _models = [], _activeModel = '', _selectedModel = '';
-let _sessions = [];
+// Completely separate session arrays per mode
+let _imgSessions = [];   // sessions from Image Generator screen
+let _vidSessions = [];   // sessions from Video Generator screen
+// _sessions always points to the active one (for backward-compat with all helpers)
+let _sessions = _imgSessions;
 let _activeJobId = null;
+let _activeMode = 'image'; // 'image' | 'video' — which screen we're on
 let _imgCache = {};   // `${jobId}:${idx}` → Blob
 let _pollGuard = {};  // jobId → bool
-let _outputMode = 'video'; // 'image' | 'video' — default ON (video)
+let _outputMode = 'image'; // kept for compat, always == _activeMode
+let _videoDuration = 10;
 
 // ═══════════════════════════════════════════════════════════════
 // LOCAL STORAGE
@@ -595,18 +665,27 @@ function setSyncUI(s) {
 // ═══════════════════════════════════════════════════════════════
 // SESSION HELPERS
 // ═══════════════════════════════════════════════════════════════
-const getSess = jid => _sessions.find(s=>s.jobId===jid);
+const getSess = jid => _sessions.find(s=>s.jobId===jid) || _imgSessions.find(s=>s.jobId===jid) || _vidSessions.find(s=>s.jobId===jid);
 function upsertSess(p) {
-  const i=_sessions.findIndex(s=>s.jobId===p.jobId);
-  if(i>=0) Object.assign(_sessions[i],p); else _sessions.unshift(p);
-  if(_user) lsSaveSess(_user.id,_sessions);
+  // Always update both the mode-specific array and _sessions (they are the same ref when in correct mode)
+  const arr=p.outputMode==='video'?_vidSessions:(p.outputMode==='image'?_imgSessions:_sessions);
+  const i=arr.findIndex(s=>s.jobId===p.jobId);
+  if(i>=0) Object.assign(arr[i],p); else arr.unshift(p);
+  // Keep _sessions in sync if it's pointing to the same array
+  if(_sessions!==arr){
+    const j=_sessions.findIndex(s=>s.jobId===p.jobId);
+    if(j>=0) Object.assign(_sessions[j],p);
+  }
+  if(_user) lsSaveSess(_user.id,[..._imgSessions,..._vidSessions]);
 }
 function delSess(jid) {
   const s=getSess(jid);
   if(s?.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}
   delete _pollGuard[jid];
-  _sessions=_sessions.filter(s=>s.jobId!==jid);
-  if(_user) lsSaveSess(_user.id,_sessions);
+  _imgSessions=_imgSessions.filter(s=>s.jobId!==jid);
+  _vidSessions=_vidSessions.filter(s=>s.jobId!==jid);
+  _sessions=_activeMode==='video'?_vidSessions:_imgSessions;
+  if(_user) lsSaveSess(_user.id,[..._imgSessions,..._vidSessions]);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -739,20 +818,29 @@ async function enterApp() {
   const h=new Date().getHours();
   $('greet').textContent=`${h<12?'Good morning':h<17?'Good afternoon':'Good evening'}, ${n} 👋`;
 
-  // 1. Instant local render
-  _sessions=lsGetSess(_user.id).map(s=>({...s,pollInterval:null}));
+  // 1. Instant local render — split sessions by mode
+  const allLocal=lsGetSess(_user.id).map(s=>({...s,pollInterval:null}));
+  _imgSessions=allLocal.filter(s=>!s.outputMode||s.outputMode==='image');
+  _vidSessions=allLocal.filter(s=>s.outputMode==='video');
+  _sessions=_activeMode==='video'?_vidSessions:_imgSessions;
   renderSessBar(); show('templates');
 
-  // 2. Background remote sync — updates session list and image URLs
+  // 2. Background remote sync — split by mode
   remoteLoad(_user.id).then(remote=>{
-    const live=_sessions.filter(s=>s.status==='generating'||s.status==='queued');
-    const liveIds=new Set(live.map(s=>s.jobId));
-    _sessions=[...live,...remote.filter(s=>!liveIds.has(s.jobId))].map(s=>({...s,pollInterval:s.pollInterval||null}));
+    const imgLive=_imgSessions.filter(s=>s.status==='generating'||s.status==='queued');
+    const vidLive=_vidSessions.filter(s=>s.status==='generating'||s.status==='queued');
+    const imgLiveIds=new Set(imgLive.map(s=>s.jobId));
+    const vidLiveIds=new Set(vidLive.map(s=>s.jobId));
+    const remoteImg=remote.filter(s=>!s.outputMode||s.outputMode==='image');
+    const remoteVid=remote.filter(s=>s.outputMode==='video');
+    _imgSessions=[...imgLive,...remoteImg.filter(s=>!imgLiveIds.has(s.jobId))].map(s=>({...s,pollInterval:s.pollInterval||null}));
+    _vidSessions=[...vidLive,...remoteVid.filter(s=>!vidLiveIds.has(s.jobId))].map(s=>({...s,pollInterval:s.pollInterval||null}));
+    _sessions=_activeMode==='video'?_vidSessions:_imgSessions;
     renderSessBar();
   });
 
-  // 3. Resume any in-flight generations
-  _sessions.forEach(s=>{ if(s.status==='generating') startPolling(s.jobId); });
+  // 3. Resume any in-flight generations (both modes)
+  [..._imgSessions,..._vidSessions].forEach(s=>{ if(s.status==='generating') startPolling(s.jobId); });
 
   // 4. Load models
   fetch(`${WORKER}/models`).then(r=>r.json()).then(d=>{
@@ -762,7 +850,7 @@ async function enterApp() {
 
 function signOut(){
   _sessions.forEach(s=>{if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}});
-  _sessions=[]; _imgCache={};
+  _sessions=[]; _imgSessions=[]; _vidSessions=[]; _imgCache={};
   try{window.google?.accounts?.oauth2?.revoke?.();}catch{}
   clearPersistedUser();
   try{sessionStorage.removeItem('vdo_sess_user');}catch{}
@@ -828,8 +916,8 @@ async function applyModel(){
 }
 const labelFor=id=>_models.find(m=>m.id===id)?.label||(id?.split('/').pop()||'Unknown');
 function updateNavLabel(){
-  const el=$('nav-model-label'); if(!el)return;
-  el.textContent=_activeModel?_activeModel.split('/').pop().replace(/-instruct$/,'').replace(/-fast$/,'⚡'):'Model';
+  const label=_activeModel?_activeModel.split('/').pop().replace(/-instruct$/,'').replace(/-fast$/,'⚡'):'Model';
+  [$('nav-model-label'),$('nav-model-label-vid')].forEach(el=>{if(el)el.textContent=label;});
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -838,27 +926,26 @@ function updateNavLabel(){
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   $('screen-'+id).classList.add('active');
-  if(id==='chat') scrollDown();
+  if(id==='chat-img'||id==='chat-vid') scrollDown();
 }
 
-// ─── separate entry points from template page ───
 function openImageTemplate(){
+  _activeMode='image'; _outputMode='image';
+  _sessions=_imgSessions;
   _activeJobId=null; clearChat();
-  setOutputMode('image');
-  show('chat');
+  show('chat-img');
+  renderSessBar();
 }
 function openVideoTemplate(){
+  _activeMode='video'; _outputMode='video';
+  _sessions=_vidSessions;
   _activeJobId=null; clearChat();
-  setOutputMode('video');
-  show('chat');
+  show('chat-vid');
+  renderSessBar();
 }
-// legacy (back-compat)
 function openTemplate(){ openImageTemplate(); }
 
-// ═══════════════════════════════════════════════════════════════
-// DURATION PICKER  (video only, shown/hidden by setOutputMode)
-// ═══════════════════════════════════════════════════════════════
-let _videoDuration = 10; // seconds, default 10
+// DURATION PICKER
 
 function setDuration(sec) {
   _videoDuration = sec;
@@ -868,59 +955,44 @@ function setDuration(sec) {
   lsSet('vdo_vid_duration', sec);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// OUTPUT MODE TOGGLE  (image ↔ video)
-// ═══════════════════════════════════════════════════════════════
-function setOutputMode(mode) {
-  _outputMode = mode;
-  const imgBtn = $('mode-img'), vidBtn = $('mode-vid');
-  const ico = $('ch-nav-ico'), title = $('ch-nav-title');
-  const durBar = $('dur-bar');
-  if (mode === 'video') {
-    vidBtn.classList.add('active','video-active');
-    imgBtn.classList.remove('active','video-active');
-    if (ico) ico.textContent = '🎬';
-    if (title) title.textContent = 'Video Generator';
-    if (durBar) durBar.classList.add('vis');
-    lsSet('vdo_output_mode', 'video');
-  } else {
-    imgBtn.classList.add('active');
-    imgBtn.classList.remove('video-active');
-    vidBtn.classList.remove('active','video-active');
-    if (ico) ico.textContent = '🎨';
-    if (title) title.textContent = 'Image Generator';
-    if (durBar) durBar.classList.remove('vis');
-    lsSet('vdo_output_mode', 'image');
-  }
-}
+// setOutputMode kept for compat — mode is determined by which screen is open
+function setOutputMode(mode){ _outputMode=mode; _activeMode=mode; }
 
 // ═══════════════════════════════════════════════════════════════
 // SESSION DOTS BAR
 // Colors: done=green, generating=yellow, error=red, queued=grey
 // ═══════════════════════════════════════════════════════════════
 function renderSessBar(){
-  const bar=$('sess-bar'); if(!bar)return;
-  if(!_sessions.length){bar.classList.remove('vis');return;}
+  // Render BOTH bars independently so dots persist when switching screens
+  _renderBar('img', _imgSessions);
+  _renderBar('vid', _vidSessions);
+}
+function _renderBar(mode, sessions){
+  const bar=$('sess-bar-'+mode); if(!bar)return;
+  const active=sessions.filter(s=>s.status!=='done'&&s.status!=='error');
+  const recent=sessions.filter(s=>s.status==='done'||s.status==='error');
+  // Show most relevant: in-progress first, then recent (up to 7 total)
+  const visible=[...active,...recent].slice(0,7);
+  if(!visible.length){bar.classList.remove('vis');return;}
   bar.classList.add('vis');
-  bar.innerHTML=_sessions.slice(0,7).map((s,i)=>{
-    // Correct color classes
+  bar.innerHTML=visible.map((s,i)=>{
     const sc = s.status==='done'       ? 's-done'
              : s.status==='generating' ? 's-gen'
              : s.status==='error'      ? 's-err'
              : 's-q';
     const cur = s.jobId===_activeJobId ? 'cur':'';
-    const stLbl = s.status==='done'       ? '✓ Done'
-                : s.status==='generating' ? '⏳ Rendering…'
-                : s.status==='error'      ? '✗ Failed'
-                : '⏳ Queued';
-    const tip = `${(s.prompt||'').slice(0,22)} · ${stLbl}`;
-    return `<div class="s-chip ${sc} ${cur}" onclick="onChipClick('${esc(s.jobId)}')" data-tip="${esc(tip)}">${i+1}</div>`;
+    const stLbl = s.status==='done'       ? '✓'
+                : s.status==='generating' ? '…'
+                : s.status==='error'      ? '✗'
+                : '·';
+    const tip = `${(s.prompt||'').slice(0,22)} · ${s.status==='done'?'Done':s.status==='generating'?'Rendering':s.status==='error'?'Failed':'Queued'}`;
+    return `<div class="s-chip ${sc} ${cur}" onclick="onChipClick('${esc(s.jobId)}')" data-tip="${esc(tip)}">${stLbl}</div>`;
   }).join('');
 }
-function activeCount(){ return _sessions.filter(s=>s.status==='generating').length; }
+function activeCount(){ return [..._imgSessions,..._vidSessions].filter(s=>s.status==='generating').length; }
 function processQueue(){
   let n=activeCount(); const toStart=[];
-  [..._sessions].reverse().filter(s=>s.status==='queued').forEach(s=>{
+  [..._imgSessions,..._vidSessions].reverse().filter(s=>s.status==='queued').forEach(s=>{
     if(n>=6)return; s.status='generating'; n++; toStart.push(s.jobId);
   });
   if(!toStart.length)return;
@@ -1246,9 +1318,19 @@ async function extractFallback(buf){
 // CHIP CLICK — restore session with 3-tier image/video loading
 // ═══════════════════════════════════════════════════════════════
 async function onChipClick(jobId){
+  // Switch to the correct screen for this session
+  const sess0=getSess(jobId);
+  if(sess0){
+    const mode=sess0.outputMode==='video'?'video':'image';
+    if(mode!==_activeMode){
+      _activeMode=mode; _outputMode=mode;
+      _sessions=mode==='video'?_vidSessions:_imgSessions;
+    }
+    show('chat-'+mode);
+  }
   _activeJobId=jobId; renderSessBar();
   const s=getSess(jobId); if(!s)return;
-  clearChat(); hideEmpty(); show('chat');
+  clearChat(); hideEmpty();
   addUserMsg(s.prompt||''); addSessSep(s.ts); addImgGroup(jobId);
 
   const isVid=s.outputMode==='video';
@@ -1318,7 +1400,8 @@ async function onChipClick(jobId){
 // SEND
 // ═══════════════════════════════════════════════════════════════
 function sendMsg(){
-  const ta=$('ch-ta'),text=ta.value.trim(); if(!text)return;
+  const taId=_activeMode==='video'?'ch-ta-vid':'ch-ta-img';
+  const ta=$(taId),text=ta.value.trim(); if(!text)return;
   ta.value=''; resize(ta);
   const jobId=`j-${_user?.id||'anon'}-${Date.now()}`;
   _activeJobId=jobId;
@@ -1613,18 +1696,27 @@ function trigDl(blob,name){
 // HISTORY
 // ═══════════════════════════════════════════════════════════════
 function openHistory(){
+  const panelId=_activeMode==='video'?'hist-panel-vid':'hist-panel-img';
   renderHistList(_sessions);
-  $('hist-panel').classList.add('open');
+  $(panelId).classList.add('open');
   if(_user) remoteLoad(_user.id).then(remote=>{
+    const mode=_activeMode;
+    const allRemote=remote.filter(s=>s.outputMode===mode||(mode==='image'&&!s.outputMode));
     const live=_sessions.filter(s=>s.status==='generating'||s.status==='queued');
     const liveIds=new Set(live.map(s=>s.jobId));
-    _sessions=[...live,...remote.filter(s=>!liveIds.has(s.jobId))].map(s=>({...s,pollInterval:s.pollInterval||null}));
+    const merged=[...live,...allRemote.filter(s=>!liveIds.has(s.jobId))].map(s=>({...s,pollInterval:s.pollInterval||null}));
+    if(mode==='video') _vidSessions=merged; else _imgSessions=merged;
+    _sessions=merged;
     renderHistList(_sessions); renderSessBar();
   });
 }
-function closeHistory(){$('hist-panel').classList.remove('open');}
+function closeHistory(){
+  $('hist-panel-img').classList.remove('open');
+  $('hist-panel-vid').classList.remove('open');
+}
 function renderHistList(sessions){
-  const list=$('hist-list');
+  const listId=_activeMode==='video'?'hist-list-vid':'hist-list-img';
+  const list=$(listId); if(!list)return;
   if(!sessions?.length){
     list.innerHTML='<div class="hist-empty"><div style="font-size:36px;opacity:.2">📭</div><div style="font-size:13px;color:var(--tx3);margin-top:8px">No history yet</div></div>';
     return;
@@ -1670,16 +1762,21 @@ async function delHistSess(e,jobId){
 // ═══════════════════════════════════════════════════════════════
 const $=id=>document.getElementById(id);
 const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const msgs=()=>$('ch-msgs');
+// msgs/empty/ta/send always returns the active-mode element
+const msgs=()=>$(_activeMode==='video'?'ch-msgs-vid':'ch-msgs-img');
 const sid=s=>(s||'').replace(/[^a-zA-Z0-9_-]/g,'_');
-const hideEmpty=()=>{const e=$('ch-empty');if(e)e.style.display='none';};
-const scrollDown=()=>{const m=msgs();requestAnimationFrame(()=>{m.scrollTop=m.scrollHeight;});};
+const hideEmpty=()=>{const sfx=_activeMode==='video'?'-vid':'-img';const e=$('ch-empty'+sfx);if(e)e.style.display='none';};
+const scrollDown=()=>{const m=msgs();requestAnimationFrame(()=>{if(m)m.scrollTop=m.scrollHeight;});};
 const resize=ta=>{ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,130)+'px';};
 const mkEl=(tag,cls,text)=>{const d=document.createElement(tag);d.className=cls;d.textContent=text;msgs().appendChild(d);};
 function clearChat(){
-  const m=msgs(); m.innerHTML='';
-  const e=document.createElement('div'); e.className='ch-empty'; e.id='ch-empty';
-  e.innerHTML='<div class="empty-ico">✨</div><div class="empty-title">Ready to create</div><div class="empty-sub">Paste zodiac content in any language — EN NL FR DE ES IT PL 中文 SV</div>';
+  const sfx=_activeMode==='video'?'-vid':'-img';
+  const m=msgs(); if(!m)return; m.innerHTML='';
+  const e=document.createElement('div'); e.className='ch-empty'; e.id='ch-empty'+sfx;
+  const isVid=_activeMode==='video';
+  e.innerHTML=isVid
+    ?'<div class="empty-ico" style="background:rgba(231,76,60,.07);border-color:rgba(231,76,60,.12)">🎬</div><div class="empty-title">Video Generator</div><div class="empty-sub">Paste zodiac content — AI renders 9:16 MP4 videos</div>'
+    :'<div class="empty-ico" style="background:rgba(108,92,231,.07);border-color:rgba(108,92,231,.1)">🖼</div><div class="empty-title">Image Generator</div><div class="empty-sub">Paste zodiac content — AI renders permanent 9:16 images</div>';
   m.appendChild(e);
 }
 let _toastT;
@@ -1718,11 +1815,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     _user = u; enterApp();
   }
 
-  const ta = $('ch-ta');
-  if (ta) {
-    ta.addEventListener('input', () => resize(ta));
-    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } });
-  }
+  // Attach textarea listeners for both screens
+  ['ch-ta-img','ch-ta-vid'].forEach(taId=>{
+    const ta=$(taId);
+    if(ta){
+      ta.addEventListener('input',()=>resize(ta));
+      ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}});
+    }
+  });
 });
 </script>
 </body>
