@@ -1378,49 +1378,47 @@ async function extractFallback(buf){
 // CHIP CLICK — restore session with 3-tier image/video loading
 // ═══════════════════════════════════════════════════════════════
 async function onChipClick(jobId){
-  // Switch to the correct screen for this session
-  const sess0=getSess(jobId);
-  if(sess0){
-    const mode=sess0.outputMode==='video'?'video':'image';
-    if(mode!==_activeMode){
-      _activeMode=mode; _outputMode=mode;
-      _sessions=mode==='video'?_vidSessions:_imgSessions;
-    }
-    show('chat-'+mode);
-  }
-  _activeJobId=jobId; renderSessBar();
-  const s=getSess(jobId); if(!s)return;
+  const s=getSess(jobId); if(!s) return;
+
+  // ── Step 1: set mode state FIRST before any DOM operation ──
+  const mode = s.outputMode==='video' ? 'video' : 'image';
+  _activeMode  = mode;
+  _outputMode  = mode;
+  _sessions    = mode==='video' ? _vidSessions : _imgSessions;
+  _activeJobId = jobId;
+
+  // ── Step 2: switch screen (now _activeMode is correct, so msgs()/hideEmpty() work) ──
+  show('chat-'+mode);
+  renderSessBar();
+
+  // ── Step 3: build chat UI into the correct container ──
   clearChat(); hideEmpty();
   addUserMsg(s.prompt||''); addSessSep(s.ts); addImgGroup(jobId);
 
-  const isVid=s.outputMode==='video';
-  // Collect all URLs — prefer videoUrls for video jobs, imageUrls for image jobs
+  // ── Step 4: render content ──
+  const isVid = mode==='video';
   const _chipUrls = isVid
     ? (s.videoUrls?.length ? s.videoUrls : (s.imageUrls||[]))
     : (s.imageUrls||[]);
-  // Valid https URLs only
   const validUrls = _chipUrls.filter(u=>u&&u.startsWith('https://'));
 
   if(s.status==='done'||validUrls.length){
     const row=$('row-'+sid(jobId));
-    if(row) row.innerHTML=''; // always clear before re-rendering
+    if(row) row.innerHTML='';
 
     if(isVid){
-      // VIDEO — render straight from URL, no blob caching needed
       if(validUrls.length){
         validUrls.forEach((url,i)=>addVideoCard(jobId,url,i));
         updateGrpHd(jobId,'done',validUrls.length);
       } else {
         updateGrpHd(jobId,'error',0,'Video URLs unavailable');
       }
-
     } else {
-      // IMAGE — URL-first: render immediately from https:// URLs (fastest, works cross-device)
-      // Then try to upgrade to blobs in the background for Save/Share
+      // Images: URL-first (works cross-device, no blob dependency)
       if(validUrls.length){
         validUrls.forEach((url,i)=>addImgCard(jobId,url,i));
         updateGrpHd(jobId,'done',validUrls.length);
-        // Background blob fetch for Save/Share — don't block rendering
+        // Background: fetch blobs for Save/Share
         fetchReleaseImgs(validUrls).then(blobs=>{
           if(blobs.length){
             blobs.forEach((b,i)=>{ _imgCache[`${jobId}:${i}`]=b; });
@@ -1428,7 +1426,7 @@ async function onChipClick(jobId){
           }
         }).catch(()=>{});
       } else {
-        // No URLs — try memory cache then localStorage blobs as fallback
+        // Fallback: memory cache → localStorage blobs
         const count=s.done||0;
         let rendered=0;
         for(let i=0;i<count;i++){
@@ -1437,13 +1435,11 @@ async function onChipClick(jobId){
         }
         if(!rendered){
           const stored=lsLoadImgs(jobId);
-          if(stored.length){
-            stored.forEach((b,i)=>{_imgCache[`${jobId}:${i}`]=b;addImgCard(jobId,b,i);});
-            rendered=stored.length;
-          }
+          stored.forEach((b,i)=>{_imgCache[`${jobId}:${i}`]=b; addImgCard(jobId,b,i);});
+          rendered=stored.length;
         }
         if(rendered) updateGrpHd(jobId,'done',rendered);
-        else updateGrpHd(jobId,'error',0,'Images unavailable — permanent URLs not saved for this session');
+        else updateGrpHd(jobId,'error',0,'Images unavailable — no permanent URLs for this session');
       }
     }
   }
@@ -1880,42 +1876,30 @@ function renderHistList(sessions){
 
 async function loadHistSess(jobId){
   closeHistory();
-  // Search both arrays regardless of current mode
-  const existing = getSess(jobId);
-  const sess = existing || null;
 
-  // Determine correct mode from session data
-  const targetMode = (sess?.outputMode || 'image') === 'video' ? 'video' : 'image';
+  // Find session in either array
+  let s = getSess(jobId);
 
-  // Switch to the correct screen/mode before rendering
-  if(targetMode !== _activeMode){
-    _activeMode = targetMode; _outputMode = targetMode;
-    _sessions = targetMode==='video' ? _vidSessions : _imgSessions;
-    show('chat-'+targetMode);
-  } else {
-    _sessions = targetMode==='video' ? _vidSessions : _imgSessions;
-    show('chat-'+targetMode);
+  if(!s){
+    // Not in memory — fetch from remote
+    const remote = await remoteLoad(_user.id).catch(()=>[]);
+    const found = remote.find(e=>e.jobId===jobId);
+    if(!found){ toast('⚠️ Session not found'); return; }
+    upsertSess({...found, pollInterval:null});
+    s = getSess(jobId);
+    if(!s){ toast('⚠️ Session not found'); return; }
   }
 
-  if(existing){ onChipClick(jobId); return; }
+  // Set mode state NOW — onChipClick reads _activeMode for ALL its DOM ops
+  const mode = s.outputMode==='video' ? 'video' : 'image';
+  _activeMode  = mode;
+  _outputMode  = mode;
+  _sessions    = mode==='video' ? _vidSessions : _imgSessions;
 
-  // Not in memory — fetch from remote
-  const remote = await remoteLoad(_user.id).catch(()=>[]);
-  const found = remote.find(e=>e.jobId===jobId);
-  if(!found){ toast('⚠️ Session not found'); return; }
-
-  // Re-check mode from the actual remote data
-  const remoteMode = found.outputMode==='video' ? 'video' : 'image';
-  if(remoteMode !== _activeMode){
-    _activeMode=remoteMode; _outputMode=remoteMode;
-    _sessions = remoteMode==='video' ? _vidSessions : _imgSessions;
-    show('chat-'+remoteMode);
-  }
-
-  upsertSess({...found, pollInterval:null});
   renderSessBar();
   onChipClick(jobId);
 }
+
 
 async function delHistSess(e,jobId){
   if(e) e.stopPropagation();
@@ -1976,7 +1960,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!u) { try { u = JSON.parse(sessionStorage.getItem('vdo_sess_user') || 'null'); } catch {} }
   if (!u) { try { u = await idbGetUser(); } catch {} }
 
-  
   if (u && u.id && u.email) {
     // Replenish all stores so they stay in sync
     writePersistedUser(u);
