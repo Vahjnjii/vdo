@@ -21,6 +21,10 @@ on:
         description: 'Output mode: image or video'
         required: false
         default: 'image'
+      duration:
+        description: 'Video duration in seconds (5/7/10/12/15/20)'
+        required: false
+        default: '10'
 
 jobs:
   render:
@@ -58,18 +62,26 @@ jobs:
 
       - name: Convert images to 10-second videos (video mode)
         if: ${{ github.event.inputs.output_mode == 'video' }}
+        env:
+          DURATION: ${{ github.event.inputs.duration }}
         run: |
           mkdir -p output_video
+          # Validate duration — only allow 5 7 10 12 15 20, default 10
+          DUR=10
+          for allowed in 5 7 10 12 15 20; do
+            if [ "$DURATION" = "$allowed" ]; then DUR=$DURATION; fi
+          done
+          echo "🎬 Using duration: ${DUR}s"
           for f in output/*.png; do
             base=$(basename "$f" .png)
             ffmpeg -y \
               -loop 1 -i "$f" \
               -c:v libx264 -preset fast -crf 18 \
-              -t 10 \
+              -t "$DUR" \
               -vf "scale=1080:1920:flags=lanczos,format=yuv420p" \
               -movflags +faststart \
               "output_video/${base}.mp4"
-            echo "✅ Video: ${base}.mp4"
+            echo "✅ Video: ${base}.mp4 (${DUR}s)"
           done
           echo "🎬 All videos created: $(ls output_video/*.mp4 | wc -l)"
 
