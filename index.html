@@ -1696,103 +1696,53 @@ function trigDl(blob,name){
 // ═══════════════════════════════════════════════════════════════
 // HISTORY
 // ═══════════════════════════════════════════════════════════════
-// ── HISTORY ─────────────────────────────────────────────────────
-// _histMode: locked at the moment the panel is opened, so async
-// callbacks always update the right panel even if the user navigates.
-let _histMode = 'image';
-
-function _getScreenMode(){
-  // Single source of truth: which chat screen is actually visible in the DOM.
-  if(document.getElementById('screen-chat-vid')&&document.getElementById('screen-chat-vid').classList.contains('active')) return 'video';
-  if(document.getElementById('screen-chat-img')&&document.getElementById('screen-chat-img').classList.contains('active')) return 'image';
-  return _activeMode==='video'?'video':'image';
-}
-
 function openHistory(){
-  // Lock the mode to whichever chat screen is visible RIGHT NOW
-  _histMode = _getScreenMode();
-  // Sync global state so everything else is consistent
-  _activeMode = _histMode;
-  _outputMode = _histMode;
-  _sessions   = _histMode==='video' ? _vidSessions : _imgSessions;
-
-  // Always close both first, then open only the correct one
-  document.getElementById('hist-panel-img').classList.remove('open');
-  document.getElementById('hist-panel-vid').classList.remove('open');
-
-  // Render immediately with local data (never blank panel)
-  _fillHistList(_histMode, _sessions);
-
-  // Now open the panel
-  document.getElementById('hist-panel-'+_histMode).classList.add('open');
-
-  // Background: fetch remote sessions and refresh list
-  if(_user){
-    remoteLoad(_user.id).then(function(remote){
-      var mode = _histMode; // use closed-over value, not _activeMode
-      var allRemote = remote.filter(function(s){ return s.outputMode===mode||(mode==='image'&&!s.outputMode); });
-      var localArr  = mode==='video' ? _vidSessions : _imgSessions;
-      var live      = localArr.filter(function(s){ return s.status==='generating'||s.status==='queued'; });
-      var liveIds   = new Set(live.map(function(s){ return s.jobId; }));
-      var merged    = live.concat(allRemote.filter(function(s){ return !liveIds.has(s.jobId); }))
-                          .map(function(s){ return Object.assign({},s,{pollInterval:s.pollInterval||null}); });
-      if(mode==='video') _vidSessions=merged; else _imgSessions=merged;
-      if(_activeMode===mode) _sessions=merged;
-      // Only refresh if the panel is still open
-      if(document.getElementById('hist-panel-'+mode).classList.contains('open')){
-        _fillHistList(mode, merged);
-      }
-      renderSessBar();
-    }).catch(function(){});
-  }
+  const panelId=_activeMode==='video'?'hist-panel-vid':'hist-panel-img';
+  renderHistList(_sessions);
+  $(panelId).classList.add('open');
+  if(_user) remoteLoad(_user.id).then(remote=>{
+    const mode=_activeMode;
+    const allRemote=remote.filter(s=>s.outputMode===mode||(mode==='image'&&!s.outputMode));
+    const live=_sessions.filter(s=>s.status==='generating'||s.status==='queued');
+    const liveIds=new Set(live.map(s=>s.jobId));
+    const merged=[...live,...allRemote.filter(s=>!liveIds.has(s.jobId))].map(s=>({...s,pollInterval:s.pollInterval||null}));
+    if(mode==='video') _vidSessions=merged; else _imgSessions=merged;
+    _sessions=merged;
+    renderHistList(_sessions); renderSessBar();
+  });
 }
-
 function closeHistory(){
-  document.getElementById('hist-panel-img').classList.remove('open');
-  document.getElementById('hist-panel-vid').classList.remove('open');
+  $('hist-panel-img').classList.remove('open');
+  $('hist-panel-vid').classList.remove('open');
 }
-
-function _fillHistList(mode, sessions){
-  var listId = mode==='video' ? 'hist-list-vid' : 'hist-list-img';
-  var list = document.getElementById(listId);
-  if(!list) return;
-  if(!sessions||!sessions.length){
-    list.innerHTML='<div class="hist-empty"><div style="font-size:36px;opacity:.2">&#128491;</div><div style="font-size:13px;color:var(--tx3);margin-top:8px">No history yet</div></div>';
+function renderHistList(sessions){
+  const listId=_activeMode==='video'?'hist-list-vid':'hist-list-img';
+  const list=$(listId); if(!list)return;
+  if(!sessions?.length){
+    list.innerHTML='<div class="hist-empty"><div style="font-size:36px;opacity:.2">📭</div><div style="font-size:13px;color:var(--tx3);margin-top:8px">No history yet</div></div>';
     return;
   }
-  list.innerHTML = sessions.map(function(e){
-    var d = new Date(e.ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    var sc = e.status==='done'?'ok':e.status==='error'?'err':'';
-    var dotCls = e.status==='done'?'ok':e.status==='error'?'err':e.status==='generating'?'sy':'q';
-    var stLbl = e.status==='done'?'Complete':e.status==='error'?'Failed':e.status==='generating'?'Rendering\u2026':'Queued';
-    var allUrls = (e.videoUrls||[]).concat(e.imageUrls||[]);
-    var perm = allUrls.some(function(u){ return u&&u.startsWith('https://'); });
-    var vuLen = (e.videoUrls||[]).length, iuLen = (e.imageUrls||[]).length;
-    var countStr = vuLen?' \u00b7 '+vuLen+' videos':iuLen?' \u00b7 '+iuLen+' images':'';
-    var safeId = esc(e.jobId);
-    var promptHtml = e.prompt
-      ? '<div class="hist-prompt">&#8220;'+esc(e.prompt.slice(0,52))+(e.prompt.length>52?'\u2026':'')+'&#8221;</div>'
-      : '';
-    var permBadge = perm ? '<span class="perm-badge">&#128190; Permanent</span>' : '';
-    var html = '<div class="hist-item" onclick="loadHistSess(this.dataset.jid)" data-jid="'+safeId+'">';
-    html += '<div class="hist-item-top">';
-    html +=   '<div class="hist-date">'+d+'</div>';
-    html +=   '<div style="display:flex;align-items:center;gap:5px">';
-    html +=     permBadge;
-    html +=     '<button class="hist-del" data-jid="'+safeId+'" onclick="event.stopPropagation();delHistSess(event,this.dataset.jid)"><i class="fas fa-trash-can"></i></button>';
-    html +=   '</div>';
-    html += '</div>';
-    html += promptHtml;
-    html += '<div class="hist-label">'+esc(e.label||'')+'</div>';
-    html += '<div class="hist-st '+sc+'"><span class="hst-dot '+dotCls+'"></span>'+stLbl+countStr+'</div>';
-    html += '</div>';
-    return html;
+  list.innerHTML=sessions.map(e=>{
+    const d=new Date(e.ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const sc=e.status==='done'?'ok':e.status==='error'?'err':'';
+    const dotCls=e.status==='done'?'ok':e.status==='error'?'err':e.status==='generating'?'sy':'q';
+    const stLbl=e.status==='done'?'Complete':e.status==='error'?'Failed':e.status==='generating'?'Rendering…':'Queued';
+    const _allUrls=[...(e.videoUrls||[]),...(e.imageUrls||[])];
+  const perm=_allUrls.some(u=>u&&u.startsWith('https://'));
+    return `<div class="hist-item" onclick="loadHistSess('${esc(e.jobId)}')">
+      <div class="hist-item-top">
+        <div class="hist-date">${d}</div>
+        <div style="display:flex;align-items:center;gap:5px">
+          ${perm?'<span class="perm-badge">💾 Permanent</span>':''}
+          <button class="hist-del" onclick="delHistSess(event,'${esc(e.jobId)}')"><i class="fas fa-trash-can"></i></button>
+        </div>
+      </div>
+      ${e.prompt?`<div class="hist-prompt">"${esc(e.prompt.slice(0,52))}${e.prompt.length>52?'…':''}"</div>`:''}
+      <div class="hist-label">${esc(e.label||'')}</div>
+      <div class="hist-st ${sc}"><span class="hst-dot ${dotCls}"></span>${stLbl}${(()=>{const _vu=(e.videoUrls||[]).length,_iu=(e.imageUrls||[]).length;return _vu?` · ${_vu} videos`:_iu?` · ${_iu} images`:'';})()}</div>
+    </div>`;
   }).join('');
 }
-
-// Backward-compat alias (delHistSess calls this)
-function renderHistList(sessions){ _fillHistList(_getScreenMode(), sessions||_sessions); }
-
 async function loadHistSess(jobId){
   closeHistory();
   if(getSess(jobId)){onChipClick(jobId);return;}
@@ -1804,10 +1754,7 @@ async function loadHistSess(jobId){
 async function delHistSess(e,jobId){
   e.stopPropagation();
   delSess(jobId); lsDelImgs(jobId);
-  // Use mode-scoped array so the list refreshes correctly regardless of _sessions pointer
-  var mode=_getScreenMode();
-  _fillHistList(mode, mode==='video'?_vidSessions:_imgSessions);
-  renderSessBar();
+  renderHistList(_sessions); renderSessBar();
   await remoteDel(jobId);
 }
 
