@@ -216,9 +216,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 /* Image screen keeps dark purple bg (default) */
 .ch-bar-img{border-top-color:rgba(108,92,231,.12)}
 
-/* History drawer accent */
-.hist-drawer-img{border-left-color:rgba(108,92,231,.2)}
-.hist-drawer-vid{border-left-color:rgba(231,76,60,.2)}
+/* History drawer accent — legacy refs removed, bottom-sheet now handles this */
 
 /* ═══ VIDEO MODE TOGGLE ═══ */
 .mode-bar{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:7px 12px 0;gap:0}
@@ -255,39 +253,89 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .send-btn:active{transform:scale(.9)}
 .send-btn:disabled{opacity:.4;cursor:wait;transform:none;animation:none}
 
-/* ═══ HISTORY ═══ */
-.hist-panel{position:fixed;inset:0;z-index:100;display:none;pointer-events:none}
-.hist-panel.open{display:block;pointer-events:auto}
-.hist-bg{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);animation:fadeIn .2s ease both}
-.hist-drawer{position:fixed;right:0;top:0;bottom:0;width:min(90%,360px);background:#07060f;border-left:1px solid var(--bd);display:flex;flex-direction:column;animation:slideR .28s cubic-bezier(.16,1,.3,1) both;box-shadow:-16px 0 56px rgba(0,0,0,.7)}
-.hist-hd{display:flex;align-items:flex-start;justify-content:space-between;padding:18px 16px;border-bottom:1px solid var(--bd);flex-shrink:0}
-.hist-hd-t{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-style:italic;margin-bottom:4px}
-.hist-sync{font-size:11px;display:flex;align-items:center;gap:5px}
+/* ═══ HISTORY BOTTOM SHEET ═══ */
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes hItemIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.hbs-overlay{position:fixed;inset:0;z-index:200;display:none;pointer-events:none}
+.hbs-overlay.open{display:block;pointer-events:auto}
+.hbs-scrim{position:absolute;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(10px)}
+.hbs-overlay.open .hbs-scrim{animation:fadeIn .22s ease both}
+.hbs-sheet{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(180deg,#0d0b1c 0%,#080614 100%);border-radius:24px 24px 0 0;border-top:1px solid rgba(255,255,255,.08);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 -24px 80px rgba(0,0,0,.8)}
+.hbs-overlay.open .hbs-sheet{animation:slideUp .32s cubic-bezier(.16,1,.3,1) both}
+.hbs-handle{width:40px;height:4px;border-radius:4px;background:rgba(255,255,255,.12);margin:12px auto 0;flex-shrink:0;cursor:grab}
+.hbs-head{display:flex;align-items:center;padding:14px 18px 0;gap:10px;flex-shrink:0}
+.hbs-title-wrap{flex:1;min-width:0}
+.hbs-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:21px;font-weight:800;font-style:italic;letter-spacing:-.5px;line-height:1}
+.hbs-title-img{background:linear-gradient(135deg,#fff 0%,#c4b5fd 50%,#818cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hbs-title-vid{background:linear-gradient(135deg,#fff 0%,#ff8a80 50%,#e74c3c 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hbs-subtitle{font-size:11px;color:var(--tx3);margin-top:3px;display:flex;align-items:center;gap:5px}
+.hbs-sync-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;transition:background .3s,box-shadow .3s}
+.hbs-sync-dot.ok{background:var(--gn);box-shadow:0 0 6px var(--gn)}
+.hbs-sync-dot.sy{background:var(--yw);animation:pulseYw 1.2s ease infinite}
+.hbs-sync-dot.off{background:var(--tx3)}
+.hbs-close{width:32px;height:32px;border-radius:10px;border:1px solid var(--bd);background:rgba(255,255,255,.04);color:var(--tx3);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s}
+.hbs-close:hover{background:rgba(255,255,255,.09);color:var(--tx)}
+.hbs-toolbar{display:flex;align-items:center;gap:8px;padding:12px 14px 0;flex-shrink:0}
+.hbs-search-wrap{flex:1;position:relative}
+.hbs-search{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:12px;padding:8px 12px 8px 34px;color:var(--tx);font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s}
+.hbs-search:focus{border-color:rgba(108,92,231,.4)}
+.hbs-search::placeholder{color:var(--tx3)}
+.hbs-search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--tx3);font-size:11px;pointer-events:none}
+.hbs-filter-row{display:flex;gap:5px;padding:8px 14px 2px;overflow-x:auto;flex-shrink:0}
+.hbs-filter-row::-webkit-scrollbar{display:none}
+.hbs-chip{padding:5px 12px;border-radius:50px;font-size:11px;font-weight:600;font-family:'Inter',sans-serif;border:1px solid var(--bd);background:rgba(255,255,255,.03);color:var(--tx3);cursor:pointer;transition:all .18s;white-space:nowrap;flex-shrink:0}
+.hbs-chip.act-img{background:rgba(108,92,231,.14);border-color:rgba(108,92,231,.35);color:var(--acc2)}
+.hbs-chip.act-vid{background:rgba(231,76,60,.12);border-color:rgba(231,76,60,.3);color:#ff8a80}
+.hbs-count{font-size:11px;color:var(--tx3);padding:6px 16px 2px;flex-shrink:0}
+.hbs-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:6px 12px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px}
+.hbs-list::-webkit-scrollbar{width:2px}
+.hbs-list::-webkit-scrollbar-thumb{background:var(--s3);border-radius:2px}
+.hbs-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:48px 24px;color:var(--tx3);text-align:center}
+.hbs-empty-ico{font-size:40px;opacity:.2}
+.hbs-empty-txt{font-size:13px;line-height:1.6}
+/* history card */
+.hc{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:16px;cursor:pointer;transition:background .18s,border-color .18s,transform .15s;overflow:hidden;animation:hItemIn .28s cubic-bezier(.16,1,.3,1) both;position:relative}
+.hc:active{transform:scale(.98)}
+.hc-img-mode:hover{border-color:rgba(108,92,231,.25);background:rgba(108,92,231,.05)}
+.hc-vid-mode:hover{border-color:rgba(231,76,60,.22);background:rgba(231,76,60,.04)}
+.hc-body{display:flex;align-items:stretch;min-height:80px}
+.hc-thumb{width:60px;flex-shrink:0;background:var(--s2);position:relative;overflow:hidden}
+.hc-thumb img,.hc-thumb video{width:100%;height:100%;object-fit:cover;display:block;opacity:.85}
+.hc-thumb-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;opacity:.22}
+.hc-thumb-count{position:absolute;bottom:4px;right:3px;background:rgba(0,0,0,.72);border-radius:5px;font-size:8.5px;font-weight:700;color:#fff;padding:1px 4px}
+.hc-content{flex:1;padding:10px 12px;min-width:0;display:flex;flex-direction:column;gap:3px}
+.hc-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.hc-date{font-size:10px;color:var(--tx3);font-weight:500;letter-spacing:.05em}
+.hc-badges{display:flex;align-items:center;gap:4px}
+.hc-perm{font-size:8.5px;font-weight:700;padding:1px 6px;border-radius:20px;background:rgba(0,214,143,.08);color:var(--gn);border:1px solid rgba(0,214,143,.18);letter-spacing:.04em}
+.hc-mode-badge{font-size:8.5px;font-weight:700;padding:1px 6px;border-radius:20px;letter-spacing:.04em}
+.hc-mode-img{background:rgba(108,92,231,.1);color:var(--acc2);border:1px solid rgba(108,92,231,.2)}
+.hc-mode-vid{background:rgba(231,76,60,.1);color:#ff8a80;border:1px solid rgba(231,76,60,.2)}
+.hc-prompt{font-size:12.5px;font-style:italic;color:var(--acc3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4}
+.hc-status{display:flex;align-items:center;gap:5px;margin-top:auto;padding-top:4px}
+.hc-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.hc-dot.ok{background:var(--gn)}
+.hc-dot.err{background:var(--rd)}
+.hc-dot.sy{background:var(--yw)}
+.hc-dot.q{background:#4a4a6a}
+.hc-st-txt{font-size:11px;color:var(--tx3)}
+.hc-st-txt.ok{color:var(--gn)}
+.hc-st-txt.err{color:var(--rd)}
+.hc-actions{display:flex;border-top:1px solid rgba(255,255,255,.05)}
+.hc-act-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:9px 6px;font-size:11px;font-weight:600;font-family:'Inter',sans-serif;border:none;background:none;cursor:pointer;color:var(--tx3);transition:background .15s,color .15s}
+.hc-act-btn:hover{color:var(--tx2);background:rgba(255,255,255,.04)}
+.hc-act-btn.del:hover{color:#ffb3b3;background:rgba(255,107,107,.07)}
+.hc-act-divider{width:1px;background:rgba(255,255,255,.05);flex-shrink:0}
+.hc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:16px 0 0 16px}
+.hc.hc-done::before{background:var(--gn);box-shadow:0 0 8px rgba(0,214,143,.4)}
+.hc.hc-err::before{background:var(--rd)}
+.hc.hc-gen::before{background:var(--yw);animation:pulseYw 1.5s ease infinite}
+.hc.hc-q::before{background:#4a4a6a}
+/* legacy sync dots still used in setSyncUI */
 .sd{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .sd.ok{background:var(--gn);box-shadow:0 0 6px var(--gn)}
 .sd.sy{background:var(--yw)}
 .sd.off{background:var(--tx3)}
-.hist-close{width:30px;height:30px;border-radius:8px;border:1px solid var(--bd);background:rgba(255,255,255,.03);color:var(--tx3);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.hist-list{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:7px}
-.hist-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--tx3);text-align:center;padding:40px}
-.hist-item{background:rgba(255,255,255,.02);border:1px solid var(--bd);border-radius:var(--r12);padding:11px 13px;cursor:pointer;transition:all .2s}
-.hist-item:hover{background:rgba(255,255,255,.04);border-color:rgba(108,92,231,.18)}
-.hist-item-top{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px}
-.hist-date{font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3)}
-.hist-del{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid transparent;color:var(--tx3);font-size:9.5px;cursor:pointer;transition:all .18s}
-.hist-del:hover{background:rgba(255,107,107,.08);border-color:rgba(255,107,107,.2);color:#ffb3b3}
-.hist-prompt{font-size:11.5px;font-style:italic;color:var(--acc3);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hist-label{font-size:12.5px;color:rgba(255,255,255,.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hist-st{font-size:10.5px;color:var(--tx3);margin-top:5px;display:flex;align-items:center;gap:6px}
-.hist-st.ok{color:var(--gn)}
-.hist-st.err{color:var(--rd)}
-/* status dot in history */
-.hst-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;display:inline-block}
-.hst-dot.ok{background:var(--gn)}
-.hst-dot.err{background:var(--rd)}
-.hst-dot.sy{background:var(--yw)}
-.hst-dot.q{background:#4a4a6a}
-.perm-badge{font-size:9px;font-weight:600;padding:2px 6px;border-radius:20px;background:rgba(0,214,143,.08);color:var(--gn);border:1px solid rgba(0,214,143,.18)}
 
 /* ═══ MODEL SHEET ═══ */
 .model-modal{position:fixed;inset:0;z-index:200;display:none;pointer-events:none}
@@ -468,33 +516,41 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
   </div>
 </div>
 
-<!-- IMAGE HISTORY PANEL -->
-<div class="hist-panel" id="hist-panel-img">
-  <div class="hist-bg" onclick="closeHistory()"></div>
-  <div class="hist-drawer hist-drawer-img">
-    <div class="hist-hd">
-      <div>
-        <div class="hist-hd-t" style="color:var(--acc2)">🖼 Image History</div>
-        <div class="hist-sync"><div class="sd ok" id="sync-dot"></div><span id="sync-txt">Synced</span></div>
+<!-- HISTORY BOTTOM SHEET (single, shared for both modes) -->
+<div class="hbs-overlay" id="hbs-overlay">
+  <div class="hbs-scrim" id="hbs-scrim" onclick="closeHistory()"></div>
+  <div class="hbs-sheet" id="hbs-sheet">
+    <div class="hbs-handle"></div>
+    <!-- header -->
+    <div class="hbs-head">
+      <div class="hbs-title-wrap">
+        <div class="hbs-title hbs-title-img" id="hbs-title">🖼 History</div>
+        <div class="hbs-subtitle">
+          <div class="hbs-sync-dot ok" id="hbs-sync-dot"></div>
+          <span id="hbs-sync-txt">Synced · GitHub Releases</span>
+        </div>
       </div>
-      <button class="hist-close" onclick="closeHistory()"><i class="fas fa-xmark"></i></button>
+      <button class="hbs-close" onclick="closeHistory()"><i class="fas fa-xmark"></i></button>
     </div>
-    <div class="hist-list" id="hist-list-img"></div>
-  </div>
-</div>
-
-<!-- VIDEO HISTORY PANEL -->
-<div class="hist-panel" id="hist-panel-vid">
-  <div class="hist-bg" onclick="closeHistory()"></div>
-  <div class="hist-drawer hist-drawer-vid">
-    <div class="hist-hd">
-      <div>
-        <div class="hist-hd-t" style="color:#ff8a80">🎬 Video History</div>
-        <div class="hist-sync"><div class="sd ok" id="sync-dot-vid"></div><span id="sync-txt-vid">Synced</span></div>
+    <!-- search -->
+    <div class="hbs-toolbar">
+      <div class="hbs-search-wrap">
+        <i class="fas fa-magnifying-glass hbs-search-ico"></i>
+        <input class="hbs-search" id="hbs-search" type="text" placeholder="Search prompts…" oninput="filterHistory()" autocomplete="off">
       </div>
-      <button class="hist-close" onclick="closeHistory()"><i class="fas fa-xmark"></i></button>
     </div>
-    <div class="hist-list" id="hist-list-vid"></div>
+    <!-- filter chips -->
+    <div class="hbs-filter-row" id="hbs-filter-row">
+      <button class="hbs-chip act-img" id="hbs-chip-all" onclick="setHistFilter('all')">All</button>
+      <button class="hbs-chip" id="hbs-chip-done" onclick="setHistFilter('done')">✓ Done</button>
+      <button class="hbs-chip" id="hbs-chip-gen" onclick="setHistFilter('generating')">⏳ Rendering</button>
+      <button class="hbs-chip" id="hbs-chip-err" onclick="setHistFilter('error')">✗ Failed</button>
+      <button class="hbs-chip" id="hbs-chip-perm" onclick="setHistFilter('perm')">💾 Permanent</button>
+    </div>
+    <!-- item count -->
+    <div class="hbs-count" id="hbs-count"></div>
+    <!-- list -->
+    <div class="hbs-list" id="hbs-list"></div>
   </div>
 </div>
 
@@ -658,9 +714,12 @@ async function remoteDel(jobId) {
   } catch {}
 }
 function setSyncUI(s) {
-  const dot=$('sync-dot'), txt=$('sync-txt'); if(!dot) return;
-  dot.className='sd '+s;
+  const dot=$('hbs-sync-dot'), txt=$('hbs-sync-txt'); if(!dot) return;
+  dot.className='hbs-sync-dot '+s;
   txt.textContent = s==='ok'?'Synced · GitHub Releases · any device': s==='sy'?'Syncing…':'Offline — cached';
+  // legacy compat (sync-dot may no longer exist but guard anyway)
+  const d2=$('sync-dot'),t2=$('sync-txt');
+  if(d2){d2.className='sd '+s;} if(t2){t2.textContent=txt.textContent;}
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1694,78 +1753,160 @@ function trigDl(blob,name){
 }
 
 // ═══════════════════════════════════════════════════════════════
-// HISTORY
+// HISTORY — bottom sheet
 // ═══════════════════════════════════════════════════════════════
+let _histFilter = 'all';
+let _histSearch  = '';
+
 function openHistory(){
-  const mode=_activeMode;
-  // Always make sure _sessions points to the correct mode array before rendering
+  const mode = _activeMode;
   _sessions = mode==='video' ? _vidSessions : _imgSessions;
-  const panelId=mode==='video'?'hist-panel-vid':'hist-panel-img';
-  // Render immediately with whatever we have (even empty) so panel is never black
+  const titleEl = $('hbs-title');
+  if(titleEl){
+    titleEl.className = 'hbs-title ' + (mode==='video' ? 'hbs-title-vid' : 'hbs-title-img');
+    titleEl.textContent = mode==='video' ? '🎬 Video History' : '🖼 Image History';
+  }
+  _histFilter='all'; _histSearch='';
+  const si=$('hbs-search'); if(si) si.value='';
+  _applyChipStyle();
   renderHistList(_sessions);
-  $(panelId).classList.add('open');
+  $('hbs-overlay').classList.add('open');
   if(_user) remoteLoad(_user.id).then(remote=>{
-    const allRemote=remote.filter(s=>s.outputMode===mode||(mode==='image'&&!s.outputMode));
-    const live=_sessions.filter(s=>s.status==='generating'||s.status==='queued');
-    const liveIds=new Set(live.map(s=>s.jobId));
-    const merged=[...live,...allRemote.filter(s=>!liveIds.has(s.jobId))].map(s=>({...s,pollInterval:s.pollInterval||null}));
-    if(mode==='video') { _vidSessions=merged; } else { _imgSessions=merged; }
-    _sessions=merged;
+    const allRemote = remote.filter(s => s.outputMode===mode||(mode==='image'&&!s.outputMode));
+    const live = _sessions.filter(s=>s.status==='generating'||s.status==='queued');
+    const liveIds = new Set(live.map(s=>s.jobId));
+    const merged = [...live,...allRemote.filter(s=>!liveIds.has(s.jobId))].map(s=>({...s,pollInterval:s.pollInterval||null}));
+    if(mode==='video') _vidSessions=merged; else _imgSessions=merged;
+    _sessions = merged;
     renderHistList(_sessions); renderSessBar();
-  }).catch(()=>{
-    // Remote load failed — already showing local data, nothing to do
+  }).catch(()=>{});
+}
+
+function closeHistory(){
+  $('hbs-overlay').classList.remove('open');
+}
+
+function setHistFilter(f){
+  _histFilter=f; _applyChipStyle(); renderHistList(_sessions);
+}
+
+function _applyChipStyle(){
+  const mode=_activeMode, act=mode==='video'?'act-vid':'act-img';
+  ['all','done','generating','error','perm'].forEach(f=>{
+    const el=$('hbs-chip-'+f); if(!el)return;
+    el.classList.remove('act-img','act-vid');
+    if(f===_histFilter) el.classList.add(act);
   });
 }
-function closeHistory(){
-  $('hist-panel-img').classList.remove('open');
-  $('hist-panel-vid').classList.remove('open');
+
+function filterHistory(){
+  _histSearch=($('hbs-search')?.value||'').trim().toLowerCase();
+  renderHistList(_sessions);
 }
+
 function renderHistList(sessions){
-  const mode=_activeMode;
-  const listId=mode==='video'?'hist-list-vid':'hist-list-img';
-  const list=$(listId); if(!list)return;
-  const arr=sessions||[];
-  if(!arr.length){
-    list.innerHTML='<div class="hist-empty"><div style="font-size:36px;opacity:.2">📭</div><div style="font-size:13px;color:var(--tx3);margin-top:8px">No history yet</div></div>';
+  const list=$('hbs-list'); if(!list) return;
+  const arr = sessions||[];
+  let filtered = arr.filter(e=>{
+    if(_histFilter==='done'       && e.status!=='done')       return false;
+    if(_histFilter==='generating' && e.status!=='generating' && e.status!=='queued') return false;
+    if(_histFilter==='error'      && e.status!=='error')      return false;
+    if(_histFilter==='perm'){
+      const urls=[...(e.videoUrls||[]),...(e.imageUrls||[])];
+      if(!urls.some(u=>u&&u.startsWith('https://'))) return false;
+    }
+    if(_histSearch){
+      const hay=(e.prompt||'')+(e.label||'');
+      if(!hay.toLowerCase().includes(_histSearch)) return false;
+    }
+    return true;
+  });
+  const countEl=$('hbs-count');
+  if(countEl) countEl.textContent = filtered.length ? `${filtered.length} session${filtered.length!==1?'s':''}` : '';
+  if(!filtered.length){
+    const msg = (_histSearch||_histFilter!=='all') ? 'No sessions match your filter' : 'No history yet';
+    list.innerHTML=`<div class="hbs-empty"><div class="hbs-empty-ico">📭</div><div class="hbs-empty-txt">${msg}</div></div>`;
     return;
   }
-  list.innerHTML=arr.map(e=>{
-    const d=new Date(e.ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    const sc=e.status==='done'?'ok':e.status==='error'?'err':'';
-    const dotCls=e.status==='done'?'ok':e.status==='error'?'err':e.status==='generating'?'sy':'q';
-    const stLbl=e.status==='done'?'Complete':e.status==='error'?'Failed':e.status==='generating'?'Rendering…':'Queued';
-    const _allUrls=[...(e.videoUrls||[]),...(e.imageUrls||[])];
-  const perm=_allUrls.some(u=>u&&u.startsWith('https://'));
-    return `<div class="hist-item" onclick="loadHistSess('${esc(e.jobId)}')">
-      <div class="hist-item-top">
-        <div class="hist-date">${d}</div>
-        <div style="display:flex;align-items:center;gap:5px">
-          ${perm?'<span class="perm-badge">💾 Permanent</span>':''}
-          <button class="hist-del" onclick="delHistSess(event,'${esc(e.jobId)}')"><i class="fas fa-trash-can"></i></button>
+  list.innerHTML = filtered.map((e,i)=>{
+    const isVid = e.outputMode==='video';
+    const d = new Date(e.ts).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+    const dotCls = e.status==='done'?'ok':e.status==='error'?'err':e.status==='generating'?'sy':'q';
+    const stLbl  = e.status==='done'?'Complete':e.status==='error'?'Failed':e.status==='generating'?'Rendering…':'Queued';
+    const stCls  = e.status==='done'?'ok':e.status==='error'?'err':'';
+    const allUrls = [...(e.videoUrls||[]),...(e.imageUrls||[])];
+    const perm   = allUrls.some(u=>u&&u.startsWith('https://'));
+    const count  = (e.videoUrls||[]).length||(e.imageUrls||[]).length||e.done||0;
+    const countTxt = isVid ? (count?`${count} vid`:'') : (count?`${count} img`:'');
+    const thumbUrl = allUrls.find(u=>u&&u.startsWith('https://'));
+    const thumbHtml = thumbUrl
+      ? (isVid
+          ? `<video src="${thumbUrl}" muted playsinline preload="none"></video>`
+          : `<img src="${thumbUrl}" alt="" loading="lazy">`)
+      : `<div class="hc-thumb-placeholder">${isVid?'🎬':'🖼'}</div>`;
+    const cardStatusCls = e.status==='done'?'hc-done':e.status==='error'?'hc-err':(e.status==='generating'||e.status==='queued')?'hc-gen':'hc-q';
+    const modeCls = isVid?'hc-vid-mode':'hc-img-mode';
+    const delay = Math.min(i*35,280);
+    return `<div class="hc ${cardStatusCls} ${modeCls}" style="animation-delay:${delay}ms" onclick="loadHistSess('${esc(e.jobId)}')">
+      <div class="hc-body">
+        <div class="hc-thumb">
+          ${thumbHtml}
+          ${countTxt?`<div class="hc-thumb-count">${countTxt}</div>`:''}
+        </div>
+        <div class="hc-content">
+          <div class="hc-top">
+            <div class="hc-date">${d}</div>
+            <div class="hc-badges">
+              ${perm?'<span class="hc-perm">💾</span>':''}
+              <span class="hc-mode-badge ${isVid?'hc-mode-vid':'hc-mode-img'}">${isVid?'VID':'IMG'}</span>
+            </div>
+          </div>
+          ${e.prompt?`<div class="hc-prompt">"${esc(e.prompt.slice(0,60))}${e.prompt.length>60?'…':''}"</div>`:'<div class="hc-prompt" style="opacity:.3">No prompt</div>'}
+          <div class="hc-status">
+            <div class="hc-dot ${dotCls}"></div>
+            <span class="hc-st-txt ${stCls}">${stLbl}</span>
+          </div>
         </div>
       </div>
-      ${e.prompt?`<div class="hist-prompt">"${esc(e.prompt.slice(0,52))}${e.prompt.length>52?'…':''}"</div>`:''}
-      <div class="hist-label">${esc(e.label||'')}</div>
-      <div class="hist-st ${sc}"><span class="hst-dot ${dotCls}"></span>${stLbl}${(()=>{const _vu=(e.videoUrls||[]).length,_iu=(e.imageUrls||[]).length;return _vu?` · ${_vu} videos`:_iu?` · ${_iu} images`:'';})()}</div>
+      <div class="hc-actions">
+        <button class="hc-act-btn" onclick="event.stopPropagation();loadHistSess('${esc(e.jobId)}')">
+          <i class="fas fa-arrow-up-right-from-square" style="font-size:10px"></i> Open
+        </button>
+        <div class="hc-act-divider"></div>
+        <button class="hc-act-btn del" onclick="event.stopPropagation();delHistSess(event,'${esc(e.jobId)}')">
+          <i class="fas fa-trash-can" style="font-size:10px"></i> Delete
+        </button>
+      </div>
     </div>`;
   }).join('');
 }
+
 async function loadHistSess(jobId){
   closeHistory();
-  // Ensure _sessions is synced before lookup
   _sessions = _activeMode==='video' ? _vidSessions : _imgSessions;
-  if(getSess(jobId)){onChipClick(jobId);return;}
-  const remote=await remoteLoad(_user.id).catch(()=>[]);
-  const found=remote.find(e=>e.jobId===jobId);
+  const existing = getSess(jobId);
+  if(existing){
+    if(existing.outputMode==='video' && _activeMode!=='video'){
+      _activeMode='video'; _outputMode='video'; _sessions=_vidSessions; show('chat-vid');
+    } else if(existing.outputMode!=='video' && _activeMode==='video'){
+      _activeMode='image'; _outputMode='image'; _sessions=_imgSessions; show('chat-img');
+    }
+    onChipClick(jobId); return;
+  }
+  const remote = await remoteLoad(_user.id).catch(()=>[]);
+  const found = remote.find(e=>e.jobId===jobId);
   if(!found){toast('⚠️ Session not found');return;}
   upsertSess({...found,pollInterval:null}); renderSessBar(); onChipClick(jobId);
 }
+
 async function delHistSess(e,jobId){
-  e.stopPropagation();
+  if(e) e.stopPropagation();
   delSess(jobId); lsDelImgs(jobId);
   renderHistList(_sessions); renderSessBar();
   await remoteDel(jobId);
 }
+
+
 
 // ═══════════════════════════════════════════════════════════════
 // UTILS
