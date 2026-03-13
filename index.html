@@ -1378,47 +1378,49 @@ async function extractFallback(buf){
 // CHIP CLICK — restore session with 3-tier image/video loading
 // ═══════════════════════════════════════════════════════════════
 async function onChipClick(jobId){
-  const s=getSess(jobId); if(!s) return;
-
-  // ── Step 1: set mode state FIRST before any DOM operation ──
-  const mode = s.outputMode==='video' ? 'video' : 'image';
-  _activeMode  = mode;
-  _outputMode  = mode;
-  _sessions    = mode==='video' ? _vidSessions : _imgSessions;
-  _activeJobId = jobId;
-
-  // ── Step 2: switch screen (now _activeMode is correct, so msgs()/hideEmpty() work) ──
-  show('chat-'+mode);
-  renderSessBar();
-
-  // ── Step 3: build chat UI into the correct container ──
+  // Switch to the correct screen for this session
+  const sess0=getSess(jobId);
+  if(sess0){
+    const mode=sess0.outputMode==='video'?'video':'image';
+    if(mode!==_activeMode){
+      _activeMode=mode; _outputMode=mode;
+      _sessions=mode==='video'?_vidSessions:_imgSessions;
+    }
+    show('chat-'+mode);
+  }
+  _activeJobId=jobId; renderSessBar();
+  const s=getSess(jobId); if(!s)return;
   clearChat(); hideEmpty();
   addUserMsg(s.prompt||''); addSessSep(s.ts); addImgGroup(jobId);
 
-  // ── Step 4: render content ──
-  const isVid = mode==='video';
+  const isVid=s.outputMode==='video';
+  // Collect all URLs — prefer videoUrls for video jobs, imageUrls for image jobs
   const _chipUrls = isVid
     ? (s.videoUrls?.length ? s.videoUrls : (s.imageUrls||[]))
     : (s.imageUrls||[]);
+  // Valid https URLs only
   const validUrls = _chipUrls.filter(u=>u&&u.startsWith('https://'));
 
   if(s.status==='done'||validUrls.length){
     const row=$('row-'+sid(jobId));
-    if(row) row.innerHTML='';
+    if(row) row.innerHTML=''; // always clear before re-rendering
 
     if(isVid){
+      // VIDEO — render straight from URL, no blob caching needed
       if(validUrls.length){
         validUrls.forEach((url,i)=>addVideoCard(jobId,url,i));
         updateGrpHd(jobId,'done',validUrls.length);
       } else {
         updateGrpHd(jobId,'error',0,'Video URLs unavailable');
       }
+
     } else {
-      // Images: URL-first (works cross-device, no blob dependency)
+      // IMAGE — URL-first: render immediately from https:// URLs (fastest, works cross-device)
+      // Then try to upgrade to blobs in the background for Save/Share
       if(validUrls.length){
         validUrls.forEach((url,i)=>addImgCard(jobId,url,i));
         updateGrpHd(jobId,'done',validUrls.length);
-        // Background: fetch blobs for Save/Share
+        // Background blob fetch for Save/Share — don't block rendering
         fetchReleaseImgs(validUrls).then(blobs=>{
           if(blobs.length){
             blobs.forEach((b,i)=>{ _imgCache[`${jobId}:${i}`]=b; });
@@ -1426,7 +1428,7 @@ async function onChipClick(jobId){
           }
         }).catch(()=>{});
       } else {
-        // Fallback: memory cache → localStorage blobs
+        // No URLs — try memory cache then localStorage blobs as fallback
         const count=s.done||0;
         let rendered=0;
         for(let i=0;i<count;i++){
@@ -1435,11 +1437,13 @@ async function onChipClick(jobId){
         }
         if(!rendered){
           const stored=lsLoadImgs(jobId);
-          stored.forEach((b,i)=>{_imgCache[`${jobId}:${i}`]=b; addImgCard(jobId,b,i);});
-          rendered=stored.length;
+          if(stored.length){
+            stored.forEach((b,i)=>{_imgCache[`${jobId}:${i}`]=b;addImgCard(jobId,b,i);});
+            rendered=stored.length;
+          }
         }
         if(rendered) updateGrpHd(jobId,'done',rendered);
-        else updateGrpHd(jobId,'error',0,'Images unavailable — no permanent URLs for this session');
+        else updateGrpHd(jobId,'error',0,'Images unavailable — permanent URLs not saved for this session');
       }
     }
   }
@@ -1753,7 +1757,12 @@ let _histSearch  = '';
 
 function openHistory(){
   const mode = _activeMode;
-  _sessions = mode==='video' ? _vidSessions : _imgSessions;
+  // Determine the correct array of sessions to work with based on the current mode.
+  const sourceSessions = mode === 'video' ? _vidSessions : _imgSessions;
+  
+  // Update the global pointer for other functions like search/filter that will be used inside the history sheet.
+  _sessions = sourceSessions;
+
   const titleEl = $('hbs-title');
   if(titleEl){
     titleEl.className = 'hbs-title ' + (mode==='video' ? 'hbs-title-vid' : 'hbs-title-img');
@@ -1762,17 +1771,39 @@ function openHistory(){
   _histFilter='all'; _histSearch='';
   const si=$('hbs-search'); if(si) si.value='';
   _applyChipStyle();
-  renderHistList(_sessions);
+  
+  // Render the list with the currently available local data first.
+  renderHistList(sourceSessions);
+  
   $('hbs-overlay').classList.add('open');
-  if(_user) remoteLoad(_user.id).then(remote=>{
-    const allRemote = remote.filter(s => s.outputMode===mode||(mode==='image'&&!s.outputMode));
-    const live = _sessions.filter(s=>s.status==='generating'||s.status==='queued');
-    const liveIds = new Set(live.map(s=>s.jobId));
-    const merged = [...live,...allRemote.filter(s=>!liveIds.has(s.jobId))].map(s=>({...s,pollInterval:s.pollInterval||null}));
-    if(mode==='video') _vidSessions=merged; else _imgSessions=merged;
-    _sessions = merged;
-    renderHistList(_sessions); renderSessBar();
-  }).catch(()=>{});
+  
+  if(_user) {
+    remoteLoad(_user.id).then(remote => {
+      // Filter all remote sessions to get only the ones relevant to the current mode.
+      const remoteForMode = remote.filter(s => s.outputMode === mode || (mode === 'image' && !s.outputMode));
+      
+      // Get "live" (generating/queued) sessions from the original local data.
+      const live = sourceSessions.filter(s => s.status === 'generating' || s.status === 'queued');
+      const liveIds = new Set(live.map(s => s.jobId));
+      
+      // Create the new merged list: start with the live local sessions, then add remote sessions that are not already in the live list.
+      const merged = [...live, ...remoteForMode.filter(s => !liveIds.has(s.jobId))].map(s => ({...s, pollInterval: s.pollInterval || null}));
+      
+      // Update the primary data source array (_imgSessions or _vidSessions) with the new merged list.
+      if(mode === 'video') {
+        _vidSessions = merged;
+      } else {
+        _imgSessions = merged;
+      }
+      
+      // Also update the global pointer to the newly merged list.
+      _sessions = merged;
+      
+      // Re-render the history list and session bar with the complete, updated data.
+      renderHistList(_sessions); 
+      renderSessBar();
+    }).catch(() => {});
+  }
 }
 
 function closeHistory(){
@@ -1876,30 +1907,42 @@ function renderHistList(sessions){
 
 async function loadHistSess(jobId){
   closeHistory();
+  // Search both arrays regardless of current mode
+  const existing = getSess(jobId);
+  const sess = existing || null;
 
-  // Find session in either array
-  let s = getSess(jobId);
+  // Determine correct mode from session data
+  const targetMode = (sess?.outputMode || 'image') === 'video' ? 'video' : 'image';
 
-  if(!s){
-    // Not in memory — fetch from remote
-    const remote = await remoteLoad(_user.id).catch(()=>[]);
-    const found = remote.find(e=>e.jobId===jobId);
-    if(!found){ toast('⚠️ Session not found'); return; }
-    upsertSess({...found, pollInterval:null});
-    s = getSess(jobId);
-    if(!s){ toast('⚠️ Session not found'); return; }
+  // Switch to the correct screen/mode before rendering
+  if(targetMode !== _activeMode){
+    _activeMode = targetMode; _outputMode = targetMode;
+    _sessions = targetMode==='video' ? _vidSessions : _imgSessions;
+    show('chat-'+targetMode);
+  } else {
+    _sessions = targetMode==='video' ? _vidSessions : _imgSessions;
+    show('chat-'+targetMode);
   }
 
-  // Set mode state NOW — onChipClick reads _activeMode for ALL its DOM ops
-  const mode = s.outputMode==='video' ? 'video' : 'image';
-  _activeMode  = mode;
-  _outputMode  = mode;
-  _sessions    = mode==='video' ? _vidSessions : _imgSessions;
+  if(existing){ onChipClick(jobId); return; }
 
+  // Not in memory — fetch from remote
+  const remote = await remoteLoad(_user.id).catch(()=>[]);
+  const found = remote.find(e=>e.jobId===jobId);
+  if(!found){ toast('⚠️ Session not found'); return; }
+
+  // Re-check mode from the actual remote data
+  const remoteMode = found.outputMode==='video' ? 'video' : 'image';
+  if(remoteMode !== _activeMode){
+    _activeMode=remoteMode; _outputMode=remoteMode;
+    _sessions = remoteMode==='video' ? _vidSessions : _imgSessions;
+    show('chat-'+remoteMode);
+  }
+
+  upsertSess({...found, pollInterval:null});
   renderSessBar();
   onChipClick(jobId);
 }
-
 
 async function delHistSess(e,jobId){
   if(e) e.stopPropagation();
