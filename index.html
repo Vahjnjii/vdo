@@ -152,6 +152,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .img-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:3px;background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:7px;padding:6px 3px;font-size:10px;font-weight:500;color:var(--tx3);cursor:pointer;font-family:'Geist',sans-serif;transition:all .18s}
 .img-btn:hover{background:rgba(255,255,255,.07);color:var(--tx2)}
 .img-btn:active{transform:scale(.93)}
+/* shared indicator */
+.img-card.shared .img-btn-share{border-color:rgba(0,214,143,.55);color:rgba(0,214,143,.9);background:rgba(0,214,143,.07)}
+.img-card.shared .img-btn-share i::after{content:' ✓';font-style:normal;font-size:10px}
 
 /* ═══ SESSION DOTS — image bar (purple) + video bar (red) ═══ */
 #sess-bar-img,#sess-bar-vid{position:absolute;left:8px;bottom:76px;top:58px;width:26px;display:none;flex-direction:column-reverse;align-items:center;justify-content:flex-start;gap:9px;padding:6px 0;z-index:10}
@@ -458,6 +461,8 @@ const LS_USER = 'vdo_user_v2';
 const LS_SESS = 'vdo_sess_v2';
 const LS_SESS_VID = 'vdo_sess_vid_v2';
 const LS_IMG  = 'vdo_img_v2_';
+const LS_SHARED = 'vdo_shared_v1';  // tracks shared items: Set of "jobId:idx"
+const LS_LAST_VIEW = 'vdo_last_view'; // restores last viewed session on refresh
 
 // ═══════════════════════════════════════════════════════════════
 // STATE
@@ -548,6 +553,18 @@ function lsLoadImgs(jobId) {
   } catch { return []; }
 }
 function lsDelImgs(jobId) { lsDel(LS_IMG+(_user?.id||'')+'_'+jobId); }
+
+// ── Shared state ──────────────────────────────────────────────
+function sharedKey(jobId,idx){ return `${jobId}:${idx}`; }
+function getSharedSet(){ try{ return new Set(JSON.parse(localStorage.getItem(LS_SHARED))||[]); }catch{return new Set();} }
+function markShared(jobId,idx){
+  const s=getSharedSet(); s.add(sharedKey(jobId,idx));
+  try{localStorage.setItem(LS_SHARED,JSON.stringify([...s]));}catch{}
+}
+function isShared(jobId,idx){ return getSharedSet().has(sharedKey(jobId,idx)); }
+function applySharedBorder(card,jobId,idx){
+  if(isShared(jobId,idx)) card.classList.add('shared');
+}
 
 // ═══════════════════════════════════════════════════════════════
 // REMOTE SYNC
@@ -691,7 +708,25 @@ async function enterApp() {
   // 1. Instant local render
   _imageSessions=lsGetSess(_user.id,'image').map(s=>({...s,pollInterval:null}));
   _videoSessions=lsGetSess(_user.id,'video').map(s=>({...s,pollInterval:null}));
-  renderSessBar(); show('templates');
+
+  // Restore last view (mode + jobId) — prevents going back to templates on refresh
+  const lastView = lsGet(LS_LAST_VIEW);
+  if(lastView?.mode && lastView?.jobId) {
+    _outputMode = lastView.mode;
+    // Set up chat UI for the restored mode
+    const isVid = _outputMode === 'video';
+    const ico=$('ch-nav-ico'), title=$('ch-nav-title'), durBar=$('dur-bar');
+    if(ico) ico.textContent = isVid ? '🎬' : '🎨';
+    if(title) title.textContent = isVid ? 'Video Generator' : 'Image Generator';
+    if(durBar) durBar.style.display = isVid ? 'flex' : 'none';
+    renderSessBar();
+    // Open the last active session
+    const found = [..._imageSessions,..._videoSessions].find(s=>s.jobId===lastView.jobId);
+    if(found) { onChipClick(lastView.jobId); }
+    else { show('chat'); clearChat(); }
+  } else {
+    renderSessBar(); show('templates');
+  }
 
   // 2. Background remote sync — updates session list and image URLs
   remoteLoad(_user.id).then(remote=>{
@@ -714,6 +749,7 @@ async function enterApp() {
 function signOut(){
   [..._imageSessions,..._videoSessions].forEach(s=>{if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}});
   _imageSessions=[]; _videoSessions=[]; _imgCache={};
+  lsDel(LS_LAST_VIEW);
   try{window.google?.accounts?.oauth2?.revoke?.();}catch{}
   clearPersistedUser(); _user=null; _activeJobId=null;
   $('so-menu').classList.remove('open');
@@ -790,6 +826,7 @@ function show(id){
 }
 function openImageTemplate(){
   _outputMode='image'; _activeJobId=null;
+  lsSet(LS_LAST_VIEW, {mode:'image', jobId:null});
   const ico=$('ch-nav-ico'), title=$('ch-nav-title'), durBar=$('dur-bar');
   if(ico) ico.textContent='🎨';
   if(title) title.textContent='Image Generator';
@@ -800,6 +837,7 @@ function openImageTemplate(){
 }
 function openVideoTemplate(){
   _outputMode='video'; _activeJobId=null;
+  lsSet(LS_LAST_VIEW, {mode:'video', jobId:null});
   const ico=$('ch-nav-ico'), title=$('ch-nav-title'), durBar=$('dur-bar');
   if(ico) ico.textContent='🎬';
   if(title) title.textContent='Video Generator';
@@ -1201,6 +1239,8 @@ async function onChipClick(jobId){
   }
 
   _activeJobId=jobId; renderSessBar();
+  // Persist so refresh restores to this session
+  lsSet(LS_LAST_VIEW, {mode:_outputMode, jobId});
   clearChat(); hideEmpty(); show('chat');
   addUserMsg(sess.prompt||''); addSessSep(sess.ts); addImgGroup(jobId);
 
@@ -1275,6 +1315,8 @@ function sendMsg(){
   ta.value=''; resize(ta);
   const jobId=`j-${_user?.id||'anon'}-${Date.now()}`;
   _activeJobId=jobId;
+  // Persist view so refresh lands back here
+  lsSet(LS_LAST_VIEW, {mode:_outputMode, jobId});
   clearChat(); hideEmpty(); addUserMsg(text);
   const sessData={jobId,prompt:text,label:text.slice(0,80),ts:Date.now(),status:'queued',done:0,total:0,imageUrls:[],outputMode:_outputMode,pollInterval:null};
   if(_outputMode==='video') sessData.videoDuration=_videoDur;
@@ -1340,6 +1382,7 @@ function addVideoCard(jobId,videoUrl,idx){
   const card=document.createElement('div');
   card.className='img-card'; card.style.animationDelay=(idx%6*55)+'ms';
   card.dataset.jobId=jobId; card.dataset.idx=idx;
+  applySharedBorder(card,jobId,idx);
   card.dataset.displayUrl=videoUrl;
   card.innerHTML=`<div class="img-card-lbl">Video ${idx+1}</div>
     <div class="vid-preview" id="prev-${sid(jobId+'_'+idx)}">
@@ -1408,6 +1451,11 @@ async function shareVideo(url,idx,jobId){
       // Fallback: share URL if files not supported
       await navigator.share({url, title, text:title});
     }
+    // Mark shared — persist border
+    markShared(jobId,idx);
+    document.querySelectorAll('.img-card').forEach(c=>{
+      if(c.dataset.jobId===jobId && +c.dataset.idx===idx) c.classList.add('shared');
+    });
     toast('Shared ✓');
   }catch(e){ if(e.name!=='AbortError') toast('⚠️ '+e.message); }
 }
@@ -1440,6 +1488,7 @@ function addImgCard(jobId,blobOrUrl,idx){
   const card=document.createElement('div');
   card.className='img-card'; card.style.animationDelay=(idx%6*55)+'ms';
   card.dataset.jobId=jobId; card.dataset.idx=idx;
+  applySharedBorder(card,jobId,idx);
   card.innerHTML=`<div class="img-card-lbl">Image ${idx+1}</div>
     <div class="img-preview loading" id="prev-${sid(jobId+'_'+idx)}">
       <img src="${url}" alt="Image ${idx+1}" onload="this.closest('.img-preview')?.classList.remove('loading')">
@@ -1501,6 +1550,11 @@ async function shareImg(jobId,idx){
       if(navigator.canShare?.({files:[file]})) await navigator.share({files:[file],title:`VDO Image ${idx+1}`});
       else await navigator.share({title:`VDO Image ${idx+1}`,text:'Generated with VDO'});
     } else trigDl(blob,rndName());
+    // Mark shared — persist border
+    markShared(jobId,idx);
+    document.querySelectorAll('.img-card').forEach(c=>{
+      if(c.dataset.jobId===jobId && +c.dataset.idx===idx) c.classList.add('shared');
+    });
     toast('Shared ✓');
   }catch(e){if(e.name!=='AbortError')toast('⚠️ '+e.message);}
 }
