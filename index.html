@@ -1697,11 +1697,19 @@ function trigDl(blob,name){
 // HISTORY
 // ═══════════════════════════════════════════════════════════════
 function openHistory(){
-  const panelId=_activeMode==='video'?'hist-panel-vid':'hist-panel-img';
+  // Detect active screen from DOM to avoid stale _activeMode after UI update
+  const vidScreenActive=$('screen-chat-vid')?.classList.contains('active');
+  const curMode=vidScreenActive?'video':'image';
+  // Sync _activeMode and _sessions to match the visible screen
+  if(curMode!==_activeMode){
+    _activeMode=curMode; _outputMode=curMode;
+    _sessions=curMode==='video'?_vidSessions:_imgSessions;
+  }
+  const panelId=curMode==='video'?'hist-panel-vid':'hist-panel-img';
   renderHistList(_sessions);
   $(panelId).classList.add('open');
   if(_user) remoteLoad(_user.id).then(remote=>{
-    const mode=_activeMode;
+    const mode=curMode;
     const allRemote=remote.filter(s=>s.outputMode===mode||(mode==='image'&&!s.outputMode));
     const live=_sessions.filter(s=>s.status==='generating'||s.status==='queued');
     const liveIds=new Set(live.map(s=>s.jobId));
@@ -1716,7 +1724,9 @@ function closeHistory(){
   $('hist-panel-vid').classList.remove('open');
 }
 function renderHistList(sessions){
-  const listId=_activeMode==='video'?'hist-list-vid':'hist-list-img';
+  const vidScreenActive=$('screen-chat-vid')?.classList.contains('active');
+  const _renderMode=vidScreenActive?'video':_activeMode==='video'?'video':'image';
+  const listId=_renderMode==='video'?'hist-list-vid':'hist-list-img';
   const list=$(listId); if(!list)return;
   if(!sessions?.length){
     list.innerHTML='<div class="hist-empty"><div style="font-size:36px;opacity:.2">📭</div><div style="font-size:13px;color:var(--tx3);margin-top:8px">No history yet</div></div>';
