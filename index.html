@@ -10,7 +10,7 @@
 <title>VDO — AI Image Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -22,7 +22,7 @@
   --gn:#00d68f;--rd:#ff6b6b;--yw:#ffd166;
   --r8:8px;--r12:12px;--r16:16px;--r20:20px;--r24:24px;
 }
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font-family:'Geist',sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
 ::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-thumb{background:var(--s3);border-radius:4px}
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -49,10 +49,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 /* ═══ LOGIN ═══ */
 #screen-login{flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow-y:auto}
 .login-wrap{position:relative;z-index:2;width:100%;max-width:340px;animation:fadeUp .65s cubic-bezier(.16,1,.3,1) both}
-.login-logo{font-family:'Plus Jakarta Sans',sans-serif;font-size:64px;font-weight:800;font-style:italic;letter-spacing:-4px;text-align:center;margin-bottom:2px;background:linear-gradient(135deg,#ffffff 0%,#c4b5fd 45%,#818cf8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1}
+.login-logo{font-family:'Instrument Serif',serif;font-size:56px;font-style:italic;letter-spacing:-3px;text-align:center;margin-bottom:2px;background:linear-gradient(135deg,#fff 20%,var(--acc2) 65%,var(--acc));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .login-tag{font-size:11.5px;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--tx3);text-align:center;margin-bottom:36px}
 .login-card{background:rgba(13,11,26,.92);backdrop-filter:blur(32px);border:1px solid var(--bd);border-radius:var(--r24);padding:26px 22px 22px;box-shadow:0 32px 80px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.05)}
-.g-btn{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:var(--r12);padding:13px 16px;color:var(--tx);font-size:14px;font-weight:500;font-family:'Inter',sans-serif;cursor:pointer;transition:all .22s;display:flex;align-items:center;justify-content:center;gap:10px}
+.g-btn{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:var(--r12);padding:13px 16px;color:var(--tx);font-size:14px;font-weight:500;font-family:'Geist',sans-serif;cursor:pointer;transition:all .22s;display:flex;align-items:center;justify-content:center;gap:10px}
 .g-btn:hover{background:rgba(255,255,255,.08);border-color:var(--bdh);transform:translateY(-1px)}
 .g-btn:active{transform:scale(.97)}
 .g-btn:disabled{opacity:.4;cursor:wait;transform:none}
@@ -62,36 +62,29 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 /* ═══ TEMPLATES ═══ */
 #screen-templates{flex-direction:column;overflow-y:auto}
 .tmpl-nav{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:18px 18px 14px;background:linear-gradient(to bottom,var(--bg) 55%,transparent);max-width:480px;margin:0 auto;width:100%}
-.tmpl-brand{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;font-style:italic;letter-spacing:-1.5px;background:linear-gradient(135deg,#ffffff,#a5b4fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.tmpl-brand{font-family:'Instrument Serif',serif;font-size:22px;font-style:italic;letter-spacing:-1px;background:linear-gradient(135deg,#fff,var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .user-chip{display:flex;align-items:center;gap:7px;background:var(--s1);border:1px solid var(--bd);border-radius:50px;padding:5px 12px 5px 5px;cursor:pointer;transition:all .2s;font-size:12.5px;font-weight:500;color:var(--tx2)}
 .user-chip:hover{border-color:var(--bdh);color:var(--tx)}
 .user-av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;overflow:hidden;flex-shrink:0}
 .user-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .tmpl-body{padding:0 18px 60px;max-width:480px;margin:0 auto;width:100%}
-.tmpl-greet{font-family:'Plus Jakarta Sans',sans-serif;font-size:30px;font-style:italic;letter-spacing:-.3px;margin-bottom:3px;line-height:1.2}
+.tmpl-greet{font-family:'Instrument Serif',serif;font-size:30px;font-style:italic;letter-spacing:-.3px;margin-bottom:3px;line-height:1.2}
 .tmpl-sub{font-size:12px;color:var(--tx3);margin-bottom:28px}
 .sec-lbl{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:11px}
-.tmpl-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
-.tcard{border-radius:var(--r16);overflow:hidden;cursor:pointer;background:var(--s1);border:1px solid var(--bd);transition:transform .25s cubic-bezier(.16,1,.3,1),border-color .2s,box-shadow .2s;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:fadeUp .4s cubic-bezier(.16,1,.3,1) both;position:relative}
-.tcard:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(0,0,0,.5)}
-.tcard:active{transform:scale(.97)}
-.tcard-img{border-radius:var(--r16)}.tcard-vid{border-radius:var(--r16)}
-.tcard-img{border-color:rgba(108,92,231,.22)}.tcard-img:hover{border-color:rgba(108,92,231,.45)}
-.tcard-vid{border-color:rgba(231,76,60,.18)}.tcard-vid:hover{border-color:rgba(231,76,60,.4)}
-.tcard-top{height:80px;display:flex;align-items:center;justify-content:center;font-size:32px;position:relative;overflow:hidden}
-.tcard-img .tcard-top{background:linear-gradient(135deg,rgba(108,92,231,.15),rgba(162,155,254,.08))}
-.tcard-vid .tcard-top{background:linear-gradient(135deg,rgba(192,57,43,.15),rgba(231,76,60,.08))}
-.tcard-glow{position:absolute;inset:0;pointer-events:none}
-.tcard-img .tcard-glow{background:radial-gradient(circle at 50% 100%,rgba(108,92,231,.25),transparent 65%)}
-.tcard-vid .tcard-glow{background:radial-gradient(circle at 50% 100%,rgba(231,76,60,.2),transparent 65%)}
-.tcard-bottom{padding:10px 12px 12px}
-.tcard-type{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:3px}
-.tcard-img .tcard-type{color:rgba(162,155,254,.6)}
-.tcard-vid .tcard-type{color:rgba(255,138,128,.6)}
-.tcard-name{font-weight:700;font-size:13.5px;color:var(--tx);line-height:1.25}
-.tcard-arr{position:absolute;bottom:10px;right:10px;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0}
-.tcard-img .tcard-arr{background:rgba(108,92,231,.12);border:1px solid rgba(108,92,231,.2);color:var(--acc2)}
-.tcard-vid .tcard-arr{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.18);color:#ff8a80}
+.tcard{border-radius:var(--r20);overflow:hidden;cursor:pointer;background:var(--s1);border:1px solid var(--bd);transition:transform .3s cubic-bezier(.16,1,.3,1),border-color .25s,box-shadow .25s;box-shadow:0 12px 40px rgba(0,0,0,.35);animation:fadeUp .5s cubic-bezier(.16,1,.3,1) both}
+.tcard:hover{transform:translateY(-4px);border-color:rgba(108,92,231,.28);box-shadow:0 20px 56px rgba(0,0,0,.5)}
+.tcard:active{transform:scale(.985)}
+.tcard-stripe{height:2px;background:linear-gradient(90deg,transparent,var(--acc),var(--acc2),transparent)}
+.tcard-body{padding:20px 18px 16px;display:flex;gap:14px}
+.tcard-ico{width:44px;height:44px;flex-shrink:0;border-radius:12px;font-size:19px;background:rgba(108,92,231,.1);border:1px solid rgba(108,92,231,.14);display:flex;align-items:center;justify-content:center}
+.tcard-info{flex:1;min-width:0}
+.tcard-badge{font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(162,155,254,.55);margin-bottom:5px}
+.tcard-name{font-family:'Instrument Serif',serif;font-size:20px;font-style:italic;color:var(--tx);margin-bottom:4px}
+.tcard-desc{font-size:12px;color:var(--tx3);line-height:1.65}
+.tcard-foot{padding:10px 18px 14px;border-top:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+.tcard-tags{display:flex;gap:5px;flex-wrap:wrap}
+.tcard-tag{font-size:10px;color:var(--tx3);background:rgba(255,255,255,.025);border:1px solid var(--bd);border-radius:50px;padding:3px 8px}
+.tcard-arr{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(108,92,231,.08);border:1px solid rgba(108,92,231,.12);color:var(--acc2);font-size:10px;flex-shrink:0}
 
 /* SO menu */
 .so-menu{position:fixed;top:62px;right:14px;z-index:500;background:#0a0818;border:1px solid var(--bd);border-radius:var(--r16);padding:6px;min-width:200px;display:none;box-shadow:0 16px 48px rgba(0,0,0,.8);animation:fadeUp .15s ease both}
@@ -101,19 +94,18 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .so-email{font-size:11px;color:var(--tx3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .so-badge{font-size:10px;color:var(--gn);margin-top:5px;display:flex;align-items:center;gap:5px;font-weight:500}
 .so-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--gn);box-shadow:0 0 6px var(--gn);flex-shrink:0}
-.so-out{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;color:rgba(255,107,107,.8);padding:9px 11px;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s}
+.so-out{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;color:rgba(255,107,107,.8);padding:9px 11px;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer;font-family:'Geist',sans-serif;transition:background .15s}
 .so-out:hover{background:rgba(255,107,107,.07)}
 
 /* ═══ CHAT ═══ */
-#screen-chat-img,#screen-chat-vid{flex-direction:column;overflow:hidden}
-#screen-chat-img .sess-bar-side,#screen-chat-vid .sess-bar-side{position:fixed}
+#screen-chat{flex-direction:column;overflow:hidden}
 .ch-nav{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top));background:rgba(4,3,10,.96);backdrop-filter:blur(24px);border-bottom:1px solid var(--bd);z-index:10}
 .ch-back{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border:1px solid var(--bd);color:var(--tx2);font-size:12px;cursor:pointer;transition:all .2s;flex-shrink:0}
 .ch-back:hover{background:rgba(255,255,255,.08);color:var(--tx)}
 .ch-nav-mid{flex:1;display:flex;align-items:center;gap:9px;min-width:0}
 .ch-nav-ico{width:30px;height:30px;border-radius:9px;flex-shrink:0;background:rgba(108,92,231,.1);border:1px solid rgba(108,92,231,.16);display:flex;align-items:center;justify-content:center;font-size:13px}
-.ch-nav-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nav-btn{display:flex;align-items:center;gap:5px;border-radius:var(--r8);padding:6px 11px;font-size:11.5px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;white-space:nowrap;border:1px solid;flex-shrink:0}
+.ch-nav-title{font-family:'Instrument Serif',serif;font-size:15px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-btn{display:flex;align-items:center;gap:5px;border-radius:var(--r8);padding:6px 11px;font-size:11.5px;font-weight:500;cursor:pointer;font-family:'Geist',sans-serif;transition:all .2s;white-space:nowrap;border:1px solid;flex-shrink:0}
 .nb-model{background:rgba(108,92,231,.08);border-color:rgba(108,92,231,.2);color:var(--acc2)}
 .nb-model:hover{background:rgba(108,92,231,.15);border-color:rgba(108,92,231,.35)}
 .nb-hist{background:rgba(255,255,255,.03);border-color:var(--bd);color:var(--tx3)}
@@ -123,7 +115,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .ch-msgs{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:14px 14px 8px;display:flex;flex-direction:column;gap:10px}
 .ch-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:40px 20px}
 .empty-ico{width:60px;height:60px;border-radius:18px;font-size:26px;background:rgba(108,92,231,.07);border:1px solid rgba(108,92,231,.1);display:flex;align-items:center;justify-content:center;animation:float 5s ease-in-out infinite}
-.empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-style:italic;color:rgba(255,255,255,.38)}
+.empty-title{font-family:'Instrument Serif',serif;font-size:18px;font-style:italic;color:rgba(255,255,255,.38)}
 .empty-sub{font-size:12.5px;color:var(--tx3);line-height:1.7;max-width:220px}
 .msg-user{align-self:flex-end;max-width:80%;background:rgba(108,92,231,.1);border:1px solid rgba(108,92,231,.18);border-radius:16px 16px 3px 16px;padding:10px 14px;font-size:13.5px;color:rgba(255,255,255,.88);line-height:1.6;white-space:pre-wrap;word-break:break-word;animation:fadeUp .2s ease both}
 .msg-err{align-self:flex-start;background:rgba(255,107,107,.06);border:1px solid rgba(255,107,107,.14);border-radius:10px;padding:10px 13px;font-size:12.5px;color:#ffb3b3;display:flex;align-items:flex-start;gap:7px;line-height:1.55;animation:fadeUp .2s ease both}
@@ -137,7 +129,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .img-group{align-self:stretch;display:flex;flex-direction:column;gap:6px}
 .grp-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(255,255,255,.025);border:1px solid var(--bd);border-radius:var(--r8);padding:8px 12px;font-size:12px;color:var(--tx2);flex-wrap:wrap}
 .grp-hd-l{display:flex;align-items:center;gap:7px;flex-shrink:0}
-.dl-all{display:flex;align-items:center;gap:6px;background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.2);border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:600;color:rgba(100,255,200,.9);cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;white-space:nowrap}
+.dl-all{display:flex;align-items:center;gap:6px;background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.2);border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:600;color:rgba(100,255,200,.9);cursor:pointer;font-family:'Geist',sans-serif;transition:all .2s;white-space:nowrap}
 .dl-all:hover{background:rgba(0,214,143,.16);transform:translateY(-1px)}
 .dl-all:active{transform:scale(.95)}
 .dl-all:disabled{opacity:.4;cursor:wait;transform:none}
@@ -152,10 +144,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .img-preview.loading img{opacity:0}
 .img-preview.loading::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 30%,rgba(255,255,255,.04) 50%,transparent 70%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
 .img-acts{padding:7px}
-.img-btn-share{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.2);border-radius:8px;padding:8px 6px;font-size:11.5px;font-weight:600;color:rgba(100,255,200,.9);cursor:pointer;font-family:'Inter',sans-serif;transition:all .18s;margin-bottom:5px}
+.img-btn-share{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.2);border-radius:8px;padding:8px 6px;font-size:11.5px;font-weight:600;color:rgba(100,255,200,.9);cursor:pointer;font-family:'Geist',sans-serif;transition:all .18s;margin-bottom:5px}
 .img-btn-share:active{transform:scale(.95)}
 .img-btns-r{display:flex;gap:4px}
-.img-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:3px;background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:7px;padding:6px 3px;font-size:10px;font-weight:500;color:var(--tx3);cursor:pointer;font-family:'Inter',sans-serif;transition:all .18s}
+.img-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:3px;background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:7px;padding:6px 3px;font-size:10px;font-weight:500;color:var(--tx3);cursor:pointer;font-family:'Geist',sans-serif;transition:all .18s}
 .img-btn:hover{background:rgba(255,255,255,.07);color:var(--tx2)}
 .img-btn:active{transform:scale(.93)}
 
@@ -165,65 +157,32 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
    RED    (#ff6b6b) = error / failed
    GREY   (#4a4a6a) = queued (waiting to start)
 */
-/* ─── SESSION SIDE BARS (one per mode) ─── */
-.sess-bar-side{position:fixed;left:6px;bottom:76px;top:108px;width:28px;display:none;flex-direction:column;align-items:center;justify-content:flex-start;gap:8px;padding:6px 0;z-index:20}
-.sess-bar-side.vis{display:flex}
+#sess-bar{position:absolute;left:8px;bottom:76px;top:58px;width:26px;display:none;flex-direction:column-reverse;align-items:center;justify-content:flex-start;gap:9px;padding:6px 0;z-index:10}
+#sess-bar.vis{display:flex}
+.s-chip{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0;border:2px solid rgba(255,255,255,.15);transition:transform .18s,border-color .18s;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both;position:relative;font-family:'Geist',sans-serif}
+.s-chip:hover{transform:scale(1.3)!important}
+.s-chip.cur{border-color:rgba(255,255,255,.6)!important}
 
-/* IMAGE dots: rounded squares, purple palette */
-.s-chip{width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0;border:2px solid rgba(255,255,255,.15);transition:transform .18s,border-color .18s;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both;position:relative;font-family:'Inter',sans-serif}
-.sess-bar-img .s-chip{border-radius:6px}
-/* VIDEO dots: pill/capsule shape, red palette */
-.sess-bar-vid .s-chip{border-radius:50px;width:22px;height:14px;font-size:8px}
-.s-chip:hover{transform:scale(1.25)!important}
-.s-chip.cur{border-color:rgba(255,255,255,.7)!important;box-shadow:0 0 0 2px rgba(255,255,255,.15)}
+/* DONE = solid green, gentle pulse */
+.s-chip.s-done{background:#00d68f;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseGn 2.5s ease 1}
 
-/* IMAGE mode chip colors */
-.sess-bar-img .s-chip.s-done{background:#6c5ce7;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseAcc 2.5s ease 1}
-.sess-bar-img .s-chip.s-gen{background:#a29bfe;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseAcc 1.4s ease infinite}
-.sess-bar-img .s-chip.s-err{background:#ff6b6b;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseRd 2s ease 2}
-.sess-bar-img .s-chip.s-q{background:#2d2a4a}
+/* PROCESSING = solid yellow/amber, repeating pulse */
+.s-chip.s-gen{background:#ffd166;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseYw 1.4s ease infinite}
 
-/* VIDEO mode chip colors */
-.sess-bar-vid .s-chip.s-done{background:#e74c3c;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseRd 2.5s ease 1}
-.sess-bar-vid .s-chip.s-gen{background:#ff8a80;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseRd 1.4s ease infinite}
-.sess-bar-vid .s-chip.s-err{background:#c0392b;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseRd 2s ease 2}
-.sess-bar-vid .s-chip.s-q{background:#3a1a18}
+/* ERROR = solid red, brief pulse */
+.s-chip.s-err{background:#ff6b6b;animation:chipIn .25s cubic-bezier(.16,1,.3,1) both,pulseRd 2s ease 2}
+
+/* QUEUED = muted grey, no pulse */
+.s-chip.s-q{background:#4a4a6a}
 
 /* tooltip */
-.s-chip::after{content:attr(data-tip);position:absolute;left:32px;top:50%;transform:translateY(-50%);background:#0a0818;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.9);font-size:11px;font-weight:500;padding:4px 10px;border-radius:7px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999}
+.s-chip::after{content:attr(data-tip);position:absolute;left:30px;top:50%;transform:translateY(-50%);background:#0a0818;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.9);font-size:11px;font-weight:500;padding:4px 10px;border-radius:7px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999}
 .s-chip:hover::after{opacity:1}
-
-/* ─── PER-SCREEN NAV ACCENT COLORS ─── */
-.ch-nav-img{border-bottom-color:rgba(108,92,231,.2)}
-.ch-ico-img{background:rgba(108,92,231,.12);border-color:rgba(108,92,231,.2)}
-.ch-nav-vid{border-bottom-color:rgba(231,76,60,.2);background:rgba(4,3,10,.97)}
-.ch-ico-vid{background:rgba(231,76,60,.12);border-color:rgba(231,76,60,.2)}
-.nb-model-vid{background:rgba(231,76,60,.08);border-color:rgba(231,76,60,.2);color:#ff8a80}
-.nb-model-vid:hover{background:rgba(231,76,60,.15);border-color:rgba(231,76,60,.4)}
-.nb-hist-vid{background:rgba(231,76,60,.04);border-color:rgba(231,76,60,.12);color:rgba(255,138,128,.5)}
-.nb-hist-vid:hover{background:rgba(231,76,60,.08);color:#ff8a80}
-.ch-ta-vid:focus{border-color:rgba(231,76,60,.35)}
-.send-btn-vid{background:linear-gradient(135deg,#c0392b,#e74c3c);box-shadow:0 4px 16px rgba(231,76,60,.4);animation:none}
-.send-btn-vid:disabled{opacity:.4;cursor:wait;transform:none}
-
-/* Black background for video screen */
-.screen-vid{background:#000}
-.screen-vid .ch-msgs{background:#000}
-.screen-vid .ch-bar-vid{background:rgba(0,0,0,.98);border-top-color:rgba(231,76,60,.15)}
-.screen-vid .ch-nav-vid{background:rgba(0,0,0,.97)}
-.screen-vid .dur-bar{background:rgba(0,0,0,.9);border-bottom:1px solid rgba(231,76,60,.1)}
-
-/* Image screen keeps dark purple bg (default) */
-.ch-bar-img{border-top-color:rgba(108,92,231,.12)}
-
-/* History drawer accent */
-.hist-drawer-img{border-left-color:rgba(108,92,231,.2)}
-.hist-drawer-vid{border-left-color:rgba(231,76,60,.2)}
 
 /* ═══ VIDEO MODE TOGGLE ═══ */
 .mode-bar{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:7px 12px 0;gap:0}
 .mode-toggle{display:flex;align-items:center;background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:50px;padding:3px;gap:2px;position:relative}
-.mode-opt{display:flex;align-items:center;gap:5px;padding:6px 13px;border-radius:50px;font-size:11.5px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;transition:all .22s;color:var(--tx3);border:none;background:none;white-space:nowrap;letter-spacing:.02em}
+.mode-opt{display:flex;align-items:center;gap:5px;padding:6px 13px;border-radius:50px;font-size:11.5px;font-weight:600;font-family:'Geist',sans-serif;cursor:pointer;transition:all .22s;color:var(--tx3);border:none;background:none;white-space:nowrap;letter-spacing:.02em}
 .mode-opt.active{color:#fff;background:linear-gradient(135deg,#4a3dc7,#6c5ce7);box-shadow:0 2px 12px rgba(108,92,231,.45)}
 .mode-opt.active.video-active{background:linear-gradient(135deg,#c0392b,#e74c3c);box-shadow:0 2px 12px rgba(231,76,60,.45)}
 .mode-opt i{font-size:10px}
@@ -235,19 +194,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .vid-play-ico{position:absolute;width:42px;height:42px;border-radius:50%;background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;pointer-events:none;transition:opacity .2s}
 .vid-preview:hover .vid-play-ico{opacity:0}
 
-/* duration bar */
-.dur-bar{flex-shrink:0;display:none;align-items:center;justify-content:center;padding:5px 12px 2px;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.dur-bar.vis{display:flex}
-.dur-bar::-webkit-scrollbar{display:none}
-.dur-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);white-space:nowrap;flex-shrink:0}
-.dur-opts{display:flex;gap:5px;flex-shrink:0}
-.dur-opt{padding:5px 12px;border-radius:50px;font-size:11.5px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;transition:all .18s;color:var(--tx3);border:1px solid var(--bd);background:rgba(255,255,255,.02);white-space:nowrap;flex-shrink:0}
-.dur-opt:active{transform:scale(.93)}
-.dur-opt.active{color:#fff;background:linear-gradient(135deg,#c0392b,#e74c3c);border-color:transparent;box-shadow:0 2px 10px rgba(231,76,60,.4)}
-
 /* input bar */
 .ch-bar{flex-shrink:0;display:flex;align-items:flex-end;gap:8px;padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom));background:rgba(4,3,10,.98);backdrop-filter:blur(24px);border-top:1px solid var(--bd)}
-.ch-ta{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:14px;padding:10px 14px;color:var(--tx);font-size:13.5px;font-family:'Inter',sans-serif;outline:none;resize:none;transition:border-color .2s;max-height:130px;overflow-y:auto;line-height:1.5}
+.ch-ta{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--bd);border-radius:14px;padding:10px 14px;color:var(--tx);font-size:13.5px;font-family:'Geist',sans-serif;outline:none;resize:none;transition:border-color .2s;max-height:130px;overflow-y:auto;line-height:1.5}
 .ch-ta:focus{border-color:rgba(108,92,231,.38)}
 .ch-ta::placeholder{color:var(--tx3)}
 .send-btn{width:40px;height:40px;flex-shrink:0;border-radius:50%;background:linear-gradient(135deg,#4a3dc7,#6c5ce7);border:none;color:#fff;font-size:14px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(108,92,231,.4);animation:pulseAcc 3s ease infinite}
@@ -261,7 +210,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .hist-bg{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);animation:fadeIn .2s ease both}
 .hist-drawer{position:fixed;right:0;top:0;bottom:0;width:min(90%,360px);background:#07060f;border-left:1px solid var(--bd);display:flex;flex-direction:column;animation:slideR .28s cubic-bezier(.16,1,.3,1) both;box-shadow:-16px 0 56px rgba(0,0,0,.7)}
 .hist-hd{display:flex;align-items:flex-start;justify-content:space-between;padding:18px 16px;border-bottom:1px solid var(--bd);flex-shrink:0}
-.hist-hd-t{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-style:italic;margin-bottom:4px}
+.hist-hd-t{font-family:'Instrument Serif',serif;font-size:20px;font-style:italic;margin-bottom:4px}
 .hist-sync{font-size:11px;display:flex;align-items:center;gap:5px}
 .sd{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .sd.ok{background:var(--gn);box-shadow:0 0 6px var(--gn)}
@@ -296,7 +245,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .model-sheet{position:fixed;bottom:0;left:0;right:0;background:#07060f;border-top:1px solid var(--bd);border-radius:22px 22px 0 0;max-height:80vh;display:flex;flex-direction:column;animation:slideU .28s cubic-bezier(.16,1,.3,1) both;box-shadow:0 -16px 56px rgba(0,0,0,.7)}
 .model-handle{width:36px;height:3px;border-radius:3px;background:rgba(255,255,255,.1);margin:12px auto 0;flex-shrink:0}
 .model-hd{display:flex;align-items:center;justify-content:space-between;padding:13px 17px 10px;flex-shrink:0;border-bottom:1px solid var(--bd)}
-.model-hd-t{font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-style:italic}
+.model-hd-t{font-family:'Instrument Serif',serif;font-size:17px;font-style:italic}
 .model-hd-x{width:28px;height:28px;border-radius:7px;border:1px solid var(--bd);background:rgba(255,255,255,.03);color:var(--tx3);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .model-active-row{display:flex;align-items:center;gap:9px;padding:10px 17px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--bd);flex-shrink:0}
 .model-active-dot{width:7px;height:7px;border-radius:50%;background:var(--gn);box-shadow:0 0 7px var(--gn);flex-shrink:0}
@@ -317,7 +266,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 .model-item-id{font-size:10px;color:var(--tx3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rec-badge{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;background:rgba(108,92,231,.1);color:var(--acc2);border:1px solid rgba(108,92,231,.16);border-radius:20px;padding:2px 6px;flex-shrink:0}
 .model-apply-row{padding:10px 13px calc(10px + env(safe-area-inset-bottom));flex-shrink:0;border-top:1px solid var(--bd)}
-.model-apply{width:100%;background:linear-gradient(135deg,#4a3dc7,#6c5ce7);border:none;border-radius:11px;padding:13px;color:#fff;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;transition:all .2s;box-shadow:0 4px 18px rgba(108,92,231,.28)}
+.model-apply{width:100%;background:linear-gradient(135deg,#4a3dc7,#6c5ce7);border:none;border-radius:11px;padding:13px;color:#fff;font-size:14px;font-weight:600;font-family:'Geist',sans-serif;cursor:pointer;transition:all .2s;box-shadow:0 4px 18px rgba(108,92,231,.28)}
 .model-apply:hover{transform:translateY(-1px)}
 .model-apply:active{transform:scale(.97)}
 .model-apply:disabled{opacity:.4;cursor:wait;transform:none}
@@ -333,7 +282,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
 <div id="screen-login" class="screen active">
   <div class="login-wrap">
     <div class="login-logo">VDO</div>
-    <div class="login-tag">AI Content Studio</div>
+    <div class="login-tag">AI Image Studio</div>
     <div class="login-card">
       <button class="g-btn" id="btn-google" onclick="doGoogleLogin()">
         <svg viewBox="0 0 18 18" style="width:17px;height:17px;flex-shrink:0"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.909-2.259c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/><path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
@@ -358,27 +307,20 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
   <div class="tmpl-body">
     <div id="greet" class="tmpl-greet">Hello 👋</div>
     <div class="tmpl-sub">Create · save permanently · access anywhere</div>
-    <div class="sec-lbl" style="margin-top:20px">Choose Generator</div>
-    <div class="tmpl-grid">
-      <div class="tcard tcard-img" onclick="openImageTemplate()" style="animation-delay:0ms">
-        <div class="tcard-top">
-          🎨
-          <div class="tcard-glow"></div>
+    <div class="sec-lbl">Generator</div>
+    <div class="tcard" onclick="openTemplate()">
+      <div class="tcard-stripe"></div>
+      <div class="tcard-body">
+        <div class="tcard-ico">🎨</div>
+        <div class="tcard-info">
+          <div class="tcard-badge">Image · 9 Languages · Permanent</div>
+          <div class="tcard-name">Zodiac Image Generator</div>
+          <div class="tcard-desc">Paste zodiac content in any language. AI formats it, renders 9:16 images, stores them permanently in GitHub Releases — accessible on any device after login.</div>
         </div>
-        <div class="tcard-bottom">
-          <div class="tcard-type">Image</div>
-          <div class="tcard-name">Image Generator</div>
-        </div>
-        <div class="tcard-arr"><i class="fas fa-arrow-right"></i></div>
       </div>
-      <div class="tcard tcard-vid" onclick="openVideoTemplate()" style="animation-delay:80ms">
-        <div class="tcard-top">
-          🎬
-          <div class="tcard-glow"></div>
-        </div>
-        <div class="tcard-bottom">
-          <div class="tcard-type">Video</div>
-          <div class="tcard-name">Video Generator</div>
+      <div class="tcard-foot">
+        <div class="tcard-tags">
+          <span class="tcard-tag">Cross-device</span><span class="tcard-tag">Unlimited</span><span class="tcard-tag">9:16</span><span class="tcard-tag">CJK ✓</span>
         </div>
         <div class="tcard-arr"><i class="fas fa-arrow-right"></i></div>
       </div>
@@ -396,105 +338,61 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;b
   <button class="so-out" onclick="signOut()"><i class="fas fa-right-from-bracket"></i> Sign out</button>
 </div>
 
-<!-- IMAGE CHAT SCREEN -->
-<div id="screen-chat-img" class="screen">
-  <div class="ch-nav ch-nav-img">
+<!-- CHAT -->
+<div id="screen-chat" class="screen">
+  <div class="ch-nav">
     <button class="ch-back" onclick="show('templates')"><i class="fas fa-arrow-left"></i></button>
     <div class="ch-nav-mid">
-      <div class="ch-nav-ico ch-ico-img">🖼</div>
-      <div class="ch-nav-title">IMAGE GEN</div>
+      <div class="ch-nav-ico" id="ch-nav-ico">🎨</div>
+      <div class="ch-nav-title" id="ch-nav-title">Image Generator</div>
     </div>
     <button class="nav-btn nb-model" onclick="openModelSheet()">
       <i class="fas fa-microchip" style="font-size:10px"></i>
       <span id="nav-model-label">Model</span>
     </button>
-    <button class="nav-btn nb-hist nb-hist-img" onclick="openHistory()">
+    <button class="nav-btn nb-hist" onclick="openHistory()">
       <i class="fas fa-clock-rotate-left" style="font-size:10px"></i>
     </button>
   </div>
-  <div id="sess-bar-img" class="sess-bar-side sess-bar-img"></div>
-  <div id="ch-msgs-img" class="ch-msgs">
-    <div class="ch-empty" id="ch-empty-img">
-      <div class="empty-ico" style="background:rgba(108,92,231,.07);border-color:rgba(108,92,231,.1)">🖼</div>
-      <div class="empty-title">Image Generator</div>
-      <div class="empty-sub">Paste zodiac content — AI renders permanent 9:16 images</div>
+
+  <!-- OUTPUT MODE TOGGLE -->
+  <div class="mode-bar">
+    <div class="mode-toggle">
+      <button class="mode-opt" id="mode-img" onclick="setOutputMode('image')">
+        <i class="fas fa-image"></i> Image
+      </button>
+      <button class="mode-opt video-active active" id="mode-vid" onclick="setOutputMode('video')">
+        <i class="fas fa-film"></i> Video <span class="mode-badge">10s</span>
+      </button>
     </div>
   </div>
-  <div class="ch-bar ch-bar-img">
-    <textarea id="ch-ta-img" class="ch-ta" placeholder="Paste zodiac content for images…" rows="1"></textarea>
-    <button id="ch-send-img" class="send-btn send-btn-img" onclick="sendMsg()"><i class="fas fa-arrow-up"></i></button>
+
+  <div id="sess-bar"></div>
+  <div id="ch-msgs" class="ch-msgs">
+    <div class="ch-empty" id="ch-empty">
+      <div class="empty-ico">✨</div>
+      <div class="empty-title">Ready to create</div>
+      <div class="empty-sub">Paste zodiac content in any language — EN NL FR DE ES IT PL 中文 SV</div>
+    </div>
+  </div>
+  <div class="ch-bar">
+    <textarea id="ch-ta" class="ch-ta" placeholder="Paste zodiac content…" rows="1"></textarea>
+    <button id="ch-send" class="send-btn" onclick="sendMsg()"><i class="fas fa-arrow-up"></i></button>
   </div>
 </div>
 
-<!-- VIDEO CHAT SCREEN -->
-<div id="screen-chat-vid" class="screen screen-vid">
-  <div class="ch-nav ch-nav-vid">
-    <button class="ch-back" onclick="show('templates')"><i class="fas fa-arrow-left"></i></button>
-    <div class="ch-nav-mid">
-      <div class="ch-nav-ico ch-ico-vid">🎬</div>
-      <div class="ch-nav-title">VIDEO GEN</div>
-    </div>
-    <button class="nav-btn nb-model nb-model-vid" onclick="openModelSheet()">
-      <i class="fas fa-microchip" style="font-size:10px"></i>
-      <span id="nav-model-label-vid">Model</span>
-    </button>
-    <button class="nav-btn nb-hist nb-hist-vid" onclick="openHistory()">
-      <i class="fas fa-clock-rotate-left" style="font-size:10px"></i>
-    </button>
-  </div>
-  <!-- DURATION BAR -->
-  <div class="dur-bar vis" id="dur-bar">
-    <span class="dur-lbl">Duration</span>
-    <div class="dur-opts">
-      <button class="dur-opt" onclick="setDuration(5)">5s</button>
-      <button class="dur-opt" onclick="setDuration(7)">7s</button>
-      <button class="dur-opt active" onclick="setDuration(10)">10s</button>
-      <button class="dur-opt" onclick="setDuration(12)">12s</button>
-      <button class="dur-opt" onclick="setDuration(15)">15s</button>
-      <button class="dur-opt" onclick="setDuration(20)">20s</button>
-    </div>
-  </div>
-  <div id="sess-bar-vid" class="sess-bar-side sess-bar-vid"></div>
-  <div id="ch-msgs-vid" class="ch-msgs">
-    <div class="ch-empty" id="ch-empty-vid">
-      <div class="empty-ico" style="background:rgba(231,76,60,.07);border-color:rgba(231,76,60,.12)">🎬</div>
-      <div class="empty-title">Video Generator</div>
-      <div class="empty-sub">Paste zodiac content — AI renders 9:16 MP4 videos</div>
-    </div>
-  </div>
-  <div class="ch-bar ch-bar-vid">
-    <textarea id="ch-ta-vid" class="ch-ta ch-ta-vid" placeholder="Paste zodiac content for video…" rows="1"></textarea>
-    <button id="ch-send-vid" class="send-btn send-btn-vid" onclick="sendMsg()"><i class="fas fa-arrow-up"></i></button>
-  </div>
-</div>
-
-<!-- IMAGE HISTORY PANEL -->
-<div class="hist-panel" id="hist-panel-img">
+<!-- HISTORY -->
+<div class="hist-panel" id="hist-panel">
   <div class="hist-bg" onclick="closeHistory()"></div>
-  <div class="hist-drawer hist-drawer-img">
+  <div class="hist-drawer">
     <div class="hist-hd">
       <div>
-        <div class="hist-hd-t" style="color:var(--acc2)">🖼 Image History</div>
+        <div class="hist-hd-t">History</div>
         <div class="hist-sync"><div class="sd ok" id="sync-dot"></div><span id="sync-txt">Synced</span></div>
       </div>
       <button class="hist-close" onclick="closeHistory()"><i class="fas fa-xmark"></i></button>
     </div>
-    <div class="hist-list" id="hist-list-img"></div>
-  </div>
-</div>
-
-<!-- VIDEO HISTORY PANEL -->
-<div class="hist-panel" id="hist-panel-vid">
-  <div class="hist-bg" onclick="closeHistory()"></div>
-  <div class="hist-drawer hist-drawer-vid">
-    <div class="hist-hd">
-      <div>
-        <div class="hist-hd-t" style="color:#ff8a80">🎬 Video History</div>
-        <div class="hist-sync"><div class="sd ok" id="sync-dot-vid"></div><span id="sync-txt-vid">Synced</span></div>
-      </div>
-      <button class="hist-close" onclick="closeHistory()"><i class="fas fa-xmark"></i></button>
-    </div>
-    <div class="hist-list" id="hist-list-vid"></div>
+    <div class="hist-list" id="hist-list"></div>
   </div>
 </div>
 
@@ -542,17 +440,14 @@ const LS_IMG  = 'vdo_img_v2_';
 // ═══════════════════════════════════════════════════════════════
 let _user = null, _gcid = null;
 let _models = [], _activeModel = '', _selectedModel = '';
-// Completely separate session arrays per mode
-let _imgSessions = [];   // sessions from Image Generator screen
-let _vidSessions = [];   // sessions from Video Generator screen
-// _sessions always points to the active one (for backward-compat with all helpers)
-let _sessions = _imgSessions;
+let _imgSessions = [];   // image-mode sessions only
+let _vidSessions = [];   // video-mode sessions only
+let _sessions    = _imgSessions; // always points to current mode
+let _activeMode  = 'image';      // 'image' | 'video'
 let _activeJobId = null;
-let _activeMode = 'image'; // 'image' | 'video' — which screen we're on
 let _imgCache = {};   // `${jobId}:${idx}` → Blob
 let _pollGuard = {};  // jobId → bool
-let _outputMode = 'image'; // kept for compat, always == _activeMode
-let _videoDuration = 10;
+let _outputMode = 'video'; // 'image' | 'video' — default ON (video)
 
 // ═══════════════════════════════════════════════════════════════
 // LOCAL STORAGE
@@ -666,17 +561,12 @@ function setSyncUI(s) {
 // ═══════════════════════════════════════════════════════════════
 // SESSION HELPERS
 // ═══════════════════════════════════════════════════════════════
-const getSess = jid => _sessions.find(s=>s.jobId===jid) || _imgSessions.find(s=>s.jobId===jid) || _vidSessions.find(s=>s.jobId===jid);
+const getSess = jid => _sessions.find(s=>s.jobId===jid)||_imgSessions.find(s=>s.jobId===jid)||_vidSessions.find(s=>s.jobId===jid);
 function upsertSess(p) {
-  // Always update both the mode-specific array and _sessions (they are the same ref when in correct mode)
   const arr=p.outputMode==='video'?_vidSessions:(p.outputMode==='image'?_imgSessions:_sessions);
   const i=arr.findIndex(s=>s.jobId===p.jobId);
   if(i>=0) Object.assign(arr[i],p); else arr.unshift(p);
-  // Keep _sessions in sync if it's pointing to the same array
-  if(_sessions!==arr){
-    const j=_sessions.findIndex(s=>s.jobId===p.jobId);
-    if(j>=0) Object.assign(_sessions[j],p);
-  }
+  if(_sessions!==arr){const j=_sessions.findIndex(s=>s.jobId===p.jobId);if(j>=0)Object.assign(_sessions[j],p);}
   if(_user) lsSaveSess(_user.id,[..._imgSessions,..._vidSessions]);
 }
 function delSess(jid) {
@@ -724,50 +614,6 @@ async function fetchReleaseImgs(imageUrls) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// INDEXEDDB AUTH PERSISTENCE  (Android Chrome — most reliable)
-// ═══════════════════════════════════════════════════════════════
-const IDB_DB = 'vdo_auth', IDB_STORE = 'kv', IDB_KEY = 'user';
-function idbOpen() {
-  return new Promise((res, rej) => {
-    const req = indexedDB.open(IDB_DB, 1);
-    req.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE);
-    req.onsuccess = e => res(e.target.result);
-    req.onerror = () => rej(req.error);
-  });
-}
-async function idbGetUser() {
-  try {
-    const db = await idbOpen();
-    return new Promise((res, rej) => {
-      const tx = db.transaction(IDB_STORE, 'readonly');
-      const req = tx.objectStore(IDB_STORE).get(IDB_KEY);
-      req.onsuccess = () => res(req.result || null);
-      req.onerror = () => rej(req.error);
-    });
-  } catch { return null; }
-}
-async function idbSetUser(u) {
-  try {
-    const db = await idbOpen();
-    return new Promise((res, rej) => {
-      const tx = db.transaction(IDB_STORE, 'readwrite');
-      tx.objectStore(IDB_STORE).put(u, IDB_KEY);
-      tx.oncomplete = res; tx.onerror = () => rej(tx.error);
-    });
-  } catch {}
-}
-async function idbDelUser() {
-  try {
-    const db = await idbOpen();
-    return new Promise(res => {
-      const tx = db.transaction(IDB_STORE, 'readwrite');
-      tx.objectStore(IDB_STORE).delete(IDB_KEY);
-      tx.oncomplete = res; tx.onerror = res;
-    });
-  } catch {}
-}
-
-// ═══════════════════════════════════════════════════════════════
 // AUTH
 // ═══════════════════════════════════════════════════════════════
 async function doGoogleLogin() {
@@ -801,7 +647,6 @@ async function doGoogleLogin() {
 function setUser(u){
   _user=u; writePersistedUser(u);
   try{sessionStorage.setItem('vdo_sess_user',JSON.stringify(u));}catch{}
-  idbSetUser(u).catch(()=>{});
   enterApp();
 }
 
@@ -819,14 +664,14 @@ async function enterApp() {
   const h=new Date().getHours();
   $('greet').textContent=`${h<12?'Good morning':h<17?'Good afternoon':'Good evening'}, ${n} 👋`;
 
-  // 1. Instant local render — split sessions by mode
+  // 1. Instant local render — split by mode
   const allLocal=lsGetSess(_user.id).map(s=>({...s,pollInterval:null}));
   _imgSessions=allLocal.filter(s=>!s.outputMode||s.outputMode==='image');
   _vidSessions=allLocal.filter(s=>s.outputMode==='video');
   _sessions=_activeMode==='video'?_vidSessions:_imgSessions;
   renderSessBar(); show('templates');
 
-  // 2. Background remote sync — split by mode
+  // 2. Background remote sync — updates session list and image URLs
   remoteLoad(_user.id).then(remote=>{
     const imgLive=_imgSessions.filter(s=>s.status==='generating'||s.status==='queued');
     const vidLive=_vidSessions.filter(s=>s.status==='generating'||s.status==='queued');
@@ -853,10 +698,7 @@ function signOut(){
   _sessions.forEach(s=>{if(s.pollInterval){clearInterval(s.pollInterval);s.pollInterval=null;}});
   _sessions=[]; _imgSessions=[]; _vidSessions=[]; _imgCache={};
   try{window.google?.accounts?.oauth2?.revoke?.();}catch{}
-  clearPersistedUser();
-  try{sessionStorage.removeItem('vdo_sess_user');}catch{}
-  idbDelUser().catch(()=>{});
-  _user=null; _activeJobId=null;
+  clearPersistedUser(); try{sessionStorage.removeItem('vdo_sess_user');}catch{} _user=null; _activeJobId=null;
   $('so-menu').classList.remove('open');
   renderSessBar(); show('login');
 }
@@ -917,8 +759,8 @@ async function applyModel(){
 }
 const labelFor=id=>_models.find(m=>m.id===id)?.label||(id?.split('/').pop()||'Unknown');
 function updateNavLabel(){
-  const label=_activeModel?_activeModel.split('/').pop().replace(/-instruct$/,'').replace(/-fast$/,'⚡'):'Model';
-  [$('nav-model-label'),$('nav-model-label-vid')].forEach(el=>{if(el)el.textContent=label;});
+  const el=$('nav-model-label'); if(!el)return;
+  el.textContent=_activeModel?_activeModel.split('/').pop().replace(/-instruct$/,'').replace(/-fast$/,'⚡'):'Model';
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -927,67 +769,57 @@ function updateNavLabel(){
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   $('screen-'+id).classList.add('active');
-  if(id==='chat-img'||id==='chat-vid') scrollDown();
+  if(id==='chat') scrollDown();
 }
+function openTemplate(){ _activeJobId=null; clearChat(); show('chat'); }
 
-function openImageTemplate(){
-  _activeMode='image'; _outputMode='image';
-  _sessions=_imgSessions;
-  _activeJobId=null; clearChat();
-  show('chat-img');
+// ═══════════════════════════════════════════════════════════════
+// OUTPUT MODE TOGGLE  (image ↔ video)
+// ═══════════════════════════════════════════════════════════════
+function setOutputMode(mode) {
+  _outputMode = mode;
+  _activeMode  = mode;
+  _sessions    = mode==='video' ? _vidSessions : _imgSessions;
+  const imgBtn = $('mode-img'), vidBtn = $('mode-vid');
+  const ico = $('ch-nav-ico'), title = $('ch-nav-title');
+  if (mode === 'video') {
+    vidBtn.classList.add('active','video-active');
+    imgBtn.classList.remove('active','video-active');
+    if (ico) ico.textContent = '🎬';
+    if (title) title.textContent = 'Video Generator';
+    lsSet('vdo_output_mode', 'video');
+  } else {
+    imgBtn.classList.add('active');
+    imgBtn.classList.remove('video-active');
+    vidBtn.classList.remove('active','video-active');
+    if (ico) ico.textContent = '🎨';
+    if (title) title.textContent = 'Image Generator';
+    lsSet('vdo_output_mode', 'image');
+  }
   renderSessBar();
 }
-function openVideoTemplate(){
-  _activeMode='video'; _outputMode='video';
-  _sessions=_vidSessions;
-  _activeJobId=null; clearChat();
-  show('chat-vid');
-  renderSessBar();
-}
-function openTemplate(){ openImageTemplate(); }
-
-// DURATION PICKER
-
-function setDuration(sec) {
-  _videoDuration = sec;
-  document.querySelectorAll('.dur-opt').forEach(b => {
-    b.classList.toggle('active', parseInt(b.textContent) === sec);
-  });
-  lsSet('vdo_vid_duration', sec);
-}
-
-// setOutputMode kept for compat — mode is determined by which screen is open
-function setOutputMode(mode){ _outputMode=mode; _activeMode=mode; }
 
 // ═══════════════════════════════════════════════════════════════
 // SESSION DOTS BAR
 // Colors: done=green, generating=yellow, error=red, queued=grey
 // ═══════════════════════════════════════════════════════════════
 function renderSessBar(){
-  // Render BOTH bars independently so dots persist when switching screens
-  _renderBar('img', _imgSessions);
-  _renderBar('vid', _vidSessions);
-}
-function _renderBar(mode, sessions){
-  const bar=$('sess-bar-'+mode); if(!bar)return;
-  const active=sessions.filter(s=>s.status!=='done'&&s.status!=='error');
-  const recent=sessions.filter(s=>s.status==='done'||s.status==='error');
-  // Show most relevant: in-progress first, then recent (up to 7 total)
-  const visible=[...active,...recent].slice(0,7);
-  if(!visible.length){bar.classList.remove('vis');return;}
+  const bar=$('sess-bar'); if(!bar)return;
+  if(!_sessions.length){bar.classList.remove('vis');return;}
   bar.classList.add('vis');
-  bar.innerHTML=visible.map((s,i)=>{
+  bar.innerHTML=_sessions.slice(0,7).map((s,i)=>{
+    // Correct color classes
     const sc = s.status==='done'       ? 's-done'
              : s.status==='generating' ? 's-gen'
              : s.status==='error'      ? 's-err'
              : 's-q';
     const cur = s.jobId===_activeJobId ? 'cur':'';
-    const stLbl = s.status==='done'       ? '✓'
-                : s.status==='generating' ? '…'
-                : s.status==='error'      ? '✗'
-                : '·';
-    const tip = `${(s.prompt||'').slice(0,22)} · ${s.status==='done'?'Done':s.status==='generating'?'Rendering':s.status==='error'?'Failed':'Queued'}`;
-    return `<div class="s-chip ${sc} ${cur}" onclick="onChipClick('${esc(s.jobId)}')" data-tip="${esc(tip)}">${stLbl}</div>`;
+    const stLbl = s.status==='done'       ? '✓ Done'
+                : s.status==='generating' ? '⏳ Rendering…'
+                : s.status==='error'      ? '✗ Failed'
+                : '⏳ Queued';
+    const tip = `${(s.prompt||'').slice(0,22)} · ${stLbl}`;
+    return `<div class="s-chip ${sc} ${cur}" onclick="onChipClick('${esc(s.jobId)}')" data-tip="${esc(tip)}">${i+1}</div>`;
   }).join('');
 }
 function activeCount(){ return [..._imgSessions,..._vidSessions].filter(s=>s.status==='generating').length; }
@@ -1041,7 +873,7 @@ async function kickGen(jobId) {
   try {
     const d = await fetchWithRetry(`${WORKER}/trigger`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({zodiac_text:s.prompt, userId:_user?.id||'', jobId, output_mode:s.outputMode||'image', duration:s.videoDuration||10})
+      body: JSON.stringify({zodiac_text:s.prompt, userId:_user?.id||'', jobId, output_mode:s.outputMode||'image'})
     });
     if (d.error) throw new Error(d.error);
     upsertSess({jobId, run_token:d.run_token, errorCount:0});
@@ -1319,18 +1151,11 @@ async function extractFallback(buf){
 // CHIP CLICK — restore session with 3-tier image/video loading
 // ═══════════════════════════════════════════════════════════════
 async function onChipClick(jobId){
-  // Switch to the correct screen for this session
-  const sess0=getSess(jobId);
-  if(sess0){
-    const mode=sess0.outputMode==='video'?'video':'image';
-    if(mode!==_activeMode){
-      _activeMode=mode; _outputMode=mode;
-      _sessions=mode==='video'?_vidSessions:_imgSessions;
-    }
-    show('chat-'+mode);
-  }
   _activeJobId=jobId; renderSessBar();
   const s=getSess(jobId); if(!s)return;
+  // Sync mode to match this session
+  const _cs0=getSess(jobId);
+  if(_cs0){const _cm=_cs0.outputMode==='video'?'video':'image';if(_cm!==_activeMode){setOutputMode(_cm);}}
   clearChat(); hideEmpty();
   addUserMsg(s.prompt||''); addSessSep(s.ts); addImgGroup(jobId);
 
@@ -1401,13 +1226,12 @@ async function onChipClick(jobId){
 // SEND
 // ═══════════════════════════════════════════════════════════════
 function sendMsg(){
-  const taId=_activeMode==='video'?'ch-ta-vid':'ch-ta-img';
-  const ta=$(taId),text=ta.value.trim(); if(!text)return;
+  const ta=$('ch-ta'),text=ta.value.trim(); if(!text)return;
   ta.value=''; resize(ta);
   const jobId=`j-${_user?.id||'anon'}-${Date.now()}`;
   _activeJobId=jobId;
   clearChat(); hideEmpty(); addUserMsg(text);
-  upsertSess({jobId,prompt:text,label:text.slice(0,80),ts:Date.now(),status:'queued',done:0,total:0,imageUrls:[],outputMode:_outputMode,videoDuration:_outputMode==='video'?_videoDuration:undefined,pollInterval:null});
+  upsertSess({jobId,prompt:text,label:text.slice(0,80),ts:Date.now(),status:'queued',done:0,total:0,imageUrls:[],outputMode:_outputMode,pollInterval:null});
   addImgGroup(jobId); scrollDown(); renderSessBar();
   if(activeCount()<6){
     upsertSess({jobId,status:'generating'});
@@ -1509,32 +1333,10 @@ async function fetchVideoBlob(url){
 // Generate a random MP4 filename
 const rndMp4Name=()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return`vdo_${(a[0]%900000000)+100000000}.mp4`;};
 
-// Extract a human-readable title from the video URL filename.
-// render.js names files like: 001-aries-weekly-horoscope.mp4
-// We strip the leading index, de-hyphenate, and title-case the result.
-function videoTitleFromUrl(url, idx) {
-  try {
-    const filename = decodeURIComponent(url.split('/').pop().split('?')[0]);
-    // Remove extension
-    const base = filename.replace(/\.mp4$/i, '');
-    // Strip leading 3-digit index (e.g. "001-")
-    const withoutIdx = base.replace(/^\d{1,3}-/, '');
-    if (!withoutIdx) return `Video ${idx + 1}`;
-    // Replace hyphens/underscores with spaces, title-case each word
-    const words = withoutIdx
-      .replace(/[-_]+/g, ' ')
-      .trim()
-      .split(/\s+/)
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' ');
-    return words || `Video ${idx + 1}`;
-  } catch {
-    return `Video ${idx + 1}`;
-  }
-}
-
 async function shareVideo(url,idx,jobId){
-  const title = videoTitleFromUrl(url, idx);
+  // Get the title from the session prompt (same as image share uses Image N)
+  const sess=jobId?getSess(jobId):null;
+  const title=sess?.label ? sess.label.slice(0,80) : `VDO Video ${idx+1}`;
 
   if(!navigator.share){ window.open(url,'_blank'); return; }
 
@@ -1647,23 +1449,9 @@ async function shareImg(jobId,idx){
   const blob=await getBlob(jobId,idx); if(!blob){toast('⚠️ Image not available');return;}
   try{
     const file=new File([blob],rndName(),{type:'image/png'});
-    const imgTitle = (()=>{
-      const sess=jobId?getSess(jobId):null;
-      // Try to get title from imageUrls filename (same naming as video)
-      const imgUrl = sess?.imageUrls?.[idx];
-      if(imgUrl){
-        try{
-          const base=decodeURIComponent(imgUrl.split('/').pop().split('?')[0]).replace(/\.png$/i,'');
-          const clean=base.replace(/^\d{1,3}-/,'').replace(/[-_]+/g,' ').trim()
-            .split(/\s+/).map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
-          if(clean) return clean;
-        }catch{}
-      }
-      return sess?.label?.slice(0,80) || `Image ${idx+1}`;
-    })();
     if(navigator.share){
-      if(navigator.canShare?.({files:[file]})) await navigator.share({files:[file],title:imgTitle,text:imgTitle});
-      else await navigator.share({title:imgTitle,text:imgTitle});
+      if(navigator.canShare?.({files:[file]})) await navigator.share({files:[file],title:`VDO Image ${idx+1}`});
+      else await navigator.share({title:`VDO Image ${idx+1}`,text:'Generated with VDO'});
     } else trigDl(blob,rndName());
     toast('Shared ✓');
   }catch(e){if(e.name!=='AbortError')toast('⚠️ '+e.message);}
@@ -1697,9 +1485,8 @@ function trigDl(blob,name){
 // HISTORY
 // ═══════════════════════════════════════════════════════════════
 function openHistory(){
-  const panelId=_activeMode==='video'?'hist-panel-vid':'hist-panel-img';
   renderHistList(_sessions);
-  $(panelId).classList.add('open');
+  $('hist-panel').classList.add('open');
   if(_user) remoteLoad(_user.id).then(remote=>{
     const mode=_activeMode;
     const allRemote=remote.filter(s=>s.outputMode===mode||(mode==='image'&&!s.outputMode));
@@ -1711,13 +1498,9 @@ function openHistory(){
     renderHistList(_sessions); renderSessBar();
   });
 }
-function closeHistory(){
-  $('hist-panel-img').classList.remove('open');
-  $('hist-panel-vid').classList.remove('open');
-}
+function closeHistory(){$('hist-panel').classList.remove('open');}
 function renderHistList(sessions){
-  const listId=_activeMode==='video'?'hist-list-vid':'hist-list-img';
-  const list=$(listId); if(!list)return;
+  const list=$('hist-list');
   if(!sessions?.length){
     list.innerHTML='<div class="hist-empty"><div style="font-size:36px;opacity:.2">📭</div><div style="font-size:13px;color:var(--tx3);margin-top:8px">No history yet</div></div>';
     return;
@@ -1763,21 +1546,16 @@ async function delHistSess(e,jobId){
 // ═══════════════════════════════════════════════════════════════
 const $=id=>document.getElementById(id);
 const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-// msgs/empty/ta/send always returns the active-mode element
-const msgs=()=>$(_activeMode==='video'?'ch-msgs-vid':'ch-msgs-img');
+const msgs=()=>$('ch-msgs');
 const sid=s=>(s||'').replace(/[^a-zA-Z0-9_-]/g,'_');
-const hideEmpty=()=>{const sfx=_activeMode==='video'?'-vid':'-img';const e=$('ch-empty'+sfx);if(e)e.style.display='none';};
-const scrollDown=()=>{const m=msgs();requestAnimationFrame(()=>{if(m)m.scrollTop=m.scrollHeight;});};
+const hideEmpty=()=>{const e=$('ch-empty');if(e)e.style.display='none';};
+const scrollDown=()=>{const m=msgs();requestAnimationFrame(()=>{m.scrollTop=m.scrollHeight;});};
 const resize=ta=>{ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,130)+'px';};
 const mkEl=(tag,cls,text)=>{const d=document.createElement(tag);d.className=cls;d.textContent=text;msgs().appendChild(d);};
 function clearChat(){
-  const sfx=_activeMode==='video'?'-vid':'-img';
-  const m=msgs(); if(!m)return; m.innerHTML='';
-  const e=document.createElement('div'); e.className='ch-empty'; e.id='ch-empty'+sfx;
-  const isVid=_activeMode==='video';
-  e.innerHTML=isVid
-    ?'<div class="empty-ico" style="background:rgba(231,76,60,.07);border-color:rgba(231,76,60,.12)">🎬</div><div class="empty-title">Video Generator</div><div class="empty-sub">Paste zodiac content — AI renders 9:16 MP4 videos</div>'
-    :'<div class="empty-ico" style="background:rgba(108,92,231,.07);border-color:rgba(108,92,231,.1)">🖼</div><div class="empty-title">Image Generator</div><div class="empty-sub">Paste zodiac content — AI renders permanent 9:16 images</div>';
+  const m=msgs(); m.innerHTML='';
+  const e=document.createElement('div'); e.className='ch-empty'; e.id='ch-empty';
+  e.innerHTML='<div class="empty-ico">✨</div><div class="empty-title">Ready to create</div><div class="empty-sub">Paste zodiac content in any language — EN NL FR DE ES IT PL 中文 SV</div>';
   m.appendChild(e);
 }
 let _toastT;
@@ -1791,39 +1569,19 @@ function toast(m){
 // ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', async () => {
-  // Restore saved duration
-  const savedDur = lsGet('vdo_vid_duration');
-  if (savedDur && [5,7,10,12,15,20].includes(+savedDur)) setDuration(+savedDur);
-  else setDuration(10);
-
+document.addEventListener('DOMContentLoaded',()=>{
+  let _u=null;
+  try{_u=readPersistedUser();}catch{}
+  if(!_u){try{_u=JSON.parse(sessionStorage.getItem('vdo_sess_user')||'null');}catch{}}
+  if(_u&&_u.id&&_u.email){_user=_u;enterApp();}
   // Restore saved output mode (default: video)
-  const savedMode = lsGet('vdo_output_mode');
-  setOutputMode(savedMode === 'image' ? 'image' : 'video');
-
-  // Auth restore: try all 4 tiers (localStorage → cookie → sessionStorage → IndexedDB)
-  // IDB is the most reliable on Android Chrome where localStorage can be wiped mid-session
-  let u = null;
-  try { u = readPersistedUser(); } catch {}
-  if (!u) { try { u = JSON.parse(sessionStorage.getItem('vdo_sess_user') || 'null'); } catch {} }
-  if (!u) { try { u = await idbGetUser(); } catch {} }
-
-  if (u && u.id && u.email) {
-    // Replenish all stores so they stay in sync
-    writePersistedUser(u);
-    try { sessionStorage.setItem('vdo_sess_user', JSON.stringify(u)); } catch {}
-    idbSetUser(u).catch(()=>{});
-    _user = u; enterApp();
+  const savedMode=lsGet('vdo_output_mode');
+  setOutputMode(savedMode==='image'?'image':'video');
+  const ta=$('ch-ta');
+  if(ta){
+    ta.addEventListener('input',()=>resize(ta));
+    ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}});
   }
-
-  // Attach textarea listeners for both screens
-  ['ch-ta-img','ch-ta-vid'].forEach(taId=>{
-    const ta=$(taId);
-    if(ta){
-      ta.addEventListener('input',()=>resize(ta));
-      ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}});
-    }
-  });
 });
 </script>
 </body>
